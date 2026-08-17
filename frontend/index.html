@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets the app draw into the notch area; the layout then pays
+         that back with env(safe-area-inset-*) padding so nothing sits under the status bar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FlexHub</title>
+
+    <!-- Status bar colour follows the active theme rather than being pinned to one shade. -->
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: light)" />
+
+    <!-- iOS ignores the web manifest for home-screen installs, so these are not redundant. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FlexHub" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem('theme');
+        var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

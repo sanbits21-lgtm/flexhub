@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Source of truth for the PWA icon set. Deliberately simple geometry: the app
+       favicon is filter-heavy and turns to mush at 192px, and maskable icons get
+       cropped to a circle on Android, so this keeps the mark well inside the safe zone. -->
+  <rect width="512" height="512" fill="#111827"/>
+  <g fill="#863bff">
+    <!-- dumbbell: end weights -->
+    <rect x="104" y="196" width="44" height="120" rx="14"/>
+    <rect x="364" y="196" width="44" height="120" rx="14"/>
+    <!-- inner collars -->
+    <rect x="156" y="216" width="34" height="80" rx="12"/>
+    <rect x="322" y="216" width="34" height="80" rx="12"/>
+    <!-- bar -->
+    <rect x="190" y="240" width="132" height="32" rx="16"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+{
+    "name":  "flexhub",
+    "version":  "1.0.0",
+    "private":  true,
+    "scripts":  {
+                    "install:all":  "npm install \u0026\u0026 npm install --prefix backend \u0026\u0026 npm install --prefix frontend",
+                    "dev":  "concurrently -n backend,frontend -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+                    "build":  "npm run build --prefix frontend",
+                    "start":  "node backend/server.js",
+                    "seed:super-admin":  "node backend/scripts/seedSuperAdmin.js",
+                    "test":  "npm test --prefix backend"
+                },
+    "devDependencies":  {
+                            "concurrently":  "^8.2.2"
+                        }
+}
