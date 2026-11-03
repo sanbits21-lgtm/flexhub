@@ -168,7 +168,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
           )}
 
           <div className="flex gap-2 pt-2">
-            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50">
+            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving
                 ? 'Saving...'
                 : form.paymentMethod === 'upi'
@@ -207,7 +207,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
             </a>
           )}
           <div className="flex gap-2 pt-2">
-            <button onClick={() => doRenew('upi')} disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50">
+            <button onClick={() => doRenew('upi')} disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving ? 'Confirming...' : 'Mark as Paid'}
             </button>
             <button type="button" onClick={onClose} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">
@@ -232,7 +232,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
             invoiceNumber={result.payment.invoiceNumber}
             paidAt={result.payment.paidAt}
           />
-          <button onClick={handleDone} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white mt-2">
+          <button onClick={handleDone} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
             Done
           </button>
         </div>

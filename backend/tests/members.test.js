@@ -130,7 +130,7 @@ describe('duplicate handling', () => {
       .send({ name: 'First', phone: '9500000013', email, branchId: branchId() });
     const res = await request(app).post('/api/members').set(auth(t.managerToken))
       .send({ name: 'Second', phone: '9500000014', email, branchId: branchId() });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409); // a duplicate is a conflict, not a malformed request
     expect(res.body.message).not.toMatch(/E11000/);
   });
 });

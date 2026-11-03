@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { staffAPI, branchesAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
+import Modal from '../../components/Modal';
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
 const emptyForm = { name: '', email: '', phone: '', password: '', specialization: '', branchId: '' };
@@ -19,6 +20,7 @@ export default function Trainers() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyEditForm);
+  const [reset, setReset] = useState(null); // { trainer, creds?, error? }
 
   const load = () => staffAPI.list({ role: 'trainer', ...(branchId ? { branchId } : {}) }).then((res) => setTrainers(res.data));
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function Trainers() {
         </div>
       )}
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         {isTenantAdmin && (
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
@@ -86,11 +88,11 @@ export default function Trainers() {
         <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className={inputClass} />
         <input placeholder="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className={inputClass} />
         <input placeholder="Specialization" value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className={inputClass} />
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Add Trainer</button>
+        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Trainer</button>
       </form>
 
       {editingId && (
-        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
+        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing trainer</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
@@ -102,13 +104,13 @@ export default function Trainers() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Save Changes</button>
+            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
       )}
 
-      <DataTable
+      <DataTable tableId="trainers"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'email', label: 'Email' },
@@ -121,6 +123,7 @@ export default function Trainers() {
             render: (row) => (
               <div className="flex gap-2">
                 <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                <button onClick={() => setReset({ trainer: row })} disabled={!row.isActive} className="text-gray-600 dark:text-gray-300 hover:underline disabled:opacity-40 disabled:no-underline">Reset password</button>
                 <button
                   onClick={() => handleDeactivate(row)}
                   disabled={!row.isActive}
@@ -134,6 +137,38 @@ export default function Trainers() {
         ]}
         rows={trainers}
       />
+
+      <Modal open={!!reset} onClose={() => setReset(null)} title={`Reset password: ${reset?.trainer?.name || ''}`}>
+        {reset && !reset.creds && (
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
+            <p>This creates a temporary password. Their current password stops working and they are signed out of the app and the website.</p>
+            {reset.error && <p className="text-red-600 dark:text-red-400">{reset.error}</p>}
+            <button
+              onClick={async () => {
+                try {
+                  const res = await staffAPI.resetPassword(reset.trainer._id);
+                  setReset({ trainer: reset.trainer, creds: res.data });
+                } catch (err) {
+                  setReset({ trainer: reset.trainer, error: err.response?.data?.message || 'Could not reset the password.' });
+                }
+              }}
+              className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold"
+            >
+              Create temporary password
+            </button>
+          </div>
+        )}
+        {reset?.creds && (
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
+            <p>Give these to the trainer. The password is shown once, and they can change it under Account in the app.</p>
+            <dl className="grid grid-cols-[6rem_1fr] gap-y-1">
+              <dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-mono break-all">{reset.creds.email}</dd>
+              <dt className="text-gray-500 dark:text-gray-400">Password</dt><dd className="font-mono">{reset.creds.password}</dd>
+            </dl>
+            <button onClick={() => setReset(null)} className="border rounded px-4 py-2 dark:border-gray-600">Done</button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

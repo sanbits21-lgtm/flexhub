@@ -239,7 +239,7 @@ export default function BulkUploadMembersModal({ open, onClose, branches, plans,
               type="button"
               onClick={handleImport}
               disabled={submitting || missingRequired.length > 0}
-              className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50"
+              className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
             >
               {submitting ? 'Importing...' : `Import ${rawRows.length} Member${rawRows.length === 1 ? '' : 's'}`}
             </button>
@@ -279,7 +279,7 @@ export default function BulkUploadMembersModal({ open, onClose, branches, plans,
             </>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={handleClose} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Done</button>
+            <button type="button" onClick={handleClose} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Done</button>
             <button type="button" onClick={reset} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Upload Another File</button>
           </div>
         </div>

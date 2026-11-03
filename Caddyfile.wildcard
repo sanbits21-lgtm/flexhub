@@ -1,0 +1,10 @@
+# One address per gym: https://<gym>.{$DOMAIN}, plus the main site on https://{$DOMAIN}.
+# One wildcard certificate, obtained by proving ownership through your DNS provider.
+{$DOMAIN}, *.{$DOMAIN} {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+	encode zstd gzip
+	# Host is passed through unchanged so the app can tell which gym a request is for.
+	reverse_proxy app:8080
+}

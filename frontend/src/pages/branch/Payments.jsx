@@ -72,7 +72,7 @@ export default function Payments() {
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Payments</h1>
 
       {user.role === 'branch-manager' && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Member</label>
             <select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} required className={inputClass}>
@@ -106,11 +106,11 @@ export default function Payments() {
               <option value="failed">Failed</option>
             </select>
           </div>
-          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Record Payment</button>
+          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Record Payment</button>
         </form>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
           <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className={inputClass}>
@@ -145,7 +145,7 @@ export default function Payments() {
         )}
       </div>
 
-      <DataTable
+      <DataTable tableId="payments"
         columns={[
           { key: 'invoiceNumber', label: 'Invoice' },
           { key: 'member', label: 'Member', render: (r) => (r.memberId?.name || memberName(r.memberId)) },

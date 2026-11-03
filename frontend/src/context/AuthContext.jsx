@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import { useBrand } from './BrandContext';
 
 const AuthContext = createContext(null);
 
@@ -10,6 +11,8 @@ export function AuthProvider({ children }) {
   // useFeature() treats "absent" as always-on, matching the backend.
   const [features, setFeatures] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState(undefined);
+  const { brand: hostBrand, setBrand } = useBrand();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -18,7 +21,7 @@ export function AuthProvider({ children }) {
       return;
     }
     authAPI.me()
-      .then((res) => { setUser(res.data.user); setFeatures(res.data.features); })
+      .then((res) => { setUser(res.data.user); setFeatures(res.data.features); setSubscription(res.data.subscription); if (res.data.brand) setBrand(res.data.brand); })
       .catch(() => localStorage.removeItem('token'))
       .finally(() => setLoading(false));
   }, []);
@@ -28,6 +31,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
     setFeatures(res.data.features);
+    setSubscription(res.data.subscription);
+    if (res.data.brand) setBrand(res.data.brand);
     return res.data.user;
   };
 
@@ -35,10 +40,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setUser(null);
     setFeatures(undefined);
+    setSubscription(undefined);
+    if (!hostBrand) setBrand(null); // main address: back to the FlexHub look
   };
 
   return (
-    <AuthContext.Provider value={{ user, features, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, features, subscription, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

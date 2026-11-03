@@ -32,7 +32,7 @@ export default function PaymentReceipt({ tenantName, member, planName, amount, m
 
   return (
     <div className="w-full">
-      <div className="receipt-print-area bg-white dark:bg-gray-800 border dark:border-gray-600 rounded p-4 text-sm text-gray-800 dark:text-gray-100 space-y-2">
+      <div className="receipt-print-area bg-white dark:bg-gray-800 dark:border dark:border-gray-700 border dark:border-gray-600 rounded p-4 text-sm text-gray-800 dark:text-gray-100 space-y-2">
         <div className="text-center">
           <p className="font-semibold text-base">{tenantName}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Payment Receipt</p>

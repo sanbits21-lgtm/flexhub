@@ -22,6 +22,7 @@ const connect = async () => {
   const name = mongoose.connection.name;
   // Hard stop: everything below wipes data, so refuse to touch a non-test database.
   if (!name.endsWith('-test')) throw new Error(`Refusing to run tests against database "${name}"`);
+  await require('../utils/migrations').run();
 };
 
 const disconnect = async () => {

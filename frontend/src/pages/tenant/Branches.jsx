@@ -42,14 +42,14 @@ export default function Branches() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Branches</h1>
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         <input placeholder="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100" />
         <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100" />
         <input placeholder="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className="border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100" />
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Add Branch</button>
+        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Branch</button>
       </form>
 
-      <DataTable
+      <DataTable tableId="branches"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'phone', label: 'Phone' },
@@ -82,7 +82,7 @@ export default function Branches() {
       />
 
       {managerFormFor && (
-        <form onSubmit={(e) => handleCreateManager(e, managerFormFor)} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+        <form onSubmit={(e) => handleCreateManager(e, managerFormFor)} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
           <div className="text-sm text-gray-500 dark:text-gray-400 w-full">New Branch Manager</div>
           {['name', 'email', 'phone', 'password'].map((field) => (
             <input
@@ -95,7 +95,7 @@ export default function Branches() {
               className="border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100"
             />
           ))}
-          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Create</button>
+          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Create</button>
           <button type="button" onClick={() => setManagerFormFor(null)} className="text-gray-500 dark:text-gray-400">Cancel</button>
         </form>
       )}

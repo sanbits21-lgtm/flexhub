@@ -16,7 +16,18 @@ const userSchema = new mongoose.Schema({
   salary: { type: Number, default: null },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },
+  // Set when someone ELSE resets this password. Tokens issued before it stop working. Not set
+  // by a user changing their own password, so that does not log them out of the session
+  // they are changing it in.
+  passwordResetAt: { type: Date },
+  // Only self-registered owners start unverified; everyone else is created by someone who
+  // vouches for them, so the default is verified. The token itself is never stored: only its hash.
+  emailVerified: { type: Boolean, default: true },
+  emailVerifyHash: { type: String },
+  emailVerifyExpires: { type: Date },
+  emailVerifySentAt: { type: Date },
 }, { timestamps: true });
+userSchema.index({ emailVerifyHash: 1 }, { sparse: true });
 
 userSchema.index({ tenantId: 1, branchId: 1 });
 userSchema.index({ role: 1 });

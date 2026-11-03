@@ -1,6 +1,37 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Member = require('../models/Member');
+const Tenant = require('../models/Tenant');
+const { approvalBlock } = require('../utils/subscription');
+
+// A token issued before the account's password was reset by someone else is dead. JWT `iat`
+// is whole seconds, so compare at second resolution (a token minted in the same second as
+// the reset survives, which is harmless: the reset was just handed to its owner).
+const isRevoked = (decoded, actor) =>
+  !!actor.passwordResetAt && decoded.iat < Math.floor(actor.passwordResetAt.getTime() / 1000);
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+// A suspended or cancelled gym is locked out entirely. A gym whose free trial has ended can
+// still sign in and READ everything (so the owner can see and export their data, and know
+// what to pay for), but cannot change anything until the platform activates a plan. Members
+// are never penalised for their gym's billing: only suspension reaches them.
+const gymStateBlock = async (req) => {
+  const tenantId = req.actorType === 'member' ? req.member.tenantId : req.user.tenantId;
+  if (!tenantId) return null; // platform staff
+  const tenant = await Tenant.findById(tenantId).select('isActive billingStatus billingPlan trialEndsAt approvalStatus');
+  if (!tenant) return null;
+  const unapproved = approvalBlock(tenant);
+  if (unapproved) return unapproved;
+  if (!tenant.isActive || ['suspended', 'cancelled'].includes(tenant.billingStatus)) {
+    return { status: 403, code: 'GYM_SUSPENDED', message: 'This gym account is suspended. Please contact support.' };
+  }
+  const expired = tenant.billingPlan === 'trial' && tenant.trialEndsAt && tenant.trialEndsAt.getTime() <= Date.now();
+  if (expired && req.actorType === 'user' && !SAFE_METHODS.has(req.method) && !req.originalUrl.startsWith('/api/auth/')) {
+    return { status: 402, code: 'TRIAL_ENDED', message: 'Your free trial has ended. You can still view your data. Contact us to choose a plan and continue.' };
+  }
+  return null;
+};
 
 // Verifies the JWT and loads the actor (staff User or Member) it belongs to.
 const protect = async (req, res, next) => {
@@ -14,17 +45,19 @@ const protect = async (req, res, next) => {
 
     if (decoded.actorType === 'member') {
       req.member = await Member.findById(decoded.id).select('-password');
-      if (!req.member || !req.member.isActive) {
+      if (!req.member || !req.member.isActive || isRevoked(decoded, req.member)) {
         return res.status(401).json({ message: 'Invalid session' });
       }
       req.actorType = 'member';
     } else {
       req.user = await User.findById(decoded.id).select('-password');
-      if (!req.user || !req.user.isActive) {
+      if (!req.user || !req.user.isActive || isRevoked(decoded, req.user)) {
         return res.status(401).json({ message: 'Invalid session' });
       }
       req.actorType = 'user';
     }
+    const blocked = await gymStateBlock(req);
+    if (blocked) return res.status(blocked.status).json({ message: blocked.message, code: blocked.code });
     next();
   } catch {
     res.status(401).json({ message: 'Token invalid' });

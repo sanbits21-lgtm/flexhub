@@ -14,7 +14,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && window.location.pathname !== '/login') {
+    if (error.response?.status === 402) window.alert(error.response.data?.message || 'This needs a paid plan.');
+    if (error.response?.status === 403 && error.response.data?.code === 'GYM_SUSPENDED') window.alert(error.response.data.message);
+    if (error.response?.status === 401 && !['/login', '/signup', '/verify-email'].includes(window.location.pathname)) {
       localStorage.removeItem('token');
       window.location.assign('/login');
     }
@@ -24,6 +26,10 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
+  signupConfig: () => api.get('/public/signup-config'),
+  signup: (data) => api.post('/public/signup', data),
+  verifyEmail: (token) => api.post('/public/verify-email', { token }),
+  resendVerification: (email) => api.post('/public/resend-verification', { email }),
   me: () => api.get('/auth/me'),
 };
 
@@ -40,6 +46,8 @@ export const tenantsAPI = {
   create: (data) => api.post('/tenants', data),
   update: (id, data) => api.put(`/tenants/${id}`, data),
   suspend: (id) => api.patch(`/tenants/${id}/suspend`),
+  approve: (id, data) => api.post(`/tenants/${id}/approve`, data || {}),
+  reject: (id, reason) => api.post(`/tenants/${id}/reject`, { reason }),
   createTenantAdmin: (id, data) => api.post(`/tenants/${id}/tenant-admins`, data),
   getFeatures: (id) => api.get(`/tenants/${id}/features`),
   updateFeatures: (id, features) => api.put(`/tenants/${id}/features`, { features }),
@@ -60,6 +68,7 @@ export const staffAPI = {
   update: (id, data) => api.put(`/staff/${id}`, data),
   remove: (id) => api.delete(`/staff/${id}`),
   assignedMembers: (id) => api.get(`/staff/${id}/assigned-members`),
+  resetPassword: (id) => api.post(`/staff/${id}/reset-password`),
   trainerReport: () => api.get('/staff/trainer-report'),
 };
 
@@ -72,6 +81,14 @@ export const membersAPI = {
   update: (id, data) => api.put(`/members/${id}`, data),
   remove: (id) => api.delete(`/members/${id}`),
   renew: (id, data) => api.post(`/members/${id}/renew`, data),
+  issueAppAccess: (id) => api.post(`/members/${id}/app-access`),
+};
+
+export const memberPlansAPI = {
+  list: (memberId) => api.get(`/members/${memberId}/plans`),
+  draft: (memberId, data) => api.post(`/members/${memberId}/plans/draft`, data),
+  create: (memberId, data) => api.post(`/members/${memberId}/plans`, data),
+  withdraw: (memberId, planId) => api.delete(`/members/${memberId}/plans/${planId}`),
 };
 
 export const equipmentAPI = {
@@ -116,8 +133,15 @@ export const reportsAPI = {
   summary: (branchId) => api.get('/reports/summary', { params: branchId ? { branchId } : {} }),
 };
 
+export const platformSettingsAPI = {
+  get: () => api.get('/platform-settings'),
+  update: (data) => api.put('/platform-settings', data),
+};
+
 export const tenantSettingsAPI = {
   get: () => api.get('/tenant-settings'),
+  getBranding: () => api.get('/tenant-settings/branding'),
+  updateBranding: (data) => api.put('/tenant-settings/branding', data),
   update: (data) => api.put('/tenant-settings', data),
 };
 

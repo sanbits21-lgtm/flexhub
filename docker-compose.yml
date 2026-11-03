@@ -1,0 +1,62 @@
+﻿# Production-style stack.
+#   docker compose up -d --build                    app only (MongoDB Atlas via MONGODB_URI)
+#   docker compose --profile db up -d --build       app + a self-hosted MongoDB with a volume
+#   docker compose --profile proxy up -d --build    adds Caddy: automatic HTTPS on $DOMAIN
+# Secrets come from a .env file next to this one (never baked into the image).
+services:
+  app:
+    build: .
+    image: flexhub:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      # With --profile db and no Atlas URI in .env, point at the bundled MongoDB instead:
+      #   MONGODB_URI=mongodb://mongo:27017/flexhub
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads:/data/uploads
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  mongo:
+    profiles: [db]
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    # Not published to the host: only the app can reach it.
+
+  caddy:
+    profiles: [proxy]
+    build: ./caddy
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      # Caddyfile = one domain; Caddyfile.wildcard = a subdomain per gym (set CADDYFILE in .env)
+      - ./${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  uploads:
+  mongo-data:
+  caddy-data:
+  caddy-config:

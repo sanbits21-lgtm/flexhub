@@ -9,11 +9,12 @@ import Modal from '../../components/Modal';
 import BulkUploadMembersModal from '../../components/BulkUploadMembersModal';
 import PaymentReceipt from '../../components/PaymentReceipt';
 import RenewMembershipModal from '../../components/RenewMembershipModal';
+import MemberPlansModal from '../../components/MemberPlansModal';
 import { buildUpiLink } from '../../utils/upi';
+import { addPlanMonths } from '../../utils/planDuration';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-const DURATION_MONTHS = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12 };
 
 const getEmptyForm = () => ({
   name: '', email: '', phone: '', dob: '', gender: '', branchId: '',
@@ -74,6 +75,8 @@ export default function Members() {
   const [formError, setFormError] = useState('');
   const [showOptional, setShowOptional] = useState(false);
   const [renewingMember, setRenewingMember] = useState(null);
+  const [appAccess, setAppAccess] = useState(null); // { member, creds?, error? }
+  const [plansMember, setPlansMember] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editingBranchId, setEditingBranchId] = useState('');
   const [editForm, setEditForm] = useState(emptyEditForm);
@@ -81,9 +84,7 @@ export default function Members() {
   const selectedPlan = plans.find((p) => p._id === form.membershipPlanId);
   const computedEndDate = useMemo(() => {
     if (!selectedPlan || !form.membershipStart) return '';
-    const end = new Date(form.membershipStart);
-    end.setMonth(end.getMonth() + DURATION_MONTHS[selectedPlan.durationUnit]);
-    return end.toISOString().slice(0, 10);
+    return addPlanMonths(form.membershipStart, selectedPlan.durationUnit);
   }, [selectedPlan, form.membershipStart]);
   const computedAmount = useMemo(() => {
     if (!selectedPlan) return 0;
@@ -289,13 +290,13 @@ export default function Members() {
               Bulk Upload
             </button>
           )}
-          <button onClick={openAddModal} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+          <button onClick={openAddModal} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
             + Add Member
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         {isTenantAdmin && (
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
@@ -534,7 +535,7 @@ export default function Members() {
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50">
+            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving ? 'Saving...' : form.membershipPlanId && form.paymentMethod === 'upi' ? 'Pay Now' : 'Save Member'}
             </button>
             <button type="button" onClick={closeAddModal} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
@@ -568,7 +569,7 @@ export default function Members() {
               <button
                 onClick={handleMarkUpiPaid}
                 disabled={markingPaid}
-                className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50"
+                className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
               >
                 {markingPaid ? 'Confirming...' : 'Mark as Paid'}
               </button>
@@ -592,12 +593,47 @@ export default function Members() {
               invoiceNumber={lastPayment.invoiceNumber}
               paidAt={lastPayment.paidAt}
             />
-            <button onClick={handleDoneAfterPayment} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white mt-2">
+            <button onClick={handleDoneAfterPayment} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
               Done
             </button>
           </div>
         )}
       </Modal>
+
+      <Modal open={!!appAccess} onClose={() => setAppAccess(null)} title={`App login and password reset: ${appAccess?.member?.name || ''}`}>
+        {appAccess && !appAccess.creds && (
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
+            <p>This creates a temporary password for the member app, for a first login or a forgotten password. Their current password stops working and they are signed out of the app.</p>
+            {appAccess.error && <p className="text-red-600 dark:text-red-400">{appAccess.error}</p>}
+            <button
+              onClick={async () => {
+                try {
+                  const res = await membersAPI.issueAppAccess(appAccess.member._id);
+                  setAppAccess({ member: appAccess.member, creds: res.data });
+                } catch (err) {
+                  setAppAccess({ member: appAccess.member, error: err.response?.data?.message || 'Could not create a login.' });
+                }
+              }}
+              className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold"
+            >
+              Create temporary password
+            </button>
+          </div>
+        )}
+        {appAccess?.creds && (
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
+            <p>Give these to the member. The password is shown once; they can change it in the app.</p>
+            <dl className="grid grid-cols-[7rem_1fr] gap-y-1">
+              <dt className="text-gray-500 dark:text-gray-400">Member code</dt><dd className="font-mono">{appAccess.creds.memberCode}</dd>
+              {appAccess.creds.email && (<><dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-mono break-all">{appAccess.creds.email}</dd></>)}
+              <dt className="text-gray-500 dark:text-gray-400">Password</dt><dd className="font-mono">{appAccess.creds.password}</dd>
+            </dl>
+            <button onClick={() => setAppAccess(null)} className="border rounded px-4 py-2 dark:border-gray-600">Done</button>
+          </div>
+        )}
+      </Modal>
+
+      <MemberPlansModal open={!!plansMember} member={plansMember} onClose={() => setPlansMember(null)} />
 
       <RenewMembershipModal
         open={!!renewingMember}
@@ -616,7 +652,7 @@ export default function Members() {
       />
 
       {editingId && (
-        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
+        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing member</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
@@ -657,13 +693,13 @@ export default function Members() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Save Changes</button>
+            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
       )}
 
-      <DataTable
+      <DataTable tableId="members"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'phone', label: 'Phone' },
@@ -692,6 +728,8 @@ export default function Members() {
                   {row.membershipPlanId ? 'Renew' : 'Add Plan'}
                 </button>
                 <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                <button onClick={() => setPlansMember(row)} disabled={!row.isActive} className="text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-40 disabled:no-underline">Plans</button>
+                <button onClick={() => setAppAccess({ member: row })} disabled={!row.isActive} className="text-gray-600 dark:text-gray-300 hover:underline disabled:opacity-40 disabled:no-underline">App login / reset</button>
                 <button
                   onClick={() => handleDeactivate(row)}
                   disabled={!row.isActive}

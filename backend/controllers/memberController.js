@@ -8,10 +8,15 @@ const MemberPayment = require('../models/MemberPayment');
 const { addPlanDuration } = require('../utils/planDuration');
 const { withDerivedStatus, statusFilter } = require('../utils/membershipStatus');
 const { logAudit } = require('../utils/audit');
+const q = require('../utils/query');
+const { pageParams } = require('../utils/paginate');
+const { generateTempPassword } = require('../utils/tempPassword');
 
 // Builds the Mongo filter for the caller's scope, translating the trainer's
 // virtual `trainerId` scope key (not a Member field) into the real relationship:
 // Member.assignedTrainerId (User.assignedMembers is never populated by anything).
+const newMemberCode = () => `GYM-${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+
 const buildMemberFilter = (req) => {
   const filter = { ...req.scope };
   delete filter.memberId;
@@ -31,9 +36,14 @@ const applyActiveFilter = (filter, req) => {
 };
 
 exports.list = async (req, res) => {
-  const { search, page = 1, limit = 20, membershipStatus, membershipPlanId, expiringInDays } = req.query;
+  const { page, limit } = pageParams(req);
+  const search = q.str(req.query.search, 'search', 60);
+  const membershipStatus = q.oneOf(req.query.membershipStatus, ['active', 'expired', 'frozen', 'cancelled'], 'membershipStatus');
+  const membershipPlanId = q.oid(req.query.membershipPlanId, 'membershipPlanId');
+  const expiringInDays = q.int(req.query.expiringInDays, { name: 'expiringInDays', min: 0, max: 3650 });
   const filter = applyActiveFilter(buildMemberFilter(req), req);
-  if (search) filter.name = { $regex: search, $options: 'i' };
+  // Escaped: a bracket typed into the search box is text, not a regex.
+  if (search) filter.name = { $regex: q.escapeRegex(search), $options: 'i' };
   if (membershipPlanId) filter.membershipPlanId = membershipPlanId;
 
   // Status and expiry-window conditions both constrain membershipEnd (and may each
@@ -43,9 +53,9 @@ exports.list = async (req, res) => {
   // Status is derived from membershipEnd (see utils/membershipStatus.js), so the
   // filter has to match on the derived value, not just the stored one.
   if (membershipStatus) conditions.push(statusFilter(membershipStatus));
-  if (expiringInDays) {
+  if (expiringInDays !== undefined) {
     const now = new Date();
-    const until = new Date(now.getTime() + Number(expiringInDays) * 24 * 60 * 60 * 1000);
+    const until = new Date(now.getTime() + expiringInDays * 24 * 60 * 60 * 1000);
     // Frozen/cancelled memberships aren't "expiring" in any useful sense — staff are
     // looking for running memberships they need to chase for renewal.
     conditions.push({ membershipEnd: { $gte: now, $lte: until }, membershipStatus: { $nin: ['cancelled', 'frozen'] } });
@@ -58,7 +68,7 @@ exports.list = async (req, res) => {
     .skip((page - 1) * limit)
     .limit(Number(limit));
   const total = await Member.countDocuments(filter);
-  res.json({ members: members.map((m) => withDerivedStatus(m)), total, page: Number(page) });
+  res.json({ members: members.map((m) => withDerivedStatus(m)), total, page, limit });
 };
 
 // A member calling :id routes may only ever target their own id — branchId alone
@@ -93,7 +103,20 @@ exports.getMe = async (req, res) => {
   res.json(req.member);
 };
 
+const Tenant = require('../models/Tenant');
+const { memberRoom } = require('../utils/subscription');
+
+const gymMemberRoom = async (tenantId) => {
+  const tenant = await Tenant.findById(tenantId).select('maxMembers');
+  return tenant ? memberRoom(tenant) : Infinity;
+};
+const memberLimitMessage = (room, wanted) => (wanted
+  ? `Your plan has room for ${room} more member${room === 1 ? '' : 's'}, but this upload has ${wanted}. Upgrade to add more.`
+  : 'You have reached the member limit of your free trial. Upgrade to add more members.');
+
 exports.create = async (req, res) => {
+  const room = await gymMemberRoom(req.body.tenantId);
+  if (room < 1) return res.status(402).json({ code: 'MEMBER_LIMIT', message: memberLimitMessage(room) });
   let { name, email, phone, password, dob, gender, emergencyContact, membershipPlanId, membershipStart, assignedTrainerId } = req.body;
   // Off for this tenant: no-op rather than error. The frontend won't send it once the
   // field is hidden; a stale client shouldn't hard-fail over a disabled optional field.
@@ -123,32 +146,38 @@ exports.create = async (req, res) => {
     if (!trainer) return res.status(400).json({ message: 'Trainer not found for this tenant' });
   }
 
-  const memberCode = `GYM-${Date.now().toString(36).toUpperCase()}`;
   // Staff no longer set a member's password at onboarding time — a random one is
   // stamped here as a placeholder until the WhatsApp self-onboarding flow (member sets
   // their own password via a link) is built; a member can't log in with it as-is.
   const initialPassword = password || crypto.randomBytes(16).toString('hex');
 
   let member;
-  try {
-    member = await Member.create({
-      tenantId: req.body.tenantId,
-      branchId: req.body.branchId,
-      memberCode,
-      name, phone, dob, emergencyContact,
-      password: initialPassword,
-      email: email || undefined,
-      gender: gender || undefined,
-      membershipPlanId: membershipPlanId || undefined,
-      membershipStart: start,
-      membershipEnd: end,
-      assignedTrainerId: assignedTrainerId || undefined,
-      qrCode: uuidv4(),
-    });
-  } catch (err) {
-    if (err.code === 11000) return res.status(400).json({ message: 'A member with this email already exists' });
-    throw err;
+  // The code is time-based plus random, so two members created in the same millisecond
+  // (a busy front desk, an import) do not collide; if one still does, try a fresh code.
+  for (let attempt = 0; attempt < 5 && !member; attempt += 1) {
+    try {
+      member = await Member.create({
+        tenantId: req.body.tenantId,
+        branchId: req.body.branchId,
+        memberCode: newMemberCode(),
+        name, phone, dob, emergencyContact,
+        password: initialPassword,
+        email: email || undefined,
+        gender: gender || undefined,
+        membershipPlanId: membershipPlanId || undefined,
+        membershipStart: start,
+        membershipEnd: end,
+        assignedTrainerId: assignedTrainerId || undefined,
+        qrCode: uuidv4(),
+      });
+    } catch (err) {
+      if (err.code !== 11000) throw err;
+      // Name the field that actually clashed: a code collision is not the user's email.
+      if (err.keyPattern && err.keyPattern.memberCode) continue;
+      return res.status(409).json({ message: 'A member with this email already exists in your gym.' });
+    }
   }
+  if (!member) return res.status(503).json({ message: 'Could not allocate a member code. Please try again.' });
   logAudit(req, 'CREATE_MEMBER', { type: 'Member', id: member._id });
   res.status(201).json({ ...member.toObject(), password: undefined });
 };
@@ -159,6 +188,10 @@ exports.create = async (req, res) => {
 // branch for the whole batch; per-row plan lookup is validated against a preloaded map
 // instead of a query per row. Failures are isolated per row, not batch-fatal.
 exports.bulkCreate = async (req, res) => {
+  const room = await gymMemberRoom(req.body.tenantId);
+  if (Array.isArray(req.body.members) && req.body.members.length > room) {
+    return res.status(402).json({ code: 'MEMBER_LIMIT', message: memberLimitMessage(room, req.body.members.length) });
+  }
   const { branchId, members } = req.body;
   if (!branchId) return res.status(400).json({ message: 'branchId is required' });
   if (!Array.isArray(members) || members.length === 0) {
@@ -193,7 +226,7 @@ exports.bulkCreate = async (req, res) => {
       // Date.now() alone can collide across rows in the same millisecond inside a tight
       // loop (unlike single create, which is always one HTTP request at a time); the row
       // index guarantees uniqueness within a batch.
-      const memberCode = `GYM-${Date.now().toString(36).toUpperCase()}${i}`;
+      const memberCode = newMemberCode();
 
       const member = await Member.create({
         tenantId: req.body.tenantId,
@@ -296,6 +329,7 @@ exports.renew = async (req, res) => {
   delete filter.trainerId;
   const member = await Member.findOne(filter);
   if (!member) return res.status(404).json({ message: 'Member not found' });
+  if (!member.isActive) return res.status(400).json({ message: 'This member is deactivated. Reactivate them before renewing.' });
 
   const { membershipPlanId, amount, method = 'cash' } = req.body;
   if (method === 'upi' && req.features && req.features['features:upiPayments'] === false) {
@@ -366,3 +400,21 @@ exports.addBodyMetric = async (req, res) => {
   if (!member) return res.status(404).json({ message: 'Member not found' });
   res.json(member);
 };
+
+// Mobile-app access. Members are created with a random password nobody knows (no
+// self-onboarding flow yet), so staff issue a temporary one here and hand it over in
+// person. It is returned once and never stored in readable form; the member changes it
+// from the app. Generating a new one replaces the old: this is also the password-reset
+// path for a member who has forgotten theirs.
+exports.issueAppAccess = async (req, res) => {
+  const filter = { ...buildMemberFilter(req), _id: req.params.id, isActive: true };
+  const member = await Member.findOne(filter);
+  if (!member) return res.status(404).json({ message: 'Member not found' });
+  const password = generateTempPassword();
+  member.password = password; // hashed by the model's pre-save hook
+  member.passwordResetAt = new Date(); // signs the member out of any phone already logged in
+  await member.save();
+  logAudit(req, 'ISSUE_MEMBER_APP_ACCESS', { type: 'Member', id: member._id });
+  res.json({ memberCode: member.memberCode, email: member.email || null, password });
+};
+exports.buildMemberFilter = buildMemberFilter;

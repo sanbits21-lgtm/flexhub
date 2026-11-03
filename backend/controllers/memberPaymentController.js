@@ -1,6 +1,8 @@
 const Member = require('../models/Member');
 const MemberPayment = require('../models/MemberPayment');
 const { logAudit } = require('../utils/audit');
+const q = require('../utils/query');
+const { pageParams } = require('../utils/paginate');
 
 const buildFilter = (req) => {
   const filter = { ...req.scope };
@@ -10,7 +12,12 @@ const buildFilter = (req) => {
 };
 
 exports.list = async (req, res) => {
-  const { page = 1, limit = 20, status, method, from, to, memberId } = req.query;
+  const { page, limit } = pageParams(req);
+  const status = q.oneOf(req.query.status, ['pending', 'paid', 'failed', 'refunded'], 'status');
+  const method = q.oneOf(req.query.method, ['cash', 'card', 'upi', 'netbanking', 'other'], 'method');
+  const memberId = q.oid(req.query.memberId, 'memberId');
+  const from = q.date(req.query.from, 'from');
+  const to = q.date(req.query.to, 'to');
   const filter = buildFilter(req);
   if (status) filter.status = status;
   if (method) filter.method = method;
@@ -19,7 +26,7 @@ exports.list = async (req, res) => {
   // filtering those out of a date range is exactly backwards for chasing them.
   if (from || to) {
     filter.createdAt = {};
-    if (from) filter.createdAt.$gte = new Date(from);
+    if (from) filter.createdAt.$gte = from;
     if (to) {
       const end = new Date(to);
       end.setHours(23, 59, 59, 999); // 'to' is an inclusive day, not a midnight boundary
@@ -30,11 +37,11 @@ exports.list = async (req, res) => {
   const payments = await MemberPayment.find(filter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
-    .limit(Number(limit))
+    .limit(limit)
     .populate('memberId', 'name memberCode phone')
     .populate('membershipPlanId', 'name');
   const total = await MemberPayment.countDocuments(filter);
-  res.json({ payments, total, page: Number(page), limit: Number(limit) });
+  res.json({ payments, total, page, limit });
 };
 
 exports.getForMember = async (req, res) => {
@@ -58,6 +65,7 @@ exports.create = async (req, res) => {
   if (req.scope.branchId) memberFilter.branchId = req.scope.branchId;
   const member = await Member.findOne(memberFilter);
   if (!member) return res.status(404).json({ message: 'Member not found' });
+  if (!member.isActive) return res.status(400).json({ message: 'This member is deactivated. Reactivate them before recording a payment.' });
 
   const paidStatus = status || 'paid';
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
@@ -78,6 +86,15 @@ exports.create = async (req, res) => {
   res.status(201).json(payment);
 };
 
+// Money moves one way. Without this a refunded payment could be flipped back to "paid" (or a
+// paid one back to "pending"), which silently rewrites revenue.
+const TRANSITIONS = {
+  pending: ['paid', 'failed'],
+  failed: ['pending', 'paid'],
+  paid: ['refunded'],
+  refunded: [],
+};
+
 exports.update = async (req, res) => {
   const { status, gatewayRef } = req.body;
 
@@ -86,11 +103,26 @@ exports.update = async (req, res) => {
   }
 
   const filter = { ...buildFilter(req), _id: req.params.id };
-  const update = { status, gatewayRef };
-  if (status === 'paid') update.paidAt = new Date();
-  // A refund reverses the collection, so the paid timestamp must go with it — otherwise
-  // refunded money keeps counting toward the month's revenue via the paidAt aggregations.
-  if (status === 'refunded') update.paidAt = null;
+  const current = await MemberPayment.findOne(filter);
+  if (!current) return res.status(404).json({ message: 'Payment not found' });
+
+  const changing = status !== undefined && status !== current.status;
+  if (changing && !TRANSITIONS[current.status].includes(status)) {
+    return res.status(400).json({
+      message: current.status === 'refunded'
+        ? 'A refunded payment cannot be changed.'
+        : `A ${current.status} payment cannot be changed to ${status}.`,
+    });
+  }
+  const update = {};
+  if (gatewayRef !== undefined) update.gatewayRef = gatewayRef;
+  if (changing) {
+    update.status = status;
+    if (status === 'paid') update.paidAt = new Date();
+    // A refund reverses the collection, so the paid timestamp must go with it — otherwise
+    // refunded money keeps counting toward the month's revenue via the paidAt aggregations.
+    if (status === 'refunded') update.paidAt = null;
+  }
   const payment = await MemberPayment.findOneAndUpdate(filter, update, { new: true })
     .populate('memberId', 'name memberCode phone')
     .populate('membershipPlanId', 'name');

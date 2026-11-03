@@ -36,7 +36,7 @@ export default function Reports() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Membership — Plan Mix</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <BarChartCard title="Active members by plan" data={data.planMix} dataKey="activeMembers" xKey="planName" colorKey="violet" />
-          <DataTable
+          <DataTable tableId="reports.first"
             columns={[
               { key: 'planName', label: 'Plan' },
               { key: 'activeMembers', label: 'Active Members' },
@@ -61,7 +61,7 @@ export default function Reports() {
           ))}
         </div>
         <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">Overdue maintenance</h3>
-        <DataTable
+        <DataTable tableId="reports.second"
           columns={[
             { key: 'name', label: 'Equipment' },
             { key: 'category', label: 'Category', render: (r) => r.category || '—' },

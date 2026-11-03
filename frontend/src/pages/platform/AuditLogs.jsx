@@ -37,7 +37,7 @@ export default function AuditLogs() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Audit Log</h1>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Action</label>
           <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1); }} className={inputClass}>
@@ -65,7 +65,7 @@ export default function AuditLogs() {
         )}
       </div>
 
-      <DataTable
+      <DataTable tableId="auditLogs"
         columns={[
           { key: 'createdAt', label: 'When', render: (r) => new Date(r.createdAt).toLocaleString() },
           { key: 'actor', label: 'Actor', render: (r) => r.actorName || '—', hideOnMobile: true },

@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* FlexHub lime by default; BrandContext overrides these for a gym with its own colour. */
+  :root { --accent: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; }
+  body { @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100; }
+  .dark { color-scheme: dark; }
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+}
+
 /* Installed as a PWA there is no browser chrome, so the app draws under the status bar
    and the home indicator. These pay back the viewport-fit=cover in index.html. On
    non-notched devices and in a normal browser tab the insets are 0, so this is a no-op. */

@@ -6,7 +6,7 @@ const memberSchema = new mongoose.Schema({
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
   memberCode: { type: String, required: true, unique: true },
   name: { type: String, required: true, trim: true },
-  email: { type: String, lowercase: true, trim: true, sparse: true, unique: true },
+  email: { type: String, lowercase: true, trim: true },
   phone: { type: String, required: true, trim: true },
   password: { type: String, required: true },
   photoUrl: { type: String },
@@ -27,12 +27,22 @@ const memberSchema = new mongoose.Schema({
     bodyFatPct: Number,
     notes: String,
   }],
+  healthNotes: { type: String, trim: true, maxlength: 500 },
+  fitnessGoal: { type: String, enum: ['lose_fat', 'build_muscle', 'stay_fit', 'improve_endurance'] },
+  experienceLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },
+  dietPreference: { type: String, enum: ['veg', 'eggetarian', 'non_veg', 'vegan'] },
   assignedTrainerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   qrCode: { type: String, required: true, unique: true },
   isActive: { type: Boolean, default: true },
+  // See User.passwordResetAt: set only by a staff-forced reset, revokes earlier sessions.
+  passwordResetAt: { type: Date },
 }, { timestamps: true });
 
 memberSchema.index({ tenantId: 1, branchId: 1 });
+// One member per email WITHIN a gym. (It used to be unique across every gym on the platform,
+// so a second gym could not enrol someone whose email another gym already had, and the
+// refusal revealed that the email existed elsewhere.) Partial: members without an email are fine.
+memberSchema.index({ tenantId: 1, email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
 memberSchema.index({ tenantId: 1, membershipStatus: 1, membershipEnd: 1 });
 
 memberSchema.pre('save', async function (next) {

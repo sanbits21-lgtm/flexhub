@@ -38,7 +38,7 @@ export default function PaymentSettings() {
         once a member has paid.
       </p>
 
-      <form onSubmit={handleSave} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-4">
+      <form onSubmit={handleSave} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-4">
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">UPI ID</label>
           <input
@@ -70,7 +70,7 @@ export default function PaymentSettings() {
         )}
 
         <div className="flex items-center gap-3">
-          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Save</button>
+          <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save</button>
           {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved.</span>}
         </div>
       </form>

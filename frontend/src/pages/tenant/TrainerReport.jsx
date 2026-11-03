@@ -36,17 +36,17 @@ export default function TrainerReport() {
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Trainer Collections & Salary</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-2xl shadow p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Collections (all-time, assigned members)</div>
           <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">₹{totalCollections}</div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-2xl shadow p-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">Total Monthly Salary</div>
           <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">₹{totalSalary}</div>
         </div>
       </div>
 
-      <DataTable
+      <DataTable tableId="trainerReport"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'branchName', label: 'Branch', render: (r) => r.branchName || '—' },

@@ -3,11 +3,31 @@ const mongoose = require('mongoose');
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  // `slug` is the gym's subdomain (iron.example.com). When it changes, the old one is kept
+  // here until `until`, so old links redirect instead of breaking (see utils/subdomain.js).
+  previousSlugs: [{ _id: false, slug: String, until: Date }],
+  // White-label look shown on the gym's login page and in its staff website.
+  brand: {
+    color: { type: String, default: '' },
+    logoUrl: { type: String, default: '' },
+    tagline: { type: String, trim: true, maxlength: 80, default: '' },
+  },
   contactEmail: { type: String, required: true, lowercase: true, trim: true },
   contactPhone: { type: String, trim: true },
   billingPlan: { type: String, enum: ['trial', 'basic', 'pro', 'enterprise'], default: 'trial' },
   billingStatus: { type: String, enum: ['active', 'past_due', 'suspended', 'cancelled'], default: 'active' },
   maxBranches: { type: Number, default: 1 },
+  // Free-trial terms. No end date = never expires (gyms created by platform staff);
+  // `maxMembers` unset = uncapped. Both are cleared when the gym moves to a paid plan.
+  trialEndsAt: { type: Date },
+  maxMembers: { type: Number },
+  signupSource: { type: String, enum: ['platform', 'self'], default: 'platform' },
+  // Self-registered gyms wait here until a platform administrator approves them. Everything
+  // else (and every gym that existed before approvals) is 'approved'.
+  approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
+  approvedAt: { type: Date },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  rejectionReason: { type: String, trim: true, maxlength: 200 },
   // Own UPI collection details — no payment gateway involved. A QR/deep-link is
   // generated client-side from upiId; upiPaymentLink is an optional fallback (e.g. a
   // GPay/PhonePe business payment page) for tenants who'd rather paste an existing link.
@@ -26,5 +46,6 @@ const tenantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 tenantSchema.index({ isActive: 1 });
+tenantSchema.index({ 'previousSlugs.slug': 1 });
 
 module.exports = mongoose.model('Tenant', tenantSchema);

@@ -4,10 +4,13 @@
 // of a bare array. Existing callers keep working untouched.
 const wantsPagination = (req) => req.query.page !== undefined || req.query.limit !== undefined;
 
-const pageParams = (req) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
+const pageParams = (req, { defaultLimit = 20 } = {}) => {
+  // Anything that is not a clean positive number (arrays, objects, text, 0, negatives)
+  // falls back to the default instead of reaching the database.
+  const num = (v) => (typeof v === 'string' && /^\d{1,9}$/.test(v) ? Number(v) : NaN);
+  const page = Math.max(1, num(req.query.page) || 1);
   // Capped so a client can't ask for the entire collection in one request.
-  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 20));
+  const limit = Math.min(200, Math.max(1, num(req.query.limit) || defaultLimit));
   return { page, limit };
 };
 

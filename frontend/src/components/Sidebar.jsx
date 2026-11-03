@@ -2,12 +2,16 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import InstallButton from './InstallButton';
+import BrandMark from './BrandMark';
+import { useBrand } from '../context/BrandContext';
+import { useFeature } from '../hooks/useFeature';
 
 const NAV_BY_ROLE = {
   'super-admin': [
     { to: '/platform-admins', label: 'Platform Admins' },
     { to: '/tenants', label: 'Tenants' },
     { to: '/audit-logs', label: 'Audit Log' },
+    { to: '/platform-settings', label: 'Platform Settings' },
   ],
   'platform-admin': [
     { to: '/tenants', label: 'Tenants' },
@@ -23,6 +27,7 @@ const NAV_BY_ROLE = {
     { to: '/payments', label: 'Payments' },
     { to: '/reports', label: 'Reports' },
     { to: '/payment-settings', label: 'Payment Settings' },
+    { to: '/branding', label: 'Branding & Address' },
   ],
   'branch-manager': [
     { to: '/members', label: 'Members' },
@@ -38,7 +43,9 @@ const NAV_BY_ROLE = {
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
-  const links = NAV_BY_ROLE[user?.role] || [];
+  const { brand } = useBrand();
+  const canBrand = useFeature('features:branding');
+  const links = (NAV_BY_ROLE[user?.role] || []).filter((l) => l.to !== '/branding' || canBrand);
 
   return (
     <>
@@ -52,7 +59,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           md:static md:translate-x-0 md:w-56 md:min-h-screen`}
       >
         <div className="p-4 text-lg font-semibold border-b border-gray-700 flex items-center justify-between">
-          FlexHub
+          <span className="flex items-center gap-2 min-w-0"><BrandMark brand={brand} size={28} /><span className="truncate">{brand?.name || 'FlexHub'}</span></span>
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <button onClick={onClose} aria-label="Close menu" className="md:hidden text-gray-400 hover:text-gray-100">
@@ -63,11 +70,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           </div>
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          <NavLink to="/" end onClick={onClose} className={({ isActive }) => `block px-3 py-2 rounded ${isActive ? 'bg-gray-700' : 'hover:bg-gray-800'}`}>
+          <NavLink to="/" end onClick={onClose} className={({ isActive }) => `block px-3 py-2 rounded-xl ${isActive ? 'bg-accent text-accent-ink font-semibold' : 'hover:bg-gray-800'}`}>
             Dashboard
           </NavLink>
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} onClick={onClose} className={({ isActive }) => `block px-3 py-2 rounded ${isActive ? 'bg-gray-700' : 'hover:bg-gray-800'}`}>
+            <NavLink key={link.to} to={link.to} onClick={onClose} className={({ isActive }) => `block px-3 py-2 rounded-xl ${isActive ? 'bg-accent text-accent-ink font-semibold' : 'hover:bg-gray-800'}`}>
               {link.label}
             </NavLink>
           ))}

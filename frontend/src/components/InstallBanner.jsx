@@ -31,7 +31,7 @@ export default function InstallBanner() {
   if (!isIos && !canPrompt) return null;
 
   return (
-    <div className="md:hidden mx-4 mt-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-3 flex items-start gap-3">
+    <div className="md:hidden mx-4 mt-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:border dark:border-gray-700 shadow-sm p-3 flex items-start gap-3">
       <img src="/icons/icon-192.png" alt="" className="w-10 h-10 rounded-lg shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Install FlexHub</p>
@@ -43,7 +43,7 @@ export default function InstallBanner() {
         {!isIos && (
           <button
             onClick={promptInstall}
-            className="mt-2 text-sm bg-gray-900 text-white rounded px-3 py-1.5 dark:bg-gray-100 dark:text-gray-900"
+            className="mt-2 text-sm bg-gray-900 text-white rounded px-3 py-1.5 dark:bg-accent dark:text-accent-ink dark:font-semibold"
           >
             Install
           </button>

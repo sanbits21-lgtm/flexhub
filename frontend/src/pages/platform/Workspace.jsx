@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { tenantsAPI } from '../../services/api';
 
-const CATEGORY_LABELS = { page: 'Pages', feature: 'Features', field: 'Fields' };
-const CATEGORY_ORDER = ['page', 'feature', 'field'];
+const CATEGORY_LABELS = { page: 'Pages', feature: 'Features', rule: 'Rules', field: 'Fields' };
+const CATEGORY_ORDER = ['page', 'feature', 'rule', 'field'];
 
 export default function Workspace() {
   const { id } = useParams();
@@ -65,7 +65,7 @@ export default function Workspace() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {grouped.map(({ category, keys }) => (
-          <div key={category} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3">
+          <div key={category} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
               {CATEGORY_LABELS[category]}
             </h2>
@@ -90,7 +90,7 @@ export default function Workspace() {
           <button
             type="submit"
             disabled={saving || !hasChanges}
-            className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white disabled:opacity-50"
+            className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>

@@ -45,7 +45,7 @@ export default function PwaStatus() {
       </div>
 
       {needRefresh && (
-        <div className="fixed bottom-4 inset-x-4 z-[60] md:left-auto md:right-4 md:w-80 rounded-lg shadow-lg bg-gray-900 text-gray-100 dark:bg-gray-100 dark:text-gray-900 p-4 pb-safe">
+        <div className="fixed bottom-4 inset-x-4 z-[60] md:left-auto md:right-4 md:w-80 rounded-lg shadow-lg bg-gray-900 text-gray-100 dark:bg-accent dark:text-accent-ink dark:font-semibold p-4 pb-safe">
           <p className="text-sm mb-3">A new version of FlexHub is available.</p>
           <div className="flex gap-2">
             <button

@@ -49,7 +49,7 @@ export default function Equipment() {
         </div>
       )}
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         {isTenantAdmin && (
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
@@ -61,10 +61,10 @@ export default function Equipment() {
         )}
         <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={inputClass} />
         <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass} />
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Add Equipment</button>
+        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Equipment</button>
       </form>
 
-      <DataTable
+      <DataTable tableId="equipment"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'category', label: 'Category', render: (r) => r.category || '—' },

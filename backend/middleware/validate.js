@@ -31,35 +31,68 @@ const objectId = z.custom(isObjectIdLike, { message: 'must be a valid id' });
 const optionalString = z.string().trim().optional().or(z.literal(''));
 const optionalObjectId = z.union([z.literal(''), z.null(), objectId]).optional();
 const optionalDate = z.union([z.string(), z.date()]).optional().nullable().or(z.literal(''));
-const money = z.coerce.number().min(0, 'cannot be negative');
+// One ceiling for every rupee amount: a typo like 1000000000000000 must not reach the books.
+const MAX_MONEY = 10_000_000;
+const money = z.coerce.number().min(0, 'cannot be negative').max(MAX_MONEY, 'is too large');
+const positiveMoney = money.refine((v) => v > 0, 'must be greater than zero');
+// Digits with an optional leading + (or a bracketed area code) and common separators; 6 to 18 characters.
+const phone = z.string().trim().regex(/^\+?[0-9(][0-9\s\-()]{5,17}$/, 'must be a valid phone number');
+const personName = z.string().trim().min(1, 'is required').max(100, 'is too long');
+const yearsAgo = (n) => new Date(Date.now() - n * 365.25 * 86400000);
+// A date of birth must be a real past date; a membership start must be near today
+// (the server derives the end date from it, so 1999 or 2099 would silently misdate a plan).
+const pastDate = optionalDate.refine((v) => {
+  if (!v) return true;
+  const d = new Date(v);
+  return !Number.isNaN(d.getTime()) && d <= new Date() && d >= yearsAgo(120);
+}, 'must be a real date of birth in the past');
+const nearDate = optionalDate.refine((v) => {
+  if (!v) return true;
+  const d = new Date(v);
+  return !Number.isNaN(d.getTime()) && d >= yearsAgo(1) && d <= new Date(Date.now() + 366 * 86400000);
+}, 'must be within a year of today');
 
 const PAYMENT_METHODS = ['cash', 'card', 'upi', 'netbanking', 'other'];
 const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 const MEMBERSHIP_STATUSES = ['active', 'expired', 'frozen', 'cancelled'];
 const DURATION_UNITS = ['monthly', 'quarterly', 'half_yearly', 'yearly'];
+const CLASS_SESSION_STATUSES = ['scheduled', 'cancelled', 'completed'];
 
 const schemas = {
+  verifyEmail: z.object({ token: z.string().regex(/^[0-9a-f]{64}$/, 'is not valid') }).strict(),
+  resendVerification: z.object({ email: z.string().trim().email('must be a valid email').max(120) }).strict(),
+  signup: z.object({
+    gymName: z.string().trim().min(2, 'must be at least 2 characters').max(60, 'is too long'),
+    ownerName: personName,
+    email: z.string().trim().email('must be a valid email').max(120),
+    phone,
+    password: z.string().min(8, 'must be at least 8 characters').max(72, 'must be 72 characters or fewer'),
+    slug: z.string().trim().max(40).optional(),
+    website: z.string().optional(),
+  }).strict(),
+
   login: z.object({
     email: z.string().email('must be a valid email'),
     password: z.string().min(1, 'is required'),
   }),
 
   memberCreate: z.object({
-    name: z.string().trim().min(1, 'is required'),
-    phone: z.string().trim().min(1, 'is required'),
-    email: z.string().email('must be a valid email').optional().or(z.literal('')),
+    name: personName,
+    phone,
+    email: z.string().email('must be a valid email').max(120).optional().or(z.literal('')),
     branchId: objectId,
     membershipPlanId: optionalObjectId,
-    membershipStart: optionalDate,
+    membershipStart: nearDate,
     assignedTrainerId: optionalObjectId,
     gender: z.enum(['male', 'female', 'other', 'prefer_not_say']).optional().or(z.literal('')),
-    dob: optionalDate,
+    dob: pastDate,
   }).passthrough(),
 
   memberUpdate: z.object({
-    name: z.string().trim().min(1, 'is required').optional(),
-    phone: z.string().trim().min(1, 'is required').optional(),
-    email: z.string().email('must be a valid email').optional().or(z.literal('')),
+    name: personName.optional(),
+    phone: phone.optional(),
+    email: z.string().email('must be a valid email').max(120).optional().or(z.literal('')),
+    dob: pastDate,
     membershipPlanId: optionalObjectId,
     membershipStatus: z.enum(MEMBERSHIP_STATUSES).optional(),
     assignedTrainerId: optionalObjectId,
@@ -75,7 +108,7 @@ const schemas = {
   paymentCreate: z.object({
     memberId: objectId,
     membershipPlanId: optionalObjectId,
-    amount: money,
+    amount: positiveMoney,
     method: z.enum(PAYMENT_METHODS).optional(),
     status: z.enum(PAYMENT_STATUSES).optional(),
   }).passthrough(),
@@ -105,10 +138,10 @@ const schemas = {
   }).passthrough(),
 
   staffCreate: z.object({
-    name: z.string().trim().min(1, 'is required'),
-    email: z.string().email('must be a valid email'),
-    phone: z.string().trim().min(1, 'is required'),
-    password: z.string().min(8, 'must be at least 8 characters'),
+    name: personName,
+    email: z.string().email('must be a valid email').max(120),
+    phone,
+    password: z.string().min(8, 'must be at least 8 characters').max(72, 'is too long'),
     role: z.enum(['branch-manager', 'trainer']).optional(),
     branchId: optionalObjectId,
     salary: z.coerce.number().min(0).optional().nullable(),
@@ -123,6 +156,48 @@ const schemas = {
     upiId: optionalString,
     upiPaymentLink: optionalString,
   }).passthrough(),
+
+  classTypeCreate: z.object({
+    name: z.string().trim().min(1, 'is required'),
+    description: optionalString,
+    durationMinutes: z.coerce.number().int().min(1, 'must be at least 1 minute'),
+    defaultCapacity: z.coerce.number().int().min(1, 'must be at least 1'),
+    branchId: optionalObjectId,
+  }).passthrough(),
+
+  classSessionCreate: z.object({
+    classTypeId: objectId,
+    trainerId: optionalObjectId,
+    startAt: z.union([z.string(), z.date()]),
+    endAt: z.union([z.string(), z.date()]),
+    capacity: z.coerce.number().int().min(1).optional().nullable(),
+    notes: optionalString,
+  }).passthrough(),
+
+  classSessionUpdate: z.object({
+    trainerId: optionalObjectId,
+    startAt: z.union([z.string(), z.date()]).optional(),
+    endAt: z.union([z.string(), z.date()]).optional(),
+    capacity: z.coerce.number().int().min(1).optional().nullable(),
+    notes: optionalString,
+    status: z.enum(CLASS_SESSION_STATUSES).optional(),
+  }).passthrough(),
+
+  classSessionBatch: z.object({
+    classTypeId: objectId,
+    trainerId: optionalObjectId,
+    startDate: z.string().min(1, 'is required'),
+    endDate: z.string().min(1, 'is required'),
+    daysOfWeek: z.array(z.coerce.number().int().min(0).max(6)).min(1, 'select at least one day'),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'must be HH:mm'),
+    durationMinutes: z.coerce.number().int().min(1).optional(),
+    capacity: z.coerce.number().int().min(1).optional().nullable(),
+  }).passthrough(),
+
+  bookingCreate: z.object({
+    classSessionId: objectId,
+    memberId: objectId,
+  }).passthrough(),
 };
 
-module.exports = { validate, schemas, z };
+module.exports = { validate, schemas, z, MAX_MONEY };

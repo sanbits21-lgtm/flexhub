@@ -1,13 +1,30 @@
 const Member = require('../models/Member');
+const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
+const { resolveFeatures } = require('../utils/features');
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  const member = await Member.findOne({ email: email?.toLowerCase() });
-  if (!member || !member.isActive || !(await member.matchPassword(password))) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+  // identifier is an email or a member code (not every member has an email); email
+  // stays accepted so existing clients keep working.
+  const { identifier, email, password } = req.body;
+  if (req.unknownHost) return res.status(401).json({ message: 'Invalid credentials' });
+  const id = String(identifier || email || '').trim();
+  // An email is unique within a gym, not across gyms, so it can match several members; the
+  // password (or a member code, which is globally unique) decides which one this is.
+  let member = null;
+  if (id && typeof password === 'string') {
+    const filter = id.includes('@') ? { email: id.toLowerCase(), isActive: true } : { memberCode: id, isActive: true };
+    // On a gym's own address, only that gym's members can match.
+    if (req.hostTenant) filter.tenantId = req.hostTenant._id;
+    const candidates = await Member.find(filter).limit(10);
+    for (const c of candidates) {
+      if (await c.matchPassword(password)) { member = c; break; }
+    }
   }
+  if (!member) return res.status(401).json({ message: 'Invalid credentials' });
+  const tenant = await Tenant.findById(member.tenantId).select('features');
   res.json({
+    features: resolveFeatures(tenant),
     token: generateToken(member._id, 'member'),
     member: {
       _id: member._id,
@@ -22,5 +39,6 @@ exports.login = async (req, res) => {
 };
 
 exports.getMe = async (req, res) => {
-  res.json({ member: req.member });
+  const tenant = await Tenant.findById(req.member.tenantId).select('features');
+  res.json({ member: req.member, features: resolveFeatures(tenant) });
 };

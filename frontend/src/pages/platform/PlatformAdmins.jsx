@@ -70,7 +70,7 @@ export default function PlatformAdmins() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Platform Admins</h1>
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         {['name', 'email', 'phone', 'password'].map((field) => (
           <div key={field}>
             <label className="block text-xs text-gray-500 dark:text-gray-400 capitalize mb-1">{field}</label>
@@ -83,11 +83,11 @@ export default function PlatformAdmins() {
             />
           </div>
         ))}
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Add Platform Admin</button>
+        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Platform Admin</button>
       </form>
 
       {editingId && (
-        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
+        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing platform admin</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
@@ -118,13 +118,13 @@ export default function PlatformAdmins() {
           </div>
 
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Save Changes</button>
+            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
       )}
 
-      <DataTable
+      <DataTable tableId="platformAdmins"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'email', label: 'Email' },

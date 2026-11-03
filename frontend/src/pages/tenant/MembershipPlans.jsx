@@ -74,7 +74,7 @@ export default function MembershipPlans() {
         </select>
       </div>
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
         <input placeholder="Plan name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={inputClass} />
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</label>
@@ -91,11 +91,11 @@ export default function MembershipPlans() {
             {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
           </select>
         </div>
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Add Plan</button>
+        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Plan</button>
       </form>
 
       {editingId && (
-        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
+        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing plan</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Plan name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
@@ -120,13 +120,13 @@ export default function MembershipPlans() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">Save Changes</button>
+            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
       )}
 
-      <DataTable
+      <DataTable tableId="membershipPlans"
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'durationUnit', label: 'Duration', render: (r) => durationLabel(r.durationUnit) },

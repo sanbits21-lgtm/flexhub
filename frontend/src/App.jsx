@@ -4,6 +4,10 @@ import { AuthProvider } from './context/AuthContext';
 import RoleRoute from './components/RoleRoute';
 import FeatureRoute from './components/FeatureRoute';
 import Sidebar from './components/Sidebar';
+import TrialBanner from './components/TrialBanner';
+import Signup from './pages/Signup';
+import VerifyEmail from './pages/VerifyEmail';
+import PlatformSettings from './pages/platform/PlatformSettings';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -17,6 +21,7 @@ import MembershipPlans from './pages/tenant/MembershipPlans';
 import TrainerReport from './pages/tenant/TrainerReport';
 import Reports from './pages/tenant/Reports';
 import PaymentSettings from './pages/tenant/PaymentSettings';
+import Branding from './pages/tenant/Branding';
 import Members from './pages/branch/Members';
 import Trainers from './pages/branch/Trainers';
 import Equipment from './pages/branch/Equipment';
@@ -41,6 +46,7 @@ function AppLayout({ children }) {
           </button>
         </header>
 
+        <TrialBanner />
         <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
@@ -53,6 +59,9 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/platform-settings" element={<RoleRoute allow={['super-admin']}><AppLayout><PlatformSettings /></AppLayout></RoleRoute>} />
 
           <Route path="/" element={<RoleRoute><AppLayout><Dashboard /></AppLayout></RoleRoute>} />
 
@@ -66,6 +75,7 @@ export default function App() {
           <Route path="/trainer-report" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="pages:trainerReport"><TrainerReport /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/reports" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="pages:reports"><Reports /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/payment-settings" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="pages:paymentSettings"><PaymentSettings /></FeatureRoute></AppLayout></RoleRoute>} />
+          <Route path="/branding" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="features:branding"><Branding /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/membership-plans" element={<RoleRoute allow={['tenant-admin', 'branch-manager']}><AppLayout><MembershipPlans /></AppLayout></RoleRoute>} />
 
           <Route path="/members" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><Members /></AppLayout></RoleRoute>} />

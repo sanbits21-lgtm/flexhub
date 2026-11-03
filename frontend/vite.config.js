@@ -34,7 +34,7 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // Without this, an offline navigation to an API path would be answered with the
         // SPA shell instead of failing — and /health would stop being a real health check.
-        navigateFallbackDenylist: [/^\/api/, /^\/health/],
+        navigateFallbackDenylist: [/^\/api/, /^\/health/, /^\/privacy/],
         // Deliberately NO runtimeCaching for /api. Responses are authenticated and
         // tenant-scoped; serving one gym a cached response — or showing stale membership
         // and payment figures — is worse than an honest network error.

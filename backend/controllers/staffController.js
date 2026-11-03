@@ -4,6 +4,7 @@ const MemberPayment = require('../models/MemberPayment');
 const Branch = require('../models/Branch');
 const { logAudit } = require('../utils/audit');
 const { sendList } = require('../utils/paginate');
+const { generateTempPassword } = require('../utils/tempPassword');
 
 // Lists staff within the caller's scope (tenant-admin sees managers+trainers across the
 // tenant; branch-manager sees trainers in their own branch).
@@ -117,4 +118,21 @@ exports.getAssignedMembers = async (req, res) => {
   // in memberController.js for why User.assignedMembers is never used for this.
   const members = await Member.find({ assignedTrainerId: trainer._id, isActive: true }).select('name memberCode membershipStatus');
   res.json(members);
+};
+
+// Forgotten trainer password. There is no self-service reset (no email/SMS channel yet),
+// so a manager issues a temporary one in person. Same shape as a member's app login: shown
+// once, never stored readable, and every session the trainer already had is revoked.
+// Trainers only: a manager's password is not another manager's to reset.
+exports.resetPassword = async (req, res) => {
+  const filter = { ...req.scope };
+  delete filter.trainerId;
+  const trainer = await User.findOne({ ...filter, _id: req.params.id, role: 'trainer', isActive: true });
+  if (!trainer) return res.status(404).json({ message: 'Trainer not found' });
+  const password = generateTempPassword();
+  trainer.password = password; // hashed by the model's pre-save hook
+  trainer.passwordResetAt = new Date();
+  await trainer.save();
+  logAudit(req, 'RESET_TRAINER_PASSWORD', { type: 'User', id: trainer._id });
+  res.json({ name: trainer.name, email: trainer.email, password });
 };

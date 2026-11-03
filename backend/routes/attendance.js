@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, requireRole, allowActors, scopeContext } = require('../middleware/auth');
 const { attachFeatures, requireFeature } = require('../middleware/features');
 const {
-  list, getForMember, checkIn, checkOut,
+  list, getForMember, checkIn, checkOut, scan,
 } = require('../controllers/attendanceController');
 
 // Members are legitimate actors here (self check-in via QR, own history), so these
@@ -17,7 +17,10 @@ const staffWithBranchContext = ['tenant-admin', 'branch-manager', 'trainer'];
 router.use(protect, scopeContext, attachFeatures, requireFeature('pages:attendance'));
 router.get('/', requireRole(...staffWithBranchContext), list);
 router.get('/member/:id', allowActors({ member: true, roles: staffWithBranchContext }), getForMember);
-router.post('/check-in', allowActors({ member: true, roles: staffWithBranchContext }), checkIn);
-router.post('/check-out', allowActors({ member: true, roles: staffWithBranchContext }), checkOut);
+// Staff only: a member checking themselves in from their own phone proves nothing about being
+// at the gym. Members check in by showing their pass (see /scan).
+router.post('/check-in', requireRole(...staffWithBranchContext), checkIn);
+router.post('/check-out', requireRole(...staffWithBranchContext), checkOut);
+router.post('/scan', requireRole('tenant-admin', 'branch-manager'), requireFeature('features:qrCheckIn'), scan);
 
 module.exports = router;

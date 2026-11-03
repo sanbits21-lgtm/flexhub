@@ -4,3 +4,5 @@ dist/
 build/
 *.log
 .claude/
+
+backend/uploads/
