@@ -1,0 +1,52 @@
+# Render Blueprint: one Docker web service (API + website) backed by MongoDB Atlas.
+# Render > New > Blueprint > pick this repo. Values marked `sync: false` are asked for in the
+# dashboard on first deploy and are never stored in git. See docs/RENDER.md.
+services:
+  - type: web
+    name: flexhub
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Starter or above: a persistent disk (member photos) is not available on the free plan,
+    # and the free plan sleeps when idle, which would break the first request after a pause.
+    plan: starter
+    region: singapore
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: uploads
+      mountPath: /data/uploads
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: TRUST_PROXY
+        value: "1"
+      # Generated once by Render; the app refuses to start in production without 32+ characters.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      # Public address of the site, e.g. https://app.yourdomain.com (used in email links)
+      - key: PUBLIC_URL
+        sync: false
+      # Set to your root domain (yourdomain.com) to give each gym its own subdomain. Leave empty otherwise.
+      - key: BASE_DOMAIN
+        sync: false
+      # Email (sign-up confirmation and approval notices). Without SMTP, sign-up stays closed in production.
+      - key: SMTP_URL
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Shown on the public /privacy page (required by the app stores)
+      - key: PRIVACY_OPERATOR_NAME
+        sync: false
+      - key: PRIVACY_CONTACT_EMAIL
+        sync: false
+      # Optional: AI workout/diet suggestions. Unset = built-in rule-based plans.
+      - key: ANTHROPIC_API_KEY
+        sync: false
