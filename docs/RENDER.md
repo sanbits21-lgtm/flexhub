@@ -17,7 +17,11 @@ The whole product (API + staff website) is one Docker web service; the database 
    `PRIVACY_OPERATOR_NAME`, `PRIVACY_CONTACT_EMAIL` (and `BASE_DOMAIN` if you want subdomains).
    `JWT_SECRET` is generated for you.
 3. First deploy builds the Docker image (a few minutes). It is healthy when `/health` answers.
-4. Create the first platform owner. In the service's **Shell** tab:
+4. Create the first platform owner. Set `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` (12+
+   characters) in the service's environment; the account is created at startup if it does not exist.
+   Sign in, change the password, then delete `SUPER_ADMIN_PASSWORD` from the environment. An
+   existing account is never modified, so a restart cannot undo your new password.
+   With paid Render Shell access you can instead run:
    `SEED_EMAIL=you@example.com SEED_PASSWORD='a-strong-password' SEED_NAME='Your Name' SEED_PHONE=9000000000 node scripts/seedSuperAdmin.js`
    then sign in at your site and change the password.
 

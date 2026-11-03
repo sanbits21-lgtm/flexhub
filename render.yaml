@@ -42,6 +42,12 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      # First platform owner, created at startup when it does not exist yet (no Shell needed).
+      # Remove SUPER_ADMIN_PASSWORD after you have signed in and changed it.
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
       # Shown on the public /privacy page (required by the app stores)
       - key: PRIVACY_OPERATOR_NAME
         sync: false
