@@ -9,7 +9,7 @@ export default defineConfig({
       // 'prompt', not 'autoUpdate': staff fill in member and payment forms, and an
       // automatic reload the moment a new build lands would throw away what they typed.
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon-32.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'FlexHub — Gym Management',
         short_name: 'FlexHub',
@@ -18,10 +18,10 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        // Matches the app shell (bg-gray-900 in Sidebar.jsx / the mobile header), so the
-        // splash and status bar don't flash a different colour on launch.
-        background_color: '#111827',
-        theme_color: '#111827',
+        // Matches the dark app shell (gray-900 in tailwind.config.js), so the splash and
+        // status bar don't flash a different colour on launch.
+        background_color: '#0A0C10',
+        theme_color: '#0A0C10',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
