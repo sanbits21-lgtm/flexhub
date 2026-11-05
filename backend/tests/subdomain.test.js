@@ -36,7 +36,7 @@ describe('public gym lookup by address', () => {
     await Tenant.updateOne({ _id: a.tenant._id }, { 'brand.color': '#FF8A00', 'brand.tagline': 'Lift. Repeat.' });
     const res = await request(app).get('/api/public/tenant').set('Host', host(a.tenant.slug));
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ name: a.tenant.name, slug: a.tenant.slug, color: '#FF8A00', logoUrl: '', tagline: 'Lift. Repeat.' });
+    expect(res.body).toEqual({ name: a.tenant.name, slug: a.tenant.slug, color: '#FF8A00', color2: '', gradientAngle: 135, logoUrl: '', tagline: 'Lift. Repeat.' });
   });
   it('is 404 for an address nobody owns, and null on the main address', async () => {
     expect((await request(app).get('/api/public/tenant').set('Host', host('nobody-here'))).status).toBe(404);
@@ -92,7 +92,14 @@ describe('branding and changing the address', () => {
   it('saves colour, logo and tagline, and rejects unsafe values', async () => {
     const ok = await put(a.adminToken, { color: '#22D3EE', logoUrl: 'https://cdn.example.com/logo.png', tagline: 'Strong together' });
     expect(ok.status).toBe(200);
-    expect(ok.body.brand).toEqual({ color: '#22D3EE', logoUrl: 'https://cdn.example.com/logo.png', tagline: 'Strong together' });
+    expect(ok.body.brand).toEqual({ color: '#22D3EE', color2: '', gradientAngle: 135, logoUrl: 'https://cdn.example.com/logo.png', tagline: 'Strong together' });
+    const grad = await put(a.adminToken, { color2: '#c8f83a', gradientAngle: 90 });
+    expect(grad.body.brand).toMatchObject({ color: '#22D3EE', color2: '#C8F83A', gradientAngle: 90 });
+    expect((await put(a.adminToken, { color2: '#111111' })).status).toBe(400);
+    expect((await put(a.adminToken, { gradientAngle: 45 })).status).toBe(400);
+    // Clearing the start colour drops the gradient with it.
+    expect((await put(a.adminToken, { color: '' })).body.brand).toMatchObject({ color: '', color2: '' });
+    await put(a.adminToken, { color: '#22D3EE', color2: '' });
     expect((await put(a.adminToken, { logoUrl: 'http://insecure.example.com/x.png' })).status).toBe(400);
     expect((await put(a.adminToken, { logoUrl: 'https://x.example.com/a.png"onerror="x' })).status).toBe(400);
     expect((await put(a.adminToken, { color: '#111111' })).status).toBe(400);

@@ -9,6 +9,9 @@ const tenantSchema = new mongoose.Schema({
   // White-label look shown on the gym's login page and in its staff website.
   brand: {
     color: { type: String, default: '' },
+    // Optional second colour: with it the accent becomes a linear gradient from `color` to `color2`.
+    color2: { type: String, default: '' },
+    gradientAngle: { type: Number, enum: [90, 135, 180], default: 135 },
     logoUrl: { type: String, default: '' },
     tagline: { type: String, trim: true, maxlength: 80, default: '' },
   },

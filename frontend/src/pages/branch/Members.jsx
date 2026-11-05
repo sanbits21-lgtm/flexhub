@@ -136,6 +136,7 @@ export default function Members() {
     setShowAddModal(true);
   };
   const closeAddModal = () => {
+    load();
     setShowAddModal(false);
     setAddStep('form');
     setCreatedMember(null);
@@ -162,6 +163,9 @@ export default function Members() {
     setFormError('');
     try {
       const { data: member } = await membersAPI.create(buildMemberPayload());
+      // The member exists from here on, whichever step comes next or however the modal is
+      // dismissed, so show them in the list now rather than only on "Done".
+      load();
 
       if (form.membershipPlanId && form.paymentMethod === 'upi') {
         // Member is created up front; the payment itself is recorded only once staff
@@ -588,6 +592,10 @@ export default function Members() {
               tenantName={upiSettings.name}
               member={createdMember}
               planName={selectedPlan?.name}
+              planDuration={selectedPlan?.durationUnit}
+              period={{ start: createdMember.membershipStart, end: createdMember.membershipEnd }}
+              discountPercent={form.discountPercent}
+              branchName={branches.find((b) => b._id === createdMember.branchId)?.name}
               amount={lastPayment.amount}
               method={lastPayment.method}
               invoiceNumber={lastPayment.invoiceNumber}

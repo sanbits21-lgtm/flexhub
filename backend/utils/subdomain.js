@@ -91,12 +91,26 @@ const cleanLogoUrl = (value) => {
   return url;
 };
 
+const GRADIENT_ANGLES = [90, 135, 180]; // left to right, diagonal, top to bottom
+const cleanGradientAngle = (value) => {
+  const n = Number(value);
+  if (!GRADIENT_ANGLES.includes(n)) throw new BadRequest('Gradient direction must be one of 90, 135 or 180.');
+  return n;
+};
+
+const brandColors = (tenant) => ({
+  color: tenant.brand?.color || '',
+  // A gradient needs a start colour too; without one the second colour is ignored.
+  color2: tenant.brand?.color ? tenant.brand?.color2 || '' : '',
+  gradientAngle: tenant.brand?.gradientAngle || 135,
+});
+
 const publicBrand = (tenant) => ({
   name: tenant.name,
   slug: tenant.slug,
-  color: tenant.brand?.color || '',
+  ...brandColors(tenant),
   logoUrl: tenant.brand?.logoUrl || '',
   tagline: tenant.brand?.tagline || '',
 });
 
-module.exports = { cleanSlug, changeSlug, isSlugFree, labelFromHost, baseDomain, cleanBrandColor, cleanLogoUrl, publicBrand, REDIRECT_DAYS, RESERVED };
+module.exports = { cleanSlug, changeSlug, isSlugFree, labelFromHost, baseDomain, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, publicBrand, REDIRECT_DAYS, RESERVED };

@@ -4,10 +4,22 @@
 
 @layer base {
   /* FlexHub lime by default; BrandContext overrides these for a gym with its own colour. */
-  :root { --accent: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; }
+  :root { --accent: 200 248 58; --accent-2: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; --accent-angle: 135deg; }
   body { @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100; }
   .dark { color-scheme: dark; }
   :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+}
+
+/* The accent fill is a gradient when the gym set a second colour. With no second colour
+   --accent-2 equals --accent, so this paints exactly the flat colour it replaces. The hover
+   shade can't show through the image, so hovering brightens instead. */
+.bg-accent,
+.dark .dark\:bg-accent {
+  background-image: linear-gradient(var(--accent-angle), rgb(var(--accent)), rgb(var(--accent-2)));
+}
+.bg-accent:hover,
+.dark .dark\:bg-accent:hover {
+  filter: brightness(1.1);
 }
 
 /* Installed as a PWA there is no browser chrome, so the app draws under the status bar
@@ -36,11 +48,32 @@
   .receipt-print-area * {
     visibility: visible;
   }
+  /* Paper is white whatever the app theme: a dark-mode receipt would print as a black slab. */
   .receipt-print-area {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
+    max-width: 380px;
+    box-sizing: border-box;
+    background: #fff !important;
+    color: #111 !important;
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    padding: 24px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .receipt-print-area * {
+    color: #111 !important;
+    border-color: #999 !important;
+  }
+  .receipt-print-area .receipt-thanks {
+    color: #555 !important;
+  }
+  @page {
+    margin: 14mm;
   }
   .no-print {
     display: none !important;

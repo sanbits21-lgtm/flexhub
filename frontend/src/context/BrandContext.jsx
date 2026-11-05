@@ -13,7 +13,7 @@ export function BrandProvider({ children }) {
 
   const setBrand = useCallback((b) => {
     setBrandState(b || null);
-    applyAccent(b?.color);
+    applyAccent(b?.color, b?.color2, b?.gradientAngle);
     document.title = b?.name || 'FlexHub';
   }, []);
 
