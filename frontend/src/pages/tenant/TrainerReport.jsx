@@ -6,6 +6,7 @@ export default function TrainerReport() {
   const [trainers, setTrainers] = useState([]);
   const [drafts, setDrafts] = useState({});
   const [savingId, setSavingId] = useState(null);
+  const [error, setError] = useState('');
 
   const load = () => staffAPI.trainerReport().then((res) => {
     setTrainers(res.data);
@@ -20,12 +21,15 @@ export default function TrainerReport() {
 
   const handleSaveSalary = async (trainer) => {
     setSavingId(trainer._id);
+    setError('');
     try {
       await staffAPI.update(trainer._id, {
         name: trainer.name,
         salary: drafts[trainer._id] === '' ? null : Number(drafts[trainer._id]),
       });
       await load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not save the salary.');
     } finally {
       setSavingId(null);
     }
@@ -45,6 +49,8 @@ export default function TrainerReport() {
           <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">₹{totalSalary}</div>
         </div>
       </div>
+
+      {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <DataTable tableId="trainerReport"
         columns={[

@@ -12,7 +12,7 @@ router.get('/', requireRole('tenant-admin', 'branch-manager'), list);
 router.get('/trainer-report', requireRole('tenant-admin'), requireFeature('pages:trainerReport'), trainerReport);
 router.post('/', requireRole('tenant-admin', 'branch-manager'), validate(schemas.staffCreate), createTrainer);
 router.post('/:id/reset-password', requireRole('tenant-admin', 'branch-manager'), resetPassword);
-router.put('/:id', requireRole('tenant-admin', 'branch-manager'), update);
+router.put('/:id', requireRole('tenant-admin', 'branch-manager'), validate(schemas.staffUpdate), update);
 router.delete('/:id', requireRole('tenant-admin', 'branch-manager'), remove);
 router.get('/:id/assigned-members', requireRole('tenant-admin', 'branch-manager'), getAssignedMembers);
 

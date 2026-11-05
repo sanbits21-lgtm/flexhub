@@ -8,7 +8,8 @@ export const fmtMoney = (n) => new Intl.NumberFormat(undefined, { style: 'curren
 const STATUS_LABEL = { paid: 'Amount Paid', refunded: 'Amount Refunded' };
 export const amountLabel = (status) => STATUS_LABEL[status] || 'Amount Due';
 
-const durationLabel = (unit) => (unit ? String(unit).replace(/_/g, ' ') : '');
+const DURATION = { monthly: '1 month', quarterly: '3 months', half_yearly: '6 months', halfyearly: '6 months', yearly: '12 months' };
+const durationLabel = (unit) => DURATION[unit] || (unit ? String(unit).replace(/_/g, ' ') : '');
 
 /** Everything a receipt shows, as ordered label/value rows. Empty values are dropped. */
 export const receiptRows = ({ member, planName, planDuration, period, method, invoiceNumber, paidAt, status, discountPercent, branchName }) => {

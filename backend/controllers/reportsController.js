@@ -3,6 +3,7 @@ const Member = require('../models/Member');
 const MembershipPlan = require('../models/MembershipPlan');
 const Attendance = require('../models/Attendance');
 const Equipment = require('../models/Equipment');
+const { statusFilter } = require('../utils/membershipStatus');
 
 // Tenant-wide (or single-branch, when req.scope.branchId is set via ?branchId=) report
 // bundle — plan mix, 30-day attendance trend, equipment health. One call, same
@@ -17,7 +18,8 @@ exports.getSummary = async (req, res) => {
     Member.aggregate([
       // isActive: deactivated members are soft-deleted and must not inflate plan mix
       // or the monthly value derived from it.
-      { $match: { ...match, isActive: true, membershipStatus: 'active', membershipPlanId: { $ne: null } } },
+      // statusFilter: a membership past its end date is no longer part of the plan mix.
+      { $match: { $and: [{ ...match, isActive: true, membershipPlanId: { $ne: null } }, statusFilter('active')] } },
       { $group: { _id: '$membershipPlanId', count: { $sum: 1 } } },
     ]),
     Attendance.aggregate([

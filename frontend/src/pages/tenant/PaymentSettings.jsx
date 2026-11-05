@@ -9,6 +9,7 @@ export default function PaymentSettings() {
   const [tenant, setTenant] = useState(null);
   const [form, setForm] = useState({ upiId: '', upiPaymentLink: '' });
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     tenantSettingsAPI.get().then((res) => {
@@ -19,10 +20,15 @@ export default function PaymentSettings() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const { data } = await tenantSettingsAPI.update(form);
-    setTenant(data);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setError('');
+    try {
+      const { data } = await tenantSettingsAPI.update(form);
+      setTenant(data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not save. Please try again.');
+    }
   };
 
   if (!tenant) return <div className="p-6 text-gray-500 dark:text-gray-400">Loading...</div>;
@@ -72,6 +78,7 @@ export default function PaymentSettings() {
         <div className="flex items-center gap-3">
           <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save</button>
           {saved && <span className="text-sm text-green-600 dark:text-green-400">Saved.</span>}
+          {error && <span role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</span>}
         </div>
       </form>
     </div>

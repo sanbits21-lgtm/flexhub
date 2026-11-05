@@ -228,6 +228,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
             member={member}
             planName={selectedPlan?.name}
             planDuration={selectedPlan?.durationUnit}
+            discountPercent={form.discountPercent}
             period={{ start: result.member.membershipStart, end: result.member.membershipEnd }}
             amount={result.payment.amount}
             method={result.payment.method}

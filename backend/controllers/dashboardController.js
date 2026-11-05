@@ -5,6 +5,7 @@ const Member = require('../models/Member');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const MemberPayment = require('../models/MemberPayment');
+const { statusFilter } = require('../utils/membershipStatus');
 const Equipment = require('../models/Equipment');
 const TenantSubscriptionInvoice = require('../models/TenantSubscriptionInvoice');
 
@@ -77,7 +78,8 @@ const tenantSummary = async (scope) => {
     membersByMonthAgg, collectionsByMonthAgg,
     expiredCount, expiringSoonCount, expiredMembers, expiringSoonMembers,
   ] = await Promise.all([
-    Member.countDocuments({ ...memberMatch, membershipStatus: 'active' }),
+    // Active = not lapsed: the stored status alone still reads 'active' after the end date passes.
+    Member.countDocuments({ $and: [memberMatch, statusFilter('active', now)] }),
     MemberPayment.aggregate([
       { $match: { ...match, status: 'paid', paidAt: { $gte: startOfMonth() } } },
       { $group: { _id: null, revenue: { $sum: '$amount' } } },
@@ -90,7 +92,7 @@ const tenantSummary = async (scope) => {
     // Grouped over every branch (not just match) so branches with zero members still show up.
     Member.aggregate([
       { $match: { tenantId: match.tenantId, branchId: { $in: branchIds }, isActive: true } },
-      { $group: { _id: '$branchId', activeMembers: { $sum: { $cond: [{ $eq: ['$membershipStatus', 'active'] }, 1, 0] } }, total: { $sum: 1 } } },
+      { $group: { _id: '$branchId', activeMembers: { $sum: { $cond: [{ $and: [{ $eq: ['$membershipStatus', 'active'] }, { $gte: [{ $ifNull: ['$membershipEnd', now] }, now] }] }, 1, 0] } }, total: { $sum: 1 } } },
     ]),
     Equipment.aggregate([
       { $match: { tenantId: match.tenantId, branchId: { $in: branchIds } } },
@@ -167,7 +169,7 @@ const branchSummary = async (scope) => {
     activeMembers, todaysCheckins, expiringSoon, maintenanceDue, revenueAgg,
     expiredCount, expiredMembers, expiringSoonMembers,
   ] = await Promise.all([
-    Member.countDocuments({ ...memberMatch, membershipStatus: 'active' }),
+    Member.countDocuments({ $and: [memberMatch, statusFilter('active', now)] }),
     Attendance.countDocuments({ ...match, checkInAt: { $gte: todayStart } }),
     Member.countDocuments({ ...lapseTrackMatch, membershipEnd: { $gte: now, $lte: soonWindow } }),
     Equipment.countDocuments({ ...match, nextServiceDue: { $lte: new Date() } }),

@@ -152,9 +152,14 @@ const schemas = {
     status: z.enum(['operational', 'under_maintenance', 'retired']).optional(),
   }).passthrough(),
 
+  // A malformed UPI ID makes every payment QR useless, so refuse it here rather than at the counter.
   tenantSettingsUpdate: z.object({
-    upiId: optionalString,
-    upiPaymentLink: optionalString,
+    upiId: z.string().trim().regex(/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/, 'must look like name@bank').optional().or(z.literal('')),
+    upiPaymentLink: z.string().trim().max(500).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
+  }).passthrough(),
+
+  staffUpdate: z.object({
+    salary: z.coerce.number().min(0, 'cannot be negative').max(MAX_MONEY, 'is too large').optional().nullable(),
   }).passthrough(),
 
   classTypeCreate: z.object({
