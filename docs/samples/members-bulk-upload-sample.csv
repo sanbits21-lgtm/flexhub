@@ -1,0 +1,9 @@
+Name,Phone,Email,Date of Birth,Gender,Membership Plan,Start Date
+Arjun Mehta,9876500001,arjun.mehta@example.com,1994-03-12,Male,Monthly,2026-11-01
+Priya Nair,9876500002,priya.nair@example.com,1998-07-25,Female,Quarterly,2026-11-01
+Rahul Verma,9876500003,,1990-01-05,M,Yearly,
+Sneha Iyer,9876500004,sneha.iyer@example.com,,F,Monthly,
+Karthik Reddy,9876500005,,,,Quarterly,2026-10-15
+Divya Shetty,9876500006,divya.shetty@example.com,2001-11-30,Female,,
+Mohammed Faiz,9876500007,,1987-09-18,Male,Yearly,2026-11-03
+Anita Desai,9876500008,,,Prefer not to say,Monthly,
