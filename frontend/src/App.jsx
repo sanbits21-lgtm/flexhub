@@ -5,6 +5,8 @@ import RoleRoute from './components/RoleRoute';
 import FeatureRoute from './components/FeatureRoute';
 import Sidebar from './components/Sidebar';
 import TrialBanner from './components/TrialBanner';
+import BrandMark from './components/BrandMark';
+import { useBrand } from './context/BrandContext';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import PlatformSettings from './pages/platform/PlatformSettings';
@@ -31,6 +33,7 @@ import MyMembers from './pages/trainer/MyMembers';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { brand } = useBrand();
 
   return (
     <div className="md:flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -38,7 +41,7 @@ function AppLayout({ children }) {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="md:hidden flex items-center justify-between bg-gray-900 text-gray-100 px-4 py-3 pt-safe sticky top-0 z-20">
-          <span className="font-semibold">FlexHub</span>
+          <span className="flex items-center gap-2 min-w-0 font-semibold"><BrandMark brand={brand} size={24} /><span className="truncate">{brand?.name || 'FlexHub'}</span></span>
           <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="p-1">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />

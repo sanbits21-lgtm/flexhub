@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +33,12 @@ const emptyEditForm = {
 };
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
+const filterInputClass = 'w-full border rounded-xl px-3 py-2 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100';
+// The list endpoint pages its results (20 by default), so the page asks for a bigger page and
+// offers "Load more" instead of silently showing only the first few members.
+const PAGE_SIZE = 50;
+const MAX_LIMIT = 200; // the API's own cap per request
+const EXPIRY_LABEL = { 7: 'Expiring in 7 days', 15: 'Expiring in 15 days', 30: 'Expiring in 30 days', 60: 'Expiring in 60 days' };
 
 // "in 5 days" / "today" / "12 days ago" — the filter is only useful if the list shows
 // how close each membership actually is to lapsing.
@@ -62,6 +68,15 @@ export default function Members() {
   const [planFilter, setPlanFilter] = useState('');
   const [expiringFilter, setExpiringFilter] = useState('');
   const [showInactive, setShowInactive] = useState(false);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [total, setTotal] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const menuRef = useRef(null);
+  const loadedRef = useRef(0); // how many rows the list currently holds, so a refresh keeps them
+  const requestRef = useRef(0); // only the newest response may update the list
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [form, setForm] = useState(getEmptyForm);
@@ -99,14 +114,46 @@ export default function Members() {
 
   useEffect(() => { if (urlBranchId) setBranchFilter(urlBranchId); }, [urlBranchId]);
 
-  const load = () => {
+  const filterParams = () => {
     const params = {};
     if (isTenantAdmin && branchFilter) params.branchId = branchFilter;
     if (statusFilter) params.membershipStatus = statusFilter;
     if (planFilter) params.membershipPlanId = planFilter;
     if (expiringFilter) params.expiringInDays = expiringFilter;
     if (showInactive) params.includeInactive = 'true';
-    return membersAPI.list(params).then((res) => setMembers(res.data.members));
+    if (debouncedSearch) params.search = debouncedSearch;
+    return params;
+  };
+  // Reloads from the top but asks for as many rows as are already showing (up to the API cap),
+  // so editing or renewing a member does not throw away the pages staff had scrolled through.
+  const load = () => {
+    const ticket = ++requestRef.current;
+    const limit = Math.min(MAX_LIMIT, Math.max(PAGE_SIZE, loadedRef.current));
+    return membersAPI.list({ ...filterParams(), page: 1, limit }).then((res) => {
+      if (ticket !== requestRef.current) return;
+      loadedRef.current = res.data.members.length;
+      setMembers(res.data.members);
+      setTotal(res.data.total);
+    });
+  };
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const ticket = requestRef.current;
+    try {
+      const page = Math.floor(members.length / PAGE_SIZE) + 1;
+      const res = await membersAPI.list({ ...filterParams(), page, limit: PAGE_SIZE });
+      if (ticket !== requestRef.current) return;
+      setMembers((prev) => {
+        const seen = new Set(prev.map((m) => m._id));
+        const next = [...prev, ...res.data.members.filter((m) => !seen.has(m._id))];
+        loadedRef.current = next.length;
+        return next;
+      });
+      setTotal(res.data.total);
+    } finally {
+      setLoadingMore(false);
+    }
   };
   useEffect(() => {
     if (isTenantAdmin) branchesAPI.list().then((res) => setBranches(res.data));
@@ -116,7 +163,20 @@ export default function Members() {
     staffAPI.list({ role: 'trainer' }).then((res) => setTrainers(res.data));
     tenantSettingsAPI.get().then((res) => setUpiSettings(res.data));
   }, []);
-  useEffect(() => { load(); }, [branchFilter, statusFilter, planFilter, expiringFilter, showInactive]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  // A changed filter starts a fresh list; only a refresh after an edit keeps the loaded rows.
+  useEffect(() => { loadedRef.current = 0; load(); }, [branchFilter, statusFilter, planFilter, expiringFilter, showInactive, debouncedSearch]);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', onKey); };
+  }, [menuOpen]);
 
   const branchName = (id) => branches.find((b) => b._id === id)?.name || id;
   const planName = (id) => plans.find((p) => p._id === id)?.name;
@@ -284,67 +344,115 @@ export default function Members() {
     load();
   };
 
+  const chips = [
+    isTenantAdmin && branchFilter && { key: 'branch', text: branchName(branchFilter), clear: () => setBranchFilter('') },
+    statusFilter && { key: 'status', text: statusFilter[0].toUpperCase() + statusFilter.slice(1), clear: () => setStatusFilter('') },
+    planFilter && { key: 'plan', text: planName(planFilter) || 'Plan', clear: () => setPlanFilter('') },
+    expiringFilter && { key: 'expiry', text: EXPIRY_LABEL[expiringFilter] || `Expiring in ${expiringFilter} days`, clear: () => setExpiringFilter('') },
+    showInactive && { key: 'inactive', text: 'Incl. deactivated', clear: () => setShowInactive(false) },
+  ].filter(Boolean);
+  const hasFilters = chips.length > 0;
+  const clearAll = () => { clearFilters(); setSearch(''); };
+  const toolBtn = 'border rounded-xl px-3 py-2 text-sm dark:border-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800';
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Members</h1>
-        <div className="flex gap-2">
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 min-w-0 truncate">
+          Members{total !== null && <span className="text-gray-500 dark:text-gray-400 font-normal"> ({total})</span>}
+        </h1>
+        <div className="flex items-center gap-2 shrink-0">
           {canBulkUpload && (
-            <button onClick={() => setShowBulkModal(true)} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">
-              Bulk Upload
-            </button>
+            <button onClick={() => setShowBulkModal(true)} className={`${toolBtn} hidden sm:block`}>Bulk Upload</button>
           )}
-          <button onClick={openAddModal} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
-            + Add Member
+          <button onClick={openAddModal} className="bg-gray-900 text-white rounded-xl px-4 py-2 text-sm sm:text-base dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
+            <span className="sm:hidden">+ Add</span><span className="hidden sm:inline">+ Add Member</span>
           </button>
+          {canBulkUpload && (
+            <div ref={menuRef} className="relative sm:hidden">
+              <button type="button" aria-label="More actions" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)} className={`${toolBtn} px-2.5`}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+              </button>
+              {menuOpen && (
+                <div role="menu" className="absolute right-0 mt-1 z-20 min-w-40 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1">
+                  <button role="menuitem" onClick={() => { setMenuOpen(false); setShowBulkModal(true); }} className="block w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">Bulk Upload</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
-        {isTenantAdmin && (
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
-            <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} className={inputClass}>
-              <option value="">All branches</option>
-              {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
-            </select>
-          </div>
-        )}
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={inputClass}>
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="expired">Expired</option>
-            <option value="frozen">Frozen</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Plan</label>
-          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={inputClass}>
-            <option value="">All plans</option>
-            {plans.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Expiry</label>
-          <select value={expiringFilter} onChange={(e) => setExpiringFilter(e.target.value)} className={inputClass}>
-            <option value="">Any expiry</option>
-            <option value="7">Expiring in 7 days</option>
-            <option value="15">Expiring in 15 days</option>
-            <option value="30">Expiring in 30 days</option>
-            <option value="60">Expiring in 60 days</option>
-          </select>
-        </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 pb-1">
-          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-          Show deactivated
-        </label>
-        {(branchFilter || statusFilter || planFilter || expiringFilter || showInactive) && (
-          <button onClick={clearFilters} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Clear filters</button>
-        )}
+      <div className="flex gap-2">
+        <input
+          type="search"
+          aria-label="Search members by name"
+          placeholder="Search by name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={`${filterInputClass} flex-1 min-w-0`}
+        />
+        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((o) => !o)} className={`${toolBtn} flex items-center gap-2 shrink-0 ${showFilters ? 'border-accent' : ''}`}>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4" /></svg>
+          Filters
+          {hasFilters && <span className="rounded-full bg-accent text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{chips.length}</span>}
+        </button>
       </div>
+
+      {showFilters && (
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {isTenantAdmin && (
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
+                <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} className={filterInputClass}>
+                  <option value="">All branches</option>
+                  {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={filterInputClass}>
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="frozen">Frozen</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Plan</label>
+              <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={filterInputClass}>
+                <option value="">All plans</option>
+                {plans.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Expiry</label>
+              <select value={expiringFilter} onChange={(e) => setExpiringFilter(e.target.value)} className={filterInputClass}>
+                <option value="">Any expiry</option>
+                {Object.entries(EXPIRY_LABEL).map(([days, label]) => <option key={days} value={days}>{label}</option>)}
+              </select>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+            Show deactivated
+          </label>
+        </div>
+      )}
+
+      {(hasFilters || search) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {chips.map((c) => (
+            <button key={c.key} type="button" onClick={c.clear} aria-label={`Remove filter: ${c.text}`} className="flex items-center gap-1.5 rounded-full border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+              {c.text}<span aria-hidden="true" className="text-gray-400">×</span>
+            </button>
+          ))}
+          <button type="button" onClick={clearAll} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Clear all</button>
+        </div>
+      )}
 
       <Modal open={showAddModal} onClose={closeAddModal} title="Add Member">
         {formError && (
@@ -707,6 +815,9 @@ export default function Members() {
         </form>
       )}
 
+      {total === null ? (
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">Loading members...</p>
+      ) : (
       <DataTable tableId="members"
         columns={[
           { key: 'name', label: 'Name' },
@@ -751,6 +862,18 @@ export default function Members() {
         ]}
         rows={members}
       />
+      )}
+
+      {total !== null && total > 0 && (
+        <div className="flex flex-col items-center gap-2 pb-2 text-sm text-gray-500 dark:text-gray-400">
+          <span>Showing {members.length} of {total}</span>
+          {members.length < total && (
+            <button type="button" onClick={loadMore} disabled={loadingMore} className={`${toolBtn} disabled:opacity-50`}>
+              {loadingMore ? 'Loading...' : `Load ${Math.min(PAGE_SIZE, total - members.length)} more`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
