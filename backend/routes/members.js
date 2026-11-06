@@ -4,7 +4,7 @@ const { protect, requireRole, scopeContext, enforceWriteScope } = require('../mi
 const { attachFeatures, requireFeature } = require('../middleware/features');
 const { validate, schemas } = require('../middleware/validate');
 const {
-  list, getOne, getProgress, getMe, create, bulkCreate, update, remove, renew, addBodyMetric, issueAppAccess,
+  list, getOne, getProgress, getMe, create, bulkCreate, bulkCheck, update, remove, renew, addBodyMetric, issueAppAccess,
 } = require('../controllers/memberController');
 
 const plans = require('../controllers/memberPlanController');
@@ -21,6 +21,7 @@ router.get('/:id/progress', getProgress);
 // branchId/tenantId, not whatever the client claimed.
 router.post('/', requireRole('tenant-admin', 'branch-manager'), enforceWriteScope, validate(schemas.memberCreate), create);
 router.post('/bulk', requireRole('tenant-admin', 'branch-manager'), requireFeature('features:bulkUpload'), enforceWriteScope, bulkCreate);
+router.post('/bulk/check', requireRole('tenant-admin', 'branch-manager'), requireFeature('features:bulkUpload'), enforceWriteScope, bulkCheck);
 router.put('/:id', requireRole('tenant-admin', 'branch-manager'), enforceWriteScope, validate(schemas.memberUpdate), update);
 router.delete('/:id', requireRole('tenant-admin', 'branch-manager'), remove);
 router.post('/:id/renew', requireRole('tenant-admin', 'branch-manager'), validate(schemas.memberRenew), renew);

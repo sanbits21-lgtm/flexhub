@@ -44,7 +44,7 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (decoded.actorType === 'member') {
-      req.member = await Member.findById(decoded.id).select('-password');
+      req.member = await Member.findById(decoded.id).select('-password -customFields');
       if (!req.member || !req.member.isActive || isRevoked(decoded, req.member)) {
         return res.status(401).json({ message: 'Invalid session' });
       }

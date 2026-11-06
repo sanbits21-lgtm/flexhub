@@ -12,6 +12,8 @@ import RenewMembershipModal from '../../components/RenewMembershipModal';
 import MemberPlansModal from '../../components/MemberPlansModal';
 import { buildUpiLink } from '../../utils/upi';
 import { addPlanMonths } from '../../utils/planDuration';
+import CustomFieldInputs from '../../components/CustomFieldInputs';
+import { formatFieldValue, payloadFromForm, toInputValue } from '../../utils/memberFields';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -19,7 +21,7 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 const getEmptyForm = () => ({
   name: '', email: '', phone: '', dob: '', gender: '', branchId: '',
   membershipPlanId: '', membershipStart: todayStr(), discountPercent: '', assignedTrainerId: '', paymentMethod: 'cash',
-  amount: '', emergencyContactName: '', emergencyContactPhone: '',
+  amount: '', emergencyContactName: '', emergencyContactPhone: '', customFields: {},
 });
 
 // Server messages are the useful ones here (duplicate email, plan not found, field-level
@@ -29,7 +31,7 @@ const errorMessage = (err) => err?.response?.data?.message || err?.message || 'S
 // No membershipPlanId here — changing plans is a renewal (RenewMembershipModal), not a
 // plain edit, since a plan change also has to move membershipEnd and record a payment.
 const emptyEditForm = {
-  name: '', phone: '', email: '', dob: '', gender: '', membershipStatus: 'active', isActive: true, assignedTrainerId: '',
+  name: '', phone: '', email: '', dob: '', gender: '', membershipStatus: 'active', isActive: true, assignedTrainerId: '', customFields: {},
 };
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
@@ -92,6 +94,7 @@ export default function Members() {
   const [renewingMember, setRenewingMember] = useState(null);
   const [appAccess, setAppAccess] = useState(null); // { member, creds?, error? }
   const [plansMember, setPlansMember] = useState(null);
+  const [memberFields, setMemberFields] = useState([]); // the gym's own extra fields
   const [editingId, setEditingId] = useState(null);
   const [editingBranchId, setEditingBranchId] = useState('');
   const [editForm, setEditForm] = useState(emptyEditForm);
@@ -162,6 +165,7 @@ export default function Members() {
     // correctly server-side (backend/controllers/staffController.js list).
     staffAPI.list({ role: 'trainer' }).then((res) => setTrainers(res.data));
     tenantSettingsAPI.get().then((res) => setUpiSettings(res.data));
+    tenantSettingsAPI.getMemberFields().then((res) => setMemberFields(res.data.fields)).catch(() => {});
   }, []);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -205,9 +209,11 @@ export default function Members() {
   };
 
   const buildMemberPayload = () => {
-    const { emergencyContactName, emergencyContactPhone, ...rest } = form;
+    const { emergencyContactName, emergencyContactPhone, customFields, ...rest } = form;
+    const extra = payloadFromForm(memberFields, customFields);
     return {
       ...rest,
+      ...(Object.keys(extra).length ? { customFields: extra } : {}),
       membershipPlanId: form.membershipPlanId || undefined,
       assignedTrainerId: form.assignedTrainerId || null,
       emergencyContact: emergencyContactName || emergencyContactPhone
@@ -321,6 +327,7 @@ export default function Members() {
       membershipStatus: member.membershipStatus,
       isActive: member.isActive,
       assignedTrainerId: member.assignedTrainerId || '',
+      customFields: Object.fromEntries(memberFields.map((f) => [f.key, toInputValue(f, member.customFields?.[f.key])])),
     });
   };
 
@@ -330,6 +337,7 @@ export default function Members() {
     e.preventDefault();
     await membersAPI.update(editingId, {
       ...editForm,
+      customFields: payloadFromForm(memberFields, editForm.customFields, { clearBlank: true }),
       email: editForm.email || undefined,
       gender: editForm.gender || undefined,
       assignedTrainerId: editForm.assignedTrainerId || null,
@@ -579,6 +587,12 @@ export default function Members() {
               </div>
             </div>
           )}
+          {memberFields.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400">Additional details</div>
+              <CustomFieldInputs fields={memberFields} values={form.customFields} onChange={(customFields) => setForm({ ...form, customFields })} />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Start Date</label>
@@ -764,6 +778,10 @@ export default function Members() {
         branches={branches}
         plans={plans}
         onImported={load}
+        memberFields={memberFields}
+        onFieldsChanged={setMemberFields}
+        onPlanCreated={(plan) => setPlans((prev) => [...prev, plan])}
+        canCreate={isTenantAdmin}
         fixedBranchId={isTenantAdmin ? undefined : user.branchId}
       />
 
@@ -808,6 +826,7 @@ export default function Members() {
               Active
             </label>
           </div>
+          <CustomFieldInputs fields={memberFields} values={editForm.customFields} onChange={(customFields) => setEditForm({ ...editForm, customFields })} className="grid grid-cols-2 sm:grid-cols-3 gap-3" />
           <div className="flex gap-2">
             <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
@@ -838,6 +857,8 @@ export default function Members() {
               </span>
             ),
           },
+          // The gym's own fields: off by default so the table stays readable; switch them on in Columns.
+          ...memberFields.map((f) => ({ key: `cf:${f.key}`, label: f.label, defaultHidden: true, render: (r) => formatFieldValue(f, r.customFields?.[f.key]) })),
           {
             key: 'actions',
             label: 'Actions',

@@ -27,6 +27,9 @@ const memberSchema = new mongoose.Schema({
     bodyFatPct: Number,
     notes: String,
   }],
+  // Values for the gym's own extra fields, keyed by Tenant.memberFields[].key. Staff-facing only:
+  // never returned to the member app (see middleware/auth.js).
+  customFields: { type: mongoose.Schema.Types.Mixed, default: undefined },
   healthNotes: { type: String, trim: true, maxlength: 500 },
   fitnessGoal: { type: String, enum: ['lose_fat', 'build_muscle', 'stay_fit', 'improve_endurance'] },
   experienceLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },

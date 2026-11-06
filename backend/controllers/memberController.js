@@ -11,6 +11,7 @@ const { logAudit } = require('../utils/audit');
 const q = require('../utils/query');
 const { pageParams } = require('../utils/paginate');
 const { generateTempPassword } = require('../utils/tempPassword');
+const { cleanCustomFields, phoneKey } = require('../utils/memberFields');
 
 // Builds the Mongo filter for the caller's scope, translating the trainer's
 // virtual `trainerId` scope key (not a Member field) into the real relationship:
@@ -106,6 +107,16 @@ exports.getMe = async (req, res) => {
 const Tenant = require('../models/Tenant');
 const { memberRoom } = require('../utils/subscription');
 
+const memberFieldDefs = async (tenantId) => (await Tenant.findById(tenantId).select('memberFields').lean())?.memberFields || [];
+
+// Phone -> name of the (not deactivated) member who already has it, for duplicate detection.
+const existingPhones = async (tenantId) => {
+  const members = await Member.find({ tenantId, isActive: true }).select('phone name').lean();
+  const byPhone = new Map();
+  members.forEach((m) => { const key = phoneKey(m.phone); if (key && !byPhone.has(key)) byPhone.set(key, m.name); });
+  return byPhone;
+};
+
 const gymMemberRoom = async (tenantId) => {
   const tenant = await Tenant.findById(tenantId).select('maxMembers');
   return tenant ? memberRoom(tenant) : Infinity;
@@ -146,6 +157,8 @@ exports.create = async (req, res) => {
     if (!trainer) return res.status(400).json({ message: 'Trainer not found for this tenant' });
   }
 
+  const { set: customFields } = cleanCustomFields(await memberFieldDefs(req.body.tenantId), req.body.customFields);
+
   // Staff no longer set a member's password at onboarding time — a random one is
   // stamped here as a placeholder until the WhatsApp self-onboarding flow (member sets
   // their own password via a link) is built; a member can't log in with it as-is.
@@ -168,6 +181,7 @@ exports.create = async (req, res) => {
         membershipStart: start,
         membershipEnd: end,
         assignedTrainerId: assignedTrainerId || undefined,
+        customFields: Object.keys(customFields).length ? customFields : undefined,
         qrCode: uuidv4(),
       });
     } catch (err) {
@@ -204,6 +218,12 @@ exports.bulkCreate = async (req, res) => {
 
   const plans = await MembershipPlan.find({ tenantId: req.body.tenantId }).select('durationUnit price');
   const planById = new Map(plans.map((p) => [p._id.toString(), p]));
+  const fieldDefs = await memberFieldDefs(req.body.tenantId);
+  // Opt-in so older clients keep their behaviour: skip a row whose phone already belongs to a
+  // member of this gym, or repeats an earlier row of the same file.
+  const skipDuplicatePhones = req.body.skipDuplicatePhones === true;
+  const knownPhones = skipDuplicatePhones ? await existingPhones(req.body.tenantId) : new Map();
+  const importedPhones = new Map();
 
   const results = [];
   let paymentsRecorded = 0;
@@ -211,6 +231,15 @@ exports.bulkCreate = async (req, res) => {
     const row = members[i] || {};
     try {
       if (!row.name || !row.phone) throw new Error('Name and phone are required');
+      const phoneId = phoneKey(row.phone);
+      if (skipDuplicatePhones && phoneId) {
+        if (knownPhones.has(phoneId)) throw new Error(`Phone already belongs to ${knownPhones.get(phoneId)}`);
+        if (importedPhones.has(phoneId)) throw new Error(`Same phone as row ${importedPhones.get(phoneId) + 1}`);
+      }
+      const { set: customFields } = cleanCustomFields(fieldDefs, row.customFields);
+      const emergency = row.emergencyContact && (row.emergencyContact.name || row.emergencyContact.phone)
+        ? { name: String(row.emergencyContact.name || '').trim() || undefined, phone: String(row.emergencyContact.phone || '').trim() || undefined }
+        : undefined;
 
       const start = row.membershipStart ? new Date(row.membershipStart) : new Date();
       let membershipPlanId;
@@ -241,8 +270,11 @@ exports.bulkCreate = async (req, res) => {
         membershipPlanId,
         membershipStart: start,
         membershipEnd: end,
+        emergencyContact: emergency,
+        customFields: Object.keys(customFields).length ? customFields : undefined,
         qrCode: uuidv4(),
       });
+      if (phoneId) importedPhones.set(phoneId, i);
 
       // A plan with no payment behind it was the gap that prompted this: the single
       // Add Member flow always records a payment when a plan is chosen, but bulk import
@@ -276,6 +308,22 @@ exports.bulkCreate = async (req, res) => {
   res.status(201).json({ results, succeeded, failed: results.length - succeeded, paymentsRecorded });
 };
 
+// Which rows of an about-to-be-imported file already match a member of this gym by phone,
+// so the import screen can warn before anything is written.
+exports.bulkCheck = async (req, res) => {
+  const { phones } = req.body || {};
+  if (!Array.isArray(phones) || phones.length === 0 || phones.length > 1000) {
+    return res.status(400).json({ message: 'phones must be a list of 1 to 1000 numbers' });
+  }
+  const known = await existingPhones(req.body.tenantId);
+  const existing = [];
+  phones.forEach((phone, row) => {
+    const key = phoneKey(phone);
+    if (key && known.has(key)) existing.push({ row, memberName: known.get(key) });
+  });
+  res.json({ existing });
+};
+
 exports.update = async (req, res) => {
   const filter = { ...req.scope, _id: req.params.id };
   delete filter.memberId;
@@ -298,6 +346,13 @@ exports.update = async (req, res) => {
     name, phone, email, dob, gender, emergencyContact,
     membershipPlanId, membershipStart, membershipStatus, assignedTrainerId, isActive,
   };
+
+  // Per-key writes, so editing one custom field never overwrites the others; a blank value clears it.
+  if (req.body.customFields !== undefined) {
+    const { set, unset } = cleanCustomFields(await memberFieldDefs(req.scope.tenantId), req.body.customFields);
+    Object.entries(set).forEach(([key, value]) => { update[`customFields.${key}`] = value; });
+    if (unset.length) update.$unset = Object.fromEntries(unset.map((key) => [`customFields.${key}`, '']));
+  }
 
   // membershipEnd is never taken from the client — it's always derived from the plan's
   // duration, exactly like create and renew do. Accepting it raw let a caller set an

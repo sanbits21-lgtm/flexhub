@@ -4,19 +4,21 @@ const storageKey = (tableId) => `flexhub:columns:${tableId}`;
 
 // localStorage can be missing or throw (private windows, blocked site data). Column
 // choice is a convenience, so a failure just means the defaults show.
+// null = the user has not chosen yet, so the columns' own defaults apply.
 const readHidden = (tableId) => {
   try {
     const raw = localStorage.getItem(storageKey(tableId));
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
   } catch {
-    return [];
+    return null;
   }
 };
 const writeHidden = (tableId, hidden) => {
   try {
-    if (hidden.length) localStorage.setItem(storageKey(tableId), JSON.stringify(hidden));
-    else localStorage.removeItem(storageKey(tableId));
+    if (hidden === null) localStorage.removeItem(storageKey(tableId));
+    else localStorage.setItem(storageKey(tableId), JSON.stringify(hidden));
   } catch { /* see above */ }
 };
 
@@ -27,20 +29,21 @@ const isConfigurable = (col) => !!col.label && !col.required && col.key !== 'act
 // Returns the columns to render plus the state the picker needs. Keyed by column `key`,
 // so a stored choice survives columns being added or reordered; stale keys are ignored.
 export function useColumnPrefs(tableId, columns) {
-  const [hidden, setHidden] = useState(() => (tableId ? readHidden(tableId) : []));
+  const [stored, setStored] = useState(() => (tableId ? readHidden(tableId) : null));
 
   const configurable = columns.filter(isConfigurable);
+  const hidden = stored ?? configurable.filter((c) => c.defaultHidden).map((c) => c.key);
   const hiddenNow = new Set(hidden.filter((k) => configurable.some((c) => c.key === k)));
   // Never let the table end up with nothing to show.
   const visible = columns.filter((c) => !isConfigurable(c) || !hiddenNow.has(c.key));
   const shownConfigurable = configurable.filter((c) => !hiddenNow.has(c.key)).length;
 
-  const update = (next) => { setHidden(next); if (tableId) writeHidden(tableId, next); };
+  const update = (next) => { setStored(next); if (tableId) writeHidden(tableId, next); };
   const toggle = (key) => {
     if (hiddenNow.has(key)) update([...hiddenNow].filter((k) => k !== key));
     else if (shownConfigurable > 1) update([...hiddenNow, key]);
   };
-  const reset = () => update([]);
+  const reset = () => update(null);
 
   return { visible, configurable, hiddenNow, toggle, reset, lastOne: shownConfigurable <= 1 };
 }

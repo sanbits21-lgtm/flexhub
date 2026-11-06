@@ -78,6 +78,7 @@ export const membersAPI = {
   progress: (id) => api.get(`/members/${id}/progress`),
   create: (data) => api.post('/members', data),
   bulkCreate: (data) => api.post('/members/bulk', data),
+  bulkCheck: (data) => api.post('/members/bulk/check', data),
   update: (id, data) => api.put(`/members/${id}`, data),
   remove: (id) => api.delete(`/members/${id}`),
   renew: (id, data) => api.post(`/members/${id}/renew`, data),
@@ -143,6 +144,8 @@ export const tenantSettingsAPI = {
   getBranding: () => api.get('/tenant-settings/branding'),
   updateBranding: (data) => api.put('/tenant-settings/branding', data),
   update: (data) => api.put('/tenant-settings', data),
+  getMemberFields: () => api.get('/tenant-settings/member-fields'),
+  createMemberField: (data) => api.post('/tenant-settings/member-fields', data),
 };
 
 export default api;

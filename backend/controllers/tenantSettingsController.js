@@ -1,6 +1,7 @@
 const Tenant = require('../models/Tenant');
 const { logAudit } = require('../utils/audit');
 const { resolveFeatures } = require('../utils/features');
+const { MAX_FIELDS, cleanLabel, cleanType, uniqueKey } = require('../utils/memberFields');
 const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, baseDomain, REDIRECT_DAYS } = require('../utils/subdomain');
 
 // Read-only for branch-manager too (they need it to show the UPI QR when collecting a
@@ -22,6 +23,37 @@ exports.updateMine = async (req, res) => {
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
   logAudit(req, 'UPDATE_TENANT_PAYMENT_SETTINGS', { type: 'Tenant', id: tenant._id });
   res.json(tenant);
+};
+
+// ---------- the gym's own member fields ----------
+
+exports.getMemberFields = async (req, res) => {
+  const tenant = await Tenant.findById(req.scope.tenantId).select('memberFields').lean();
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  res.json({ fields: tenant.memberFields || [], max: MAX_FIELDS });
+};
+
+// Create-only on purpose: removing or retyping a field would orphan the values already saved
+// on members. The label can still be shown differently later without changing the key.
+exports.createMemberField = async (req, res) => {
+  const label = cleanLabel(req.body?.label);
+  const type = cleanType(req.body?.type);
+  const tenant = await Tenant.findById(req.scope.tenantId).select('memberFields');
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  const defs = tenant.memberFields || [];
+  if (defs.some((d) => d.label.toLowerCase() === label.toLowerCase())) {
+    return res.status(409).json({ message: `You already have a field called "${label}".` });
+  }
+  const field = { key: uniqueKey(label, defs), label, type };
+  // The cap is part of the update filter, so two requests at once cannot both slip past it.
+  const updated = await Tenant.findOneAndUpdate(
+    { _id: tenant._id, [`memberFields.${MAX_FIELDS - 1}`]: { $exists: false } },
+    { $push: { memberFields: field } },
+    { new: true },
+  ).select('_id');
+  if (!updated) return res.status(400).json({ message: `You can have at most ${MAX_FIELDS} custom fields.` });
+  logAudit(req, 'CREATE_MEMBER_FIELD', { type: 'Tenant', id: tenant._id, metadata: { key: field.key } });
+  res.status(201).json(field);
 };
 
 // ---------- branding and address (tenant-admin) ----------

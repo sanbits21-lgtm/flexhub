@@ -15,6 +15,13 @@ const tenantSchema = new mongoose.Schema({
     logoUrl: { type: String, default: '' },
     tagline: { type: String, trim: true, maxlength: 80, default: '' },
   },
+  // The gym's own extra member fields (see utils/memberFields.js). Values live on each member.
+  memberFields: [{
+    _id: false,
+    key: { type: String, required: true },
+    label: { type: String, required: true, trim: true, maxlength: 40 },
+    type: { type: String, enum: ['text', 'number', 'date'], default: 'text' },
+  }],
   contactEmail: { type: String, required: true, lowercase: true, trim: true },
   contactPhone: { type: String, trim: true },
   billingPlan: { type: String, enum: ['trial', 'basic', 'pro', 'enterprise'], default: 'trial' },
