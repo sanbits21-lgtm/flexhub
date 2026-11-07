@@ -143,6 +143,31 @@ app.get('/privacy', (req, res, next) => {
   });
 });
 
+// The member app is installable on its own, apart from the staff website, so it has its own
+// manifest: scoped to /member, named after the gym whose address this is (iron.example.com) and
+// tinted with its colour. On the main address it is simply "FlexHub Member".
+app.get('/member.webmanifest', (req, res) => {
+  const gym = req.hostTenant;
+  const color = /^#[0-9A-Fa-f]{6}$/.test(gym?.brand?.color || '') ? gym.brand.color : '#0A0C10';
+  res.type('application/manifest+json').set('Cache-Control', 'public, max-age=300').json({
+    id: '/member',
+    name: gym ? `${gym.name} Member` : 'FlexHub Member',
+    short_name: (gym ? gym.name : 'FlexHub').slice(0, 12),
+    description: 'Your membership, workouts, diet plans and entry pass.',
+    start_url: '/member',
+    scope: '/member',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#0A0C10',
+    theme_color: color,
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  });
+});
+
 const frontendDist = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDist, {
   setHeaders: (res, filePath) => {

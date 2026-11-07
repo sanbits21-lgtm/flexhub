@@ -2,6 +2,7 @@ const Member = require('../models/Member');
 const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
 const { resolveFeatures } = require('../utils/features');
+const { publicBrand } = require('../utils/subdomain');
 
 exports.login = async (req, res) => {
   // identifier is an email or a member code (not every member has an email); email
@@ -22,9 +23,10 @@ exports.login = async (req, res) => {
     }
   }
   if (!member) return res.status(401).json({ message: 'Invalid credentials' });
-  const tenant = await Tenant.findById(member.tenantId).select('features');
+  const tenant = await Tenant.findById(member.tenantId).select('features name slug brand');
   res.json({
     features: resolveFeatures(tenant),
+    brand: publicBrand(tenant),
     token: generateToken(member._id, 'member'),
     member: {
       _id: member._id,
@@ -39,6 +41,6 @@ exports.login = async (req, res) => {
 };
 
 exports.getMe = async (req, res) => {
-  const tenant = await Tenant.findById(req.member.tenantId).select('features');
-  res.json({ member: req.member, features: resolveFeatures(tenant) });
+  const tenant = await Tenant.findById(req.member.tenantId).select('features name slug brand');
+  res.json({ member: req.member, features: resolveFeatures(tenant), brand: publicBrand(tenant) });
 };

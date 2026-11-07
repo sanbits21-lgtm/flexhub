@@ -781,12 +781,14 @@ export default function Members() {
         )}
         {appAccess?.creds && (
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <p>Give these to the member. The password is shown once; they can change it in the app.</p>
+            <p>Give these to the member. The password is shown once; they can change it after signing in.</p>
             <dl className="grid grid-cols-[7rem_1fr] gap-y-1">
+              <dt className="text-gray-500 dark:text-gray-400">Web app</dt><dd className="font-mono break-all">{`${window.location.origin}/member`}</dd>
               <dt className="text-gray-500 dark:text-gray-400">Member code</dt><dd className="font-mono">{appAccess.creds.memberCode}</dd>
               {appAccess.creds.email && (<><dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-mono break-all">{appAccess.creds.email}</dd></>)}
               <dt className="text-gray-500 dark:text-gray-400">Password</dt><dd className="font-mono">{appAccess.creds.password}</dd>
             </dl>
+            <p className="text-xs text-gray-500 dark:text-gray-400">The member opens the web app address on their phone, signs in, and can add it to their home screen to use it like an app.</p>
             <button onClick={() => setAppAccess(null)} className="border rounded px-4 py-2 dark:border-gray-600">Done</button>
           </div>
         )}

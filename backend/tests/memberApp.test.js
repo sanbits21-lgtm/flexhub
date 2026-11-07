@@ -54,7 +54,9 @@ describe('app access', () => {
 
   it('changes the password only with the current one', async () => {
     const bad = await request(app).put('/api/member-app/me/password').set(auth(meToken)).send({ currentPassword: 'nope', newPassword: 'NewPassw0rd!' });
-    expect(bad.status).toBe(401);
+    // 400 and not 401: 401 means "your session is bad" and signs the member out of the app.
+    expect(bad.status).toBe(400);
+    expect(bad.body.message).toMatch(/incorrect/i);
     const short = await request(app).put('/api/member-app/me/password').set(auth(meToken)).send({ currentPassword: 'x', newPassword: 'short' });
     expect(short.status).toBe(400);
   });
@@ -197,7 +199,7 @@ describe('delete my account', () => {
 
   it('needs the password, and rejects a wrong one without changing anything', async () => {
     expect((await request(app).delete('/api/member-app/me').set(auth(vToken)).send({})).status).toBe(400);
-    expect((await request(app).delete('/api/member-app/me').set(auth(vToken)).send({ password: 'nope-nope' })).status).toBe(401);
+    expect((await request(app).delete('/api/member-app/me').set(auth(vToken)).send({ password: 'nope-nope' })).status).toBe(400);
     expect((await Member.findById(victim._id)).name).toBe('Leaving Member');
   });
 

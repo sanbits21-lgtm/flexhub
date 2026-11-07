@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import RoleRoute from './components/RoleRoute';
@@ -8,6 +8,8 @@ import TrialBanner from './components/TrialBanner';
 import BrandMark from './components/BrandMark';
 import { useBrand } from './context/BrandContext';
 import Signup from './pages/Signup';
+// The member app is its own section; staff never download it and members never need the staff pages.
+const MemberApp = lazy(() => import('./member/MemberApp'));
 import VerifyEmail from './pages/VerifyEmail';
 import PlatformSettings from './pages/platform/PlatformSettings';
 
@@ -61,6 +63,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/member/*" element={<Suspense fallback={<div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>}><MemberApp /></Suspense>} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />

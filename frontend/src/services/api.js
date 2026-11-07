@@ -16,7 +16,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 402) window.alert(error.response.data?.message || 'This needs a paid plan.');
     if (error.response?.status === 403 && error.response.data?.code === 'GYM_SUSPENDED') window.alert(error.response.data.message);
-    if (error.response?.status === 401 && !['/login', '/signup', '/verify-email'].includes(window.location.pathname)) {
+    // The member app (/member) has its own session; a stale STAFF token in the same browser must
+    // not throw a member out to the staff login.
+    const onMemberApp = window.location.pathname.startsWith('/member');
+    if (error.response?.status === 401 && !onMemberApp && !['/login', '/signup', '/verify-email'].includes(window.location.pathname)) {
       localStorage.removeItem('token');
       window.location.assign('/login');
     }

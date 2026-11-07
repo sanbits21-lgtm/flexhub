@@ -223,7 +223,9 @@ exports.changePassword = async (req, res) => {
     return res.status(400).json({ message: 'New password must be 8 to 72 characters.' });
   }
   const member = await Member.findById(req.member._id);
-  if (!(await member.matchPassword(currentPassword))) return res.status(401).json({ message: 'Current password is incorrect.' });
+  // 400, not 401: a wrong password here is a bad request. 401 means the SESSION is bad, and the apps
+  // answer that by signing the member out.
+  if (!(await member.matchPassword(currentPassword))) return res.status(400).json({ message: 'Current password is incorrect.' });
   member.password = newPassword;
   await member.save();
   logAudit(req, 'MEMBER_CHANGE_PASSWORD', { type: 'Member', id: member._id });
@@ -239,7 +241,7 @@ exports.deleteAccount = async (req, res) => {
   const { password } = req.body || {};
   if (typeof password !== 'string' || !password) return res.status(400).json({ message: 'Enter your password to delete your account.' });
   const member = await Member.findById(req.member._id);
-  if (!(await member.matchPassword(password))) return res.status(401).json({ message: 'Password is incorrect.' });
+  if (!(await member.matchPassword(password))) return res.status(400).json({ message: 'Password is incorrect.' });
 
   const photo = member.photoUrl;
   const now = new Date();
