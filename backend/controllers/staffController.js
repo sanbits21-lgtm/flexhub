@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { revokeActor } = require('../utils/sessions');
 const Member = require('../models/Member');
 const MemberPayment = require('../models/MemberPayment');
 const Branch = require('../models/Branch');
@@ -133,6 +134,7 @@ exports.resetPassword = async (req, res) => {
   trainer.password = password; // hashed by the model's pre-save hook
   trainer.passwordResetAt = new Date();
   await trainer.save();
+  await revokeActor('user', trainer._id);
   logAudit(req, 'RESET_TRAINER_PASSWORD', { type: 'User', id: trainer._id });
   res.json({ name: trainer.name, email: trainer.email, password });
 };

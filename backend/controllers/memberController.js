@@ -106,6 +106,7 @@ exports.getMe = async (req, res) => {
 
 const Tenant = require('../models/Tenant');
 const { memberRoom } = require('../utils/subscription');
+const { revokeActor } = require('../utils/sessions');
 
 const memberFieldDefs = async (tenantId) => (await Tenant.findById(tenantId).select('memberFields').lean())?.memberFields || [];
 
@@ -482,6 +483,7 @@ exports.issueAppAccess = async (req, res) => {
   member.password = password; // hashed by the model's pre-save hook
   member.passwordResetAt = new Date(); // signs the member out of any phone already logged in
   await member.save();
+  await revokeActor('member', member._id);
   logAudit(req, 'ISSUE_MEMBER_APP_ACCESS', { type: 'Member', id: member._id });
   res.json({ memberCode: member.memberCode, email: member.email || null, password });
 };

@@ -104,6 +104,12 @@ if (process.env.NODE_ENV !== 'test' || process.env.FORCE_RATE_LIMIT === 'on') {
   }));
   app.use('/api/auth/login', loginLimiter);
   app.use('/api/member-auth/login', loginLimiter);
+  // Renewing a session is cheap and frequent (every few minutes while the app is open), so the
+  // ceiling is higher than for logins, but a stolen refresh token cannot be hammered either.
+  app.use(['/api/auth/refresh', '/api/member-auth/refresh'], rateLimit({
+    windowMs: 15 * 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false,
+    message: { message: 'Too many attempts. Please try again shortly.' },
+  }));
 }
 
 app.use('/api/public', require('./routes/public'));

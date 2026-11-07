@@ -1,6 +1,6 @@
 const Member = require('../models/Member');
 const Tenant = require('../models/Tenant');
-const generateToken = require('../utils/generateToken');
+const { startSession, deliver } = require('../utils/sessions');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
 
@@ -24,10 +24,11 @@ exports.login = async (req, res) => {
   }
   if (!member) return res.status(401).json({ message: 'Invalid credentials' });
   const tenant = await Tenant.findById(member.tenantId).select('features name slug brand');
+  const issued = await startSession('member', member, req);
   res.json({
     features: resolveFeatures(tenant),
     brand: publicBrand(tenant),
-    token: generateToken(member._id, 'member'),
+    ...deliver(req, res, 'member', issued),
     member: {
       _id: member._id,
       name: member.name,

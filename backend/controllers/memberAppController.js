@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { z } = require('zod');
 const Member = require('../models/Member');
 const generateToken = require('../utils/generateToken');
+const { revokeActor } = require('../utils/sessions');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
 const MemberPlan = require('../models/MemberPlan');
@@ -230,8 +231,9 @@ exports.changePassword = async (req, res) => {
   member.password = newPassword;
   member.passwordResetAt = new Date(); // other phones/browsers are signed out; this one gets a fresh token
   await member.save();
+  await revokeActor('member', member._id, req.sid);
   logAudit(req, 'MEMBER_CHANGE_PASSWORD', { type: 'Member', id: member._id });
-  res.json({ message: 'Password updated', token: generateToken(member._id, 'member') });
+  res.json({ message: 'Password updated', token: generateToken(member._id, 'member', req.sid) });
 };
 // ---------- delete my account ----------
 
@@ -247,6 +249,7 @@ exports.deleteAccount = async (req, res) => {
 
   const photo = member.photoUrl;
   const now = new Date();
+  await revokeActor('member', member._id);
   // updateOne skips schema validators on purpose: required fields (phone, password) are
   // overwritten with placeholders rather than removed.
   await Member.updateOne({ _id: member._id }, {

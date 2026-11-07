@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { authAPI, refreshAccessToken } from '../services/api';
+import { setToken } from '../services/authToken';
 import { useBrand } from './BrandContext';
 
 const AuthContext = createContext(null);
@@ -15,20 +16,19 @@ export function AuthProvider({ children }) {
   const { brand: hostBrand, setBrand } = useBrand();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    authAPI.me()
+    try { localStorage.removeItem('token'); } catch { /* storage unavailable */ } // the long-lived token of older versions
+    // The access token lives only in memory, so a page load starts by renewing it from the refresh
+    // cookie. No cookie (never signed in, or signed out) simply means "not logged in".
+    refreshAccessToken()
+      .then(() => authAPI.me())
       .then((res) => { setUser(res.data.user); setFeatures(res.data.features); setSubscription(res.data.subscription); if (res.data.brand) setBrand(res.data.brand); })
-      .catch(() => localStorage.removeItem('token'))
+      .catch(() => setToken(null))
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     const res = await authAPI.login(email, password);
-    localStorage.setItem('token', res.data.token);
+    setToken(res.data.token);
     setUser(res.data.user);
     setFeatures(res.data.features);
     setSubscription(res.data.subscription);
@@ -37,7 +37,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    authAPI.logout().catch(() => {}); // ends this login on the server and clears the cookie
+    setToken(null);
     setUser(null);
     setFeatures(undefined);
     setSubscription(undefined);

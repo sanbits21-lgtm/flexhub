@@ -1,26 +1,59 @@
 import axios from 'axios';
+import { getToken, setToken } from './authToken';
 
-const api = axios.create({ baseURL: '/api' });
+// X-Requested-With: a page on another site cannot add this header, which is what lets the server
+// trust the refresh cookie (see backend/utils/sessions.js).
+const api = axios.create({ baseURL: '/api', headers: { 'X-Requested-With': 'flexhub' } });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// The access token lasts minutes. When it runs out the server says TOKEN_EXPIRED; one refresh
+// call gets a new one and the request is repeated. Several requests expiring together share a
+// single refresh (a second one would present an already-used refresh token).
+let refreshing = null;
+export const refreshAccessToken = () => {
+  if (!refreshing) {
+    refreshing = axios.post('/api/auth/refresh', {}, { headers: { 'X-Requested-With': 'flexhub' } })
+      .then((res) => { setToken(res.data.token); return res.data.token; })
+      .finally(() => { refreshing = null; });
+  }
+  return refreshing;
+};
+const isAuthCall = (url = '') => /\/auth\/(login|refresh|logout)/.test(url);
 
 // A token that expires mid-session used to leave a logged-in-looking UI behind: every
 // call 401'd but nothing reacted until the next full page load. Clearing the token and
 // bouncing to /login makes the session end visible at the moment it actually ends.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const { response, config } = error;
+    if (response?.status === 401 && response.data?.code === 'TOKEN_EXPIRED' && config && !config._retried && !isAuthCall(config.url)) {
+      let token = null;
+      try {
+        token = await refreshAccessToken();
+      } catch (refreshError) {
+        // No answer at all (offline) is not the end of the session; only a refusal is, and that
+        // falls through to the session-ended handling below.
+        if (!refreshError.response) return Promise.reject(error);
+      }
+      if (token) {
+        config._retried = true;
+        config.headers.Authorization = `Bearer ${token}`;
+        return api(config); // whatever this answers (even an error) is the answer to the caller
+      }
+    }
     if (error.response?.status === 402) window.alert(error.response.data?.message || 'This needs a paid plan.');
     if (error.response?.status === 403 && error.response.data?.code === 'GYM_SUSPENDED') window.alert(error.response.data.message);
     // The member app (/member) has its own session; a stale STAFF token in the same browser must
     // not throw a member out to the staff login.
     const onMemberApp = window.location.pathname.startsWith('/member');
-    if (error.response?.status === 401 && !onMemberApp && !['/login', '/signup', '/verify-email'].includes(window.location.pathname)) {
-      localStorage.removeItem('token');
+    if (error.response?.status === 401 && !onMemberApp && !isAuthCall(error.config?.url) && !['/login', '/signup', '/verify-email'].includes(window.location.pathname)) {
+      setToken(null);
       window.location.assign('/login');
     }
     return Promise.reject(error);
@@ -29,6 +62,8 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
+  logout: () => api.post('/auth/logout'),
+  logoutAll: () => api.post('/auth/logout-all'),
   signupConfig: () => api.get('/public/signup-config'),
   signup: (data) => api.post('/public/signup', data),
   verifyEmail: (token) => api.post('/public/verify-email', { token }),

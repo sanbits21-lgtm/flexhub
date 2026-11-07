@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
+const { startSession, deliver, revokeActor } = require('../utils/sessions');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
 const { subscriptionOf, approvalBlock } = require('../utils/subscription');
@@ -55,8 +56,9 @@ exports.login = async (req, res) => {
   user.lastLoginAt = new Date();
   await user.save();
 
+  const issued = await startSession('user', user, req);
   res.json({
-    token: generateToken(user._id, 'user'),
+    ...deliver(req, res, 'user', issued),
     user: {
       _id: user._id,
       name: user.name,
@@ -89,5 +91,6 @@ exports.changePassword = async (req, res) => {
   // change); the caller gets a fresh one so they stay signed in.
   user.passwordResetAt = new Date();
   await user.save();
-  res.json({ message: 'Password updated', token: generateToken(user._id, 'user') });
+  await revokeActor('user', user._id, req.sid); // every other device's refresh token dies too
+  res.json({ message: 'Password updated', token: generateToken(user._id, 'user', req.sid) });
 };

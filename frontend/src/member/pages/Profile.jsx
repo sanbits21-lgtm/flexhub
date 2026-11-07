@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { memberApi, errorText, TOKEN_KEY } from '../api';
+import { memberApi, errorText, setMemberToken } from '../api';
 import { useMemberAuth } from '../MemberAuth';
 import { useLoad } from '../useLoad';
 import { useTheme } from '../../context/ThemeContext';
@@ -129,7 +129,7 @@ export default function Profile() {
     setPwMsg({ ok: false, text: '' });
     try {
       const { data } = await memberApi.put('/member-app/me/password', { currentPassword: pw.current, newPassword: pw.next });
-      if (data?.token) localStorage.setItem(TOKEN_KEY, data.token); // other devices are signed out; this one stays in
+      if (data?.token) setMemberToken(data.token); // other devices are signed out; this one stays in
       setPw({ current: '', next: '' });
       setPwMsg({ ok: true, text: 'Password changed. Use it next time you sign in.' });
     } catch (err) {
@@ -150,6 +150,12 @@ export default function Profile() {
       setDelError(errorText(err, 'Could not delete your account.'));
       setDelBusy(false);
     }
+  };
+
+  const signOutEverywhere = async () => {
+    if (!window.confirm('Sign out of every phone and browser where you are signed in?')) return;
+    try { await memberApi.post('/member-auth/logout-all'); } catch { /* sign out here regardless */ }
+    signOut();
   };
 
   const years = form.dob ? ageOf(form.dob) : null;
@@ -224,6 +230,7 @@ export default function Profile() {
       </Card>
 
       <Btn kind="secondary" onClick={signOut} className="w-full">Sign out</Btn>
+      <button type="button" onClick={signOutEverywhere} className="w-full text-center text-sm text-gray-500 dark:text-gray-400 underline py-2">Sign out of all devices</button>
       <Muted>Your name, phone and email are managed by your gym. Ask the front desk to change them.</Muted>
     </Screen>
   );

@@ -40,6 +40,7 @@ const protect = async (req, res, next) => {
   try {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.sid = decoded.sid; // which login this is, so "everyone else" can be signed out without ending it
 
     if (decoded.actorType === 'member') {
       req.member = await Member.findById(decoded.id).select('-password -customFields');
@@ -57,7 +58,10 @@ const protect = async (req, res, next) => {
     const blocked = await gymStateBlock(req);
     if (blocked) return res.status(blocked.status).json({ message: blocked.message, code: blocked.code });
     next();
-  } catch {
+  } catch (err) {
+    // The short-lived access token ran out: clients renew it with their refresh token and retry.
+    // Any other 401 means the session itself is gone.
+    if (err.name === 'TokenExpiredError') return res.status(401).json({ message: 'Session expired', code: 'TOKEN_EXPIRED' });
     res.status(401).json({ message: 'Token invalid' });
   }
 };

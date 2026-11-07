@@ -29,12 +29,26 @@ export const setToken = (t: string | null) => { token = t; };
 export const setUnauthorizedHandler = (fn: () => void) => { onUnauthorized = fn; };
 export const authHeaders = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+// The access token lasts minutes. When it runs out the server answers TOKEN_EXPIRED; the signed-in
+// provider (lib/auth.tsx) registers how to renew it, and the failed request is then repeated once.
+// It resolves true when renewed, false when the refresh token was refused, and throws when the
+// server could not be reached (being offline is not the end of a session).
+let refresher: (() => Promise<boolean>) | null = null;
+export const setRefresher = (fn: (() => Promise<boolean>) | null) => { refresher = fn; };
+/** Renews the access token now (used when something outside `api`, like an image, was refused). */
+export const refreshNow = async (): Promise<boolean> => (refresher ? refresher().catch(() => false) : false);
+
+// Calls where a 401 is an answer to the call itself, not a sign the session is over.
+const AUTH_PATHS = new Set(['/member-auth/login', '/auth/login', '/member-auth/refresh', '/auth/refresh', '/member-auth/logout', '/auth/logout']);
+
+async function request<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      // X-Client: native asks the server to return the refresh token in the response body (this
+      // app cannot use the cookie a browser would get) instead of setting a cookie.
+      headers: { 'Content-Type': 'application/json', 'X-Client': 'native', ...authHeaders() },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -42,8 +56,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    // An expired or revoked token on any call except login itself ends the session.
-    if (res.status === 401 && path !== '/member-auth/login' && path !== '/auth/login') onUnauthorized();
+    if (res.status === 401 && data?.code === 'TOKEN_EXPIRED' && refresher && !retried && !AUTH_PATHS.has(path)) {
+      let renewed = false;
+      try { renewed = await refresher(); } catch { throw new ApiError('Cannot reach the gym server. Check your internet connection.', 0); }
+      if (renewed) return request<T>(method, path, body, true);
+    }
+    // A revoked or unrenewable session on any call except the sign-in calls ends the session.
+    if (res.status === 401 && !AUTH_PATHS.has(path)) onUnauthorized();
     throw new ApiError(data?.message || `Request failed (${res.status})`, res.status);
   }
   return data as T;
