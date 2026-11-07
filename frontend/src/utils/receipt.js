@@ -5,6 +5,13 @@ export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { d
 export const fmtDateTime = (d) => new Date(d || Date.now()).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 export const fmtMoney = (n) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(n) || 0);
 
+/** Rupees without needless decimals: 4500 -> ₹4,500 and 4500.5 -> ₹4,500.50. */
+export const fmtRupees = (n) => {
+  const value = Number(n) || 0;
+  const digits = Number.isInteger(value) ? 0 : 2; // whole rupees plain, paise always two digits
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'INR', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+};
+
 const STATUS_LABEL = { paid: 'Amount Paid', refunded: 'Amount Refunded' };
 export const amountLabel = (status) => STATUS_LABEL[status] || 'Amount Due';
 

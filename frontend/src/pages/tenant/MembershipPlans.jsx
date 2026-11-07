@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { membershipPlansAPI, branchesAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
+import Modal from '../../components/Modal';
+import ListToolbar, { fieldClass, matches, primaryBtn, toolBtn } from '../../components/ListToolbar';
+import { fmtRupees } from '../../utils/receipt';
 
 const DURATION_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
@@ -9,149 +13,182 @@ const DURATION_OPTIONS = [
   { value: 'yearly', label: 'Yearly' },
 ];
 const durationLabel = (unit) => DURATION_OPTIONS.find((o) => o.value === unit)?.label || unit;
+const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
-const emptyForm = { name: '', durationUnit: 'monthly', price: '', description: '', branchId: '' };
-
-const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
+const emptyForm = { name: '', durationUnit: 'monthly', price: '', description: '', branchId: '', isActive: true };
 
 export default function MembershipPlans() {
-  const [plans, setPlans] = useState([]);
+  const { user } = useAuth();
+  // The API lets only the gym owner change plans; everyone else here reads them.
+  const canManage = user.role === 'tenant-admin';
+  const [plans, setPlans] = useState(null);
   const [branches, setBranches] = useState([]);
-  const [filterBranchId, setFilterBranchId] = useState('');
+  const [search, setSearch] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
+  const [editing, setEditing] = useState(null); // null = closed, 'new' = adding, else the plan being edited
   const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const load = () => membershipPlansAPI.list(filterBranchId || undefined).then((res) => setPlans(res.data));
-  useEffect(() => { branchesAPI.list().then((res) => setBranches(res.data)); }, []);
-  useEffect(() => { load(); }, [filterBranchId]);
+  const load = () => membershipPlansAPI.list(branchFilter || undefined).then((res) => setPlans(res.data));
+  useEffect(() => { if (canManage) branchesAPI.list().then((res) => setBranches(res.data)); }, [canManage]);
+  useEffect(() => { load(); }, [branchFilter]);
 
   const branchName = (id) => branches.find((b) => b._id === id)?.name;
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    await membershipPlansAPI.create({ ...form, branchId: form.branchId || null });
-    setForm(emptyForm);
-    load();
-  };
-
-  const startEdit = (plan) => {
-    setEditingId(plan._id);
-    setEditForm({
+  const openAdd = () => { setForm(emptyForm); setError(''); setEditing('new'); };
+  const openEdit = (plan) => {
+    setError('');
+    setForm({
       name: plan.name,
       durationUnit: plan.durationUnit,
-      price: plan.price,
+      price: String(plan.price),
       description: plan.description || '',
       branchId: plan.branchId || '',
       isActive: plan.isActive,
     });
+    setEditing(plan);
   };
+  const close = () => setEditing(null);
 
-  const cancelEdit = () => { setEditingId(null); setEditForm(emptyForm); };
-
-  const handleUpdate = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    await membershipPlansAPI.update(editingId, { ...editForm, branchId: editForm.branchId || null });
-    cancelEdit();
-    load();
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const body = { ...form, price: Number(form.price), branchId: form.branchId || null };
+      if (editing === 'new') await membershipPlansAPI.create(body);
+      else await membershipPlansAPI.update(editing._id, body);
+      close();
+      load();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleRemove = async (plan) => {
-    if (!window.confirm(`Deactivate plan "${plan.name}"?`)) return;
+    if (!window.confirm(`Deactivate plan "${plan.name}"? Existing members keep it; new members can't be given it.`)) return;
     await membershipPlansAPI.remove(plan._id);
     load();
   };
 
+  const rows = (plans || []).filter((p) => (showInactive || p.isActive) && matches(search, p.name, p.description));
+  const chips = [
+    branchFilter && { key: 'branch', text: branchName(branchFilter) || 'Branch', clear: () => setBranchFilter('') },
+    showInactive && { key: 'inactive', text: 'Incl. inactive', clear: () => setShowInactive(false) },
+  ].filter(Boolean);
+  const clearAll = () => { setSearch(''); setBranchFilter(''); setShowInactive(false); };
+
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Membership Plans</h1>
+    <div className="p-4 sm:p-6 space-y-4">
+      <ListToolbar
+        title="Membership Plans"
+        count={plans ? rows.length : null}
+        addLabel="Add Plan"
+        onAdd={canManage ? openAdd : undefined}
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search plans"
+        chips={chips}
+        onClearAll={clearAll}
+        filters={(
+          <div className="space-y-3">
+            {canManage && (
+              <div>
+                <label htmlFor="mp-branch" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Show plans for</label>
+                <select id="mp-branch" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} className={fieldClass}>
+                  <option value="">All branches</option>
+                  {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
+                </select>
+              </div>
+            )}
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+              Show inactive plans
+            </label>
+          </div>
+        )}
+      />
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-500 dark:text-gray-400">Show plans for</label>
-        <select value={filterBranchId} onChange={(e) => setFilterBranchId(e.target.value)} className={inputClass}>
-          <option value="">All branches</option>
-          {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
-        </select>
-      </div>
+      {!canManage && <p className="text-xs text-gray-500 dark:text-gray-400">Only the gym owner can add or change plans.</p>}
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow flex flex-wrap gap-3 items-end">
-        <input placeholder="Plan name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={inputClass} />
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</label>
-          <select value={form.durationUnit} onChange={(e) => setForm({ ...form, durationUnit: e.target.value })} className={inputClass}>
-            {DURATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-        <input placeholder="Price" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required className={inputClass} />
-        <input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} />
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
-          <select value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value })} className={inputClass}>
-            <option value="">Tenant-wide (all branches)</option>
-            {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
-          </select>
-        </div>
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Plan</button>
-      </form>
+      {plans === null ? (
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">Loading plans...</p>
+      ) : (
+        <DataTable tableId="membershipPlans"
+          columns={[
+            { key: 'name', label: 'Name' },
+            { key: 'durationUnit', label: 'Duration', render: (r) => durationLabel(r.durationUnit) },
+            { key: 'price', label: 'Price', render: (r) => fmtRupees(r.price) },
+            ...(canManage ? [{ key: 'branch', label: 'Branch', render: (r) => (r.branchId ? branchName(r.branchId) || 'Unknown branch' : 'All branches') }] : []),
+            { key: 'isActive', label: 'Active', render: (r) => (r.isActive ? 'Yes' : 'No') },
+            ...(canManage ? [{
+              key: 'actions',
+              label: 'Actions',
+              render: (row) => (
+                <div className="flex gap-2">
+                  <button onClick={() => openEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                  <button
+                    onClick={() => handleRemove(row)}
+                    disabled={!row.isActive}
+                    className="text-red-600 dark:text-red-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                  >
+                    {row.isActive ? 'Deactivate' : 'Inactive'}
+                  </button>
+                </div>
+              ),
+            }] : []),
+          ]}
+          rows={rows}
+        />
+      )}
 
-      {editingId && (
-        <form onSubmit={handleUpdate} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Editing plan</div>
-          <div className="flex flex-wrap gap-3 items-end">
-            <input placeholder="Plan name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
+      <Modal open={editing !== null} onClose={close} title={editing === 'new' ? 'Add Plan' : 'Edit Plan'}>
+        <form onSubmit={handleSave} className="space-y-3">
+          {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          <div>
+            <label htmlFor="mp-name" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Plan name</label>
+            <input id="mp-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={60} className={fieldClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</label>
-              <select value={editForm.durationUnit} onChange={(e) => setEditForm({ ...editForm, durationUnit: e.target.value })} className={inputClass}>
+              <label htmlFor="mp-duration" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</label>
+              <select id="mp-duration" value={form.durationUnit} onChange={(e) => setForm({ ...form, durationUnit: e.target.value })} className={fieldClass}>
                 {DURATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
-            <input placeholder="Price" type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) })} required className={inputClass} />
-            <input placeholder="Description" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className={inputClass} />
             <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
-              <select value={editForm.branchId} onChange={(e) => setEditForm({ ...editForm, branchId: e.target.value })} className={inputClass}>
-                <option value="">Tenant-wide (all branches)</option>
-                {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
-              </select>
+              <label htmlFor="mp-price" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Price (₹)</label>
+              <input id="mp-price" type="number" min="0" step="any" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required className={fieldClass} />
             </div>
+          </div>
+          <div>
+            <label htmlFor="mp-desc" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Description (optional)</label>
+            <input id="mp-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={fieldClass} />
+          </div>
+          <div>
+            <label htmlFor="mp-form-branch" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
+            <select id="mp-form-branch" value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value })} className={fieldClass}>
+              <option value="">All branches</option>
+              {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
+            </select>
+          </div>
+          {editing !== 'new' && (
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })} />
+              <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
               Active
             </label>
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
-            <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
+          )}
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editing === 'new' ? 'Add Plan' : 'Save Changes'}</button>
+            <button type="button" onClick={close} className={toolBtn}>Cancel</button>
           </div>
         </form>
-      )}
-
-      <DataTable tableId="membershipPlans"
-        columns={[
-          { key: 'name', label: 'Name' },
-          { key: 'durationUnit', label: 'Duration', render: (r) => durationLabel(r.durationUnit) },
-          { key: 'price', label: 'Price', render: (r) => `₹${r.price}` },
-          { key: 'branch', label: 'Branch', render: (r) => (r.branchId ? branchName(r.branchId) || 'Unknown branch' : 'All branches') },
-          { key: 'isActive', label: 'Active', render: (r) => (r.isActive ? 'Yes' : 'No') },
-          {
-            key: 'actions',
-            label: 'Actions',
-            render: (row) => (
-              <div className="flex gap-2">
-                <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                <button
-                  onClick={() => handleRemove(row)}
-                  disabled={!row.isActive}
-                  className="text-red-600 dark:text-red-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
-                >
-                  {row.isActive ? 'Deactivate' : 'Inactive'}
-                </button>
-              </div>
-            ),
-          },
-        ]}
-        rows={plans}
-      />
+      </Modal>
     </div>
   );
 }

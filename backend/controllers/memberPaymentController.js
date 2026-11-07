@@ -1,8 +1,20 @@
+const mongoose = require('mongoose');
 const Member = require('../models/Member');
 const MemberPayment = require('../models/MemberPayment');
 const { logAudit } = require('../utils/audit');
 const q = require('../utils/query');
 const { pageParams } = require('../utils/paginate');
+
+// Aggregation does not cast ids the way find() does, so string ids are converted here.
+const toObjectIds = (filter) => {
+  const out = { ...filter };
+  ['tenantId', 'branchId', 'memberId'].forEach((k) => {
+    if (typeof out[k] === 'string' && mongoose.isValidObjectId(out[k])) out[k] = new mongoose.Types.ObjectId(out[k]);
+  });
+  return out;
+};
+
+const SUMMARY_STATUSES = ['paid', 'pending', 'refunded', 'failed'];
 
 const buildFilter = (req) => {
   const filter = { ...req.scope };
@@ -18,8 +30,17 @@ exports.list = async (req, res) => {
   const memberId = q.oid(req.query.memberId, 'memberId');
   const from = q.date(req.query.from, 'from');
   const to = q.date(req.query.to, 'to');
+  const search = q.str(req.query.search, 'search', 60);
   const filter = buildFilter(req);
   if (status) filter.status = status;
+  // By invoice number or by the member's name (members are looked up inside this gym only).
+  if (search) {
+    const rx = new RegExp(q.escapeRegex(search), 'i');
+    const memberScope = { tenantId: filter.tenantId };
+    if (filter.branchId) memberScope.branchId = filter.branchId;
+    const ids = await Member.find({ ...memberScope, name: rx }).select('_id').limit(200).lean();
+    filter.$or = [{ invoiceNumber: rx }, { memberId: { $in: ids.map((m) => m._id) } }];
+  }
   if (method) filter.method = method;
   if (memberId) filter.memberId = memberId;
   // Date range is on createdAt, not paidAt: a pending payment has no paidAt, and
@@ -41,7 +62,18 @@ exports.list = async (req, res) => {
     .populate('memberId', 'name memberCode phone')
     .populate('membershipPlanId', 'name');
   const total = await MemberPayment.countDocuments(filter);
-  res.json({ payments, total, page, limit });
+
+  // Money totals over EVERYTHING the search and filters match, not just this page, so the figure
+  // on screen is what the filters describe. Only the amount of paid payments is "collected".
+  const byStatus = await MemberPayment.aggregate([
+    { $match: toObjectIds(filter) },
+    { $group: { _id: '$status', amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+  ]);
+  const summary = Object.fromEntries(SUMMARY_STATUSES.map((s) => {
+    const row = byStatus.find((r) => r._id === s);
+    return [s, { amount: row?.amount || 0, count: row?.count || 0 }];
+  }));
+  res.json({ payments, total, page, limit, summary });
 };
 
 exports.getForMember = async (req, res) => {
