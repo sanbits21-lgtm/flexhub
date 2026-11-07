@@ -37,7 +37,10 @@ export default function PendingApprovals({ tenants, onChanged }) {
   };
   const approve = (t) => {
     const members = val(t._id, 'maxMembers', termDefault(t, 'maxMembers', 'trialMaxMembers', 'maxMembers'));
+    const unconfirmed = t.owner && !t.owner.emailVerified;
+    if (unconfirmed && !window.confirm(`${t.owner.email} has not confirmed their email. Approve "${t.name}" anyway and mark that email as confirmed? Only do this if you know the gym is genuine. If email is not set up, tell the owner yourself that they can sign in.`)) return null;
     return act(() => tenantsAPI.approve(t._id, {
+      ...(unconfirmed ? { confirmEmail: true } : {}),
       ...(pkgOf(t) ? { packageId: pkgOf(t)._id } : {}),
       trialDays: Number(val(t._id, 'trialDays', termDefault(t, 'trialDays', 'trialDays', 'trialDays'))),
       maxMembers: members === '' ? null : Number(members), // blank = unlimited
@@ -84,7 +87,7 @@ export default function PendingApprovals({ tenants, onChanged }) {
             <label>Trial days<input type="number" min={pkgOf(t) ? 0 : 1} max="365" value={val(t._id, 'trialDays', termDefault(t, 'trialDays', 'trialDays', 'trialDays'))} onChange={(e) => setTerm(t._id, 'trialDays', e.target.value)} className={`${inputClass} block`} /></label>
             <label>Members<input type="number" min="1" placeholder="Unlimited" value={val(t._id, 'maxMembers', termDefault(t, 'maxMembers', 'trialMaxMembers', 'maxMembers'))} onChange={(e) => setTerm(t._id, 'maxMembers', e.target.value)} className={`${inputClass} block`} /></label>
             <label>Branches<input type="number" min="1" value={val(t._id, 'maxBranches', termDefault(t, 'maxBranches', 'trialMaxBranches', 'maxBranches'))} onChange={(e) => setTerm(t._id, 'maxBranches', e.target.value)} className={`${inputClass} block`} /></label>
-            <button type="button" disabled={!t.owner?.emailVerified} onClick={() => approve(t)} title={t.owner?.emailVerified ? '' : 'Waiting for the owner to confirm their email'} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">Approve</button>
+            <button type="button" onClick={() => approve(t)} title={t.owner?.emailVerified ? '' : 'The owner has not confirmed their email; you will be asked to vouch for it'} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">{t.owner?.emailVerified ? 'Approve' : 'Approve anyway'}</button>
             <button type="button" onClick={() => reject(t)} className="border rounded px-4 py-2 text-red-700 dark:text-red-400 dark:border-gray-600">Reject</button>
           </div>
         </div>

@@ -125,8 +125,17 @@ exports.approve = async (req, res) => {
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
   if (tenant.approvalStatus === 'approved') return res.status(409).json({ message: 'This gym is already approved.' });
   const owner = await User.findOne({ tenantId: tenant._id, role: 'tenant-admin' }).sort({ createdAt: 1 });
-  if (owner && owner.emailVerified === false) {
-    return res.status(400).json({ message: 'The owner has not confirmed their email address yet.' });
+  // Normally the owner proves their email first. An approver who knows the gym (or when mail is
+  // not set up, so no link was ever delivered) can vouch for it: that confirms the email too,
+  // since an unconfirmed owner could not sign in even after approval.
+  const vouched = !!owner && owner.emailVerified === false;
+  if (vouched) {
+    if (req.body?.confirmEmail !== true) {
+      return res.status(400).json({ message: 'The owner has not confirmed their email address yet.', code: 'EMAIL_NOT_CONFIRMED' });
+    }
+    owner.emailVerified = true;
+    owner.emailVerifyExpires = undefined;
+    await owner.save();
   }
   const s = await getSettings();
   const body = req.body || {};
@@ -165,7 +174,7 @@ exports.approve = async (req, res) => {
       buttonUrl: gymLoginUrl(tenant, req),
     });
   }
-  logAudit(req, 'APPROVE_TENANT', { type: 'Tenant', id: tenant._id, metadata: { trialDays: days, maxMembers: tenant.maxMembers, maxBranches: tenant.maxBranches, package: pkg?.name } });
+  logAudit(req, 'APPROVE_TENANT', { type: 'Tenant', id: tenant._id, metadata: { trialDays: days, maxMembers: tenant.maxMembers, maxBranches: tenant.maxBranches, package: pkg?.name, emailConfirmedByApprover: vouched } });
   res.json(tenant);
 };
 

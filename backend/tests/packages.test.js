@@ -180,6 +180,21 @@ describe('choosing a package when registering', () => {
   });
 });
 
+describe('approving a gym whose email was never confirmed', () => {
+  it('needs the approver to vouch for the email, and then the owner can sign in', async () => {
+    const b = body();
+    expect((await signup(b)).status).toBe(201); // no confirmation click
+    const tenantId = (await User.findOne({ email: b.email })).tenantId.toString();
+    const refused = await approve(tenantId);
+    expect(refused.status).toBe(400);
+    expect(refused.body.code).toBe('EMAIL_NOT_CONFIRMED');
+    expect((await approve(tenantId, { confirmEmail: false })).status).toBe(400);
+    expect((await approve(tenantId, { confirmEmail: true })).status).toBe(200);
+    expect(await User.findOne({ email: b.email })).toMatchObject({ emailVerified: true });
+    expect((await request(app).post('/api/auth/login').send({ email: b.email, password: 'Password123!' })).status).toBe(200);
+  });
+});
+
 describe('approving a gym that chose a package', () => {
   it('lists the requested package for the approver', async () => {
     const pkg = await createPkg({ name: 'Studio', price: 1500 });
