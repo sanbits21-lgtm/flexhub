@@ -14,6 +14,14 @@ const emptyEditForm = {
   name: '', contactEmail: '', contactPhone: '', billingPlan: 'trial', billingStatus: 'active', maxBranches: 1, isActive: true,
 };
 
+// yyyy-mm-dd in the browser's own time zone, for a date input.
+const dayOf = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const when = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
 
 export default function Tenants() {
@@ -24,6 +32,10 @@ export default function Tenants() {
 
   const [packages, setPackages] = useState([]);
   const [heldPackage, setHeldPackage] = useState(''); // what the gym had when editing began
+  const [heldPlanEnd, setHeldPlanEnd] = useState('');
+  const [editError, setEditError] = useState('');
+  const [renewing, setRenewing] = useState(null); // { tenant, months, amount }
+  const [renewError, setRenewError] = useState('');
 
   const load = () => tenantsAPI.list().then((res) => setTenants(res.data));
   useEffect(() => { load(); packagesAPI.list().then((r) => setPackages(r.data)).catch(() => {}); }, []);
@@ -38,8 +50,11 @@ export default function Tenants() {
   const startEdit = (tenant) => {
     setEditingId(tenant._id);
     setHeldPackage(tenant.packageId || '');
+    setHeldPlanEnd(dayOf(tenant.planEndsAt));
+    setEditError('');
     setEditForm({
       packageId: tenant.packageId || '',
+      planEndsAt: dayOf(tenant.planEndsAt),
       name: tenant.name,
       contactEmail: tenant.contactEmail,
       contactPhone: tenant.contactPhone || '',
@@ -50,15 +65,39 @@ export default function Tenants() {
     });
   };
 
-  const cancelEdit = () => { setEditingId(null); setEditForm(emptyEditForm); };
+  const cancelEdit = () => { setEditingId(null); setEditForm(emptyEditForm); setEditError(''); };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     // Only a changed package is sent: it overrides the plan and limits typed beside it.
-    const { packageId, ...rest } = editForm;
-    await tenantsAPI.update(editingId, packageId && packageId !== heldPackage ? { ...rest, packageId } : rest);
-    cancelEdit();
-    load();
+    const { packageId, planEndsAt, ...rest } = editForm;
+    const payload = { ...rest };
+    if (packageId && packageId !== heldPackage) payload.packageId = packageId;
+    // Only a changed date is sent, so an unrelated edit does not move the end to midnight.
+    if (planEndsAt !== heldPlanEnd) payload.planEndsAt = planEndsAt ? new Date(`${planEndsAt}T23:59:59`).toISOString() : '';
+    try {
+      await tenantsAPI.update(editingId, payload);
+      cancelEdit();
+      load();
+    } catch (err) {
+      setEditError(err.response?.data?.message || 'Could not save the changes.');
+    }
+  };
+
+  const startRenew = (tenant) => {
+    const pkg = packages.find((p) => p._id === tenant.packageId);
+    setRenewError('');
+    setRenewing({ tenant, months: pkg?.billingMonths || 1, amount: pkg?.price ?? 0 });
+  };
+  const doRenew = async (e) => {
+    e.preventDefault();
+    try {
+      await tenantsAPI.renew(renewing.tenant._id, { months: Number(renewing.months), amount: Number(renewing.amount) });
+      setRenewing(null);
+      load();
+    } catch (err) {
+      setRenewError(err.response?.data?.message || 'Could not record the renewal.');
+    }
   };
 
   const extendTrial = async (tenant) => {
@@ -129,15 +168,35 @@ export default function Tenants() {
               <option value="cancelled">Cancelled</option>
             </select>
             <input placeholder="Max branches" type="number" min="1" value={editForm.maxBranches} onChange={(e) => setEditForm({ ...editForm, maxBranches: Number(e.target.value) })} className={inputClass} />
+            {editForm.billingPlan !== 'trial' && (
+              <label className="text-sm text-gray-600 dark:text-gray-400">Plan ends
+                <input type="date" value={editForm.planEndsAt || ''} onChange={(e) => setEditForm({ ...editForm, planEndsAt: e.target.value })} className={`${inputClass} block w-full`} />
+              </label>
+            )}
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })} />
               Active
             </label>
           </div>
+          {editError && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{editError}</div>}
           <div className="flex gap-2">
             <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
+        </form>
+      )}
+
+      {renewing && (
+        <form onSubmit={doRenew} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-3 border-2 border-gray-900 dark:border-gray-100">
+          <div className="font-semibold text-gray-900 dark:text-gray-100">{renewing.tenant.billingPlan === 'trial' ? 'Activate a paid plan for' : 'Renew'} {renewing.tenant.name}</div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Record a payment you have received. {renewing.tenant.billingPlan !== 'trial' && renewing.tenant.planEndsAt && new Date(renewing.tenant.planEndsAt) > new Date() ? `It is added after the current end (${when(renewing.tenant.planEndsAt)}).` : 'It runs from today.'}</p>
+          <div className="flex flex-wrap items-end gap-3 text-sm text-gray-700 dark:text-gray-200">
+            <label>Months<input type="number" min="1" max="60" required value={renewing.months} onChange={(e) => setRenewing({ ...renewing, months: e.target.value })} className={`${inputClass} block w-24`} /></label>
+            <label>Amount received (₹)<input type="number" min="0" required value={renewing.amount} onChange={(e) => setRenewing({ ...renewing, amount: e.target.value })} className={`${inputClass} block w-36`} /></label>
+            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold">Record and renew</button>
+            <button type="button" onClick={() => setRenewing(null)} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
+          </div>
+          {renewError && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{renewError}</div>}
         </form>
       )}
 
@@ -150,11 +209,13 @@ export default function Tenants() {
           { key: 'maxBranches', label: 'Max Branches' },
           {
             key: 'trialEndsAt',
-            label: 'Trial',
+            label: 'Ends',
             render: (row) => {
-              if (row.billingPlan !== 'trial' || !row.trialEndsAt) return row.billingPlan === 'trial' ? 'No end date' : '-';
-              const ended = new Date(row.trialEndsAt) <= new Date();
-              return <span className={ended ? 'text-red-600 dark:text-red-400' : ''}>{ended ? 'Ended ' : 'Ends '}{new Date(row.trialEndsAt).toLocaleDateString()}</span>;
+              const end = row.billingPlan === 'trial' ? row.trialEndsAt : row.planEndsAt;
+              if (!end) return 'No end date';
+              const left = Math.ceil((new Date(end) - Date.now()) / 86400000);
+              const cls = left <= 0 ? 'text-red-600 dark:text-red-400' : left <= 7 ? 'text-amber-600 dark:text-amber-400' : '';
+              return <span className={cls}>{left <= 0 ? 'Ended ' : 'Ends '}{when(end)}{row.billingPlan === 'trial' ? ' (trial)' : ''}</span>;
             },
           },
           { key: 'signupSource', label: 'Source', render: (row) => (row.signupSource === 'self' ? 'Self sign-up' : 'Platform') },
@@ -165,6 +226,7 @@ export default function Tenants() {
               <div className="flex gap-2">
                 <Link to={`/tenants/${row._id}/workspace`} className="text-blue-600 dark:text-blue-400 hover:underline">Workspace</Link>
                 {row.billingPlan === 'trial' && row.trialEndsAt && <button onClick={() => extendTrial(row)} className="text-blue-600 dark:text-blue-400 hover:underline">+7 days</button>}
+                <button onClick={() => startRenew(row)} className="text-blue-600 dark:text-blue-400 hover:underline">{row.billingPlan === 'trial' ? 'Activate plan' : 'Renew'}</button>
                 <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
                 <button
                   onClick={() => handleSuspend(row)}

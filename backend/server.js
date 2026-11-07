@@ -18,6 +18,7 @@ if (process.env.NODE_ENV === 'production') {
 
 connectDB().then(() => require('./utils/migrations').run()).then(() => require('./utils/bootstrapAdmin').bootstrapSuperAdmin()).then(() => {
   const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  require('./utils/expiryNotices').startExpiryScheduler();
 
   // Orchestrators stop containers with SIGTERM: finish in-flight requests (a payment being
   // recorded must not be cut off), close the DB, then exit. The timer is a backstop.

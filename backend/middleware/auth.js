@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Member = require('../models/Member');
 const Tenant = require('../models/Tenant');
-const { approvalBlock } = require('../utils/subscription');
+const { approvalBlock, expiryBlock } = require('../utils/subscription');
 
 // A token issued before the account's password was reset by someone else is dead. JWT `iat`
 // is whole seconds, so compare at second resolution (a token minted in the same second as
@@ -19,17 +19,15 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const gymStateBlock = async (req) => {
   const tenantId = req.actorType === 'member' ? req.member.tenantId : req.user.tenantId;
   if (!tenantId) return null; // platform staff
-  const tenant = await Tenant.findById(tenantId).select('isActive billingStatus billingPlan trialEndsAt approvalStatus');
+  const tenant = await Tenant.findById(tenantId).select('isActive billingStatus billingPlan trialEndsAt planEndsAt approvalStatus');
   if (!tenant) return null;
   const unapproved = approvalBlock(tenant);
   if (unapproved) return unapproved;
   if (!tenant.isActive || ['suspended', 'cancelled'].includes(tenant.billingStatus)) {
     return { status: 403, code: 'GYM_SUSPENDED', message: 'This gym account is suspended. Please contact support.' };
   }
-  const expired = tenant.billingPlan === 'trial' && tenant.trialEndsAt && tenant.trialEndsAt.getTime() <= Date.now();
-  if (expired && req.actorType === 'user' && !SAFE_METHODS.has(req.method) && !req.originalUrl.startsWith('/api/auth/')) {
-    return { status: 402, code: 'TRIAL_ENDED', message: 'Your free trial has ended. You can still view your data. Contact us to choose a plan and continue.' };
-  }
+  const expired = expiryBlock(tenant);
+  if (expired && req.actorType === 'user' && !SAFE_METHODS.has(req.method) && !req.originalUrl.startsWith('/api/auth/')) return expired;
   return null;
 };
 

@@ -31,6 +31,12 @@ const tenantSchema = new mongoose.Schema({
   // `maxMembers` unset = uncapped. Both are cleared when the gym moves to a paid plan.
   trialEndsAt: { type: Date },
   maxMembers: { type: Number },
+  // When a PAID plan runs out (trials use `trialEndsAt`). Unset = never expires. Set when a package
+  // is granted and pushed forward on each renewal (see tenantController.renew).
+  planEndsAt: { type: Date },
+  // Which "ending soon" email was last sent for which end date, so each stage goes out once and a
+  // renewal (new end date) starts the sequence again. See utils/expiryNotices.js.
+  expiryNotice: { _id: false, stage: Number, forEnd: Date, sentAt: Date },
   signupSource: { type: String, enum: ['platform', 'self'], default: 'platform' },
   // Self-registered gyms wait here until a platform administrator approves them. Everything
   // else (and every gym that existed before approvals) is 'approved'.

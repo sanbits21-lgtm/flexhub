@@ -50,6 +50,7 @@ export const tenantsAPI = {
   update: (id, data) => api.put(`/tenants/${id}`, data),
   suspend: (id) => api.patch(`/tenants/${id}/suspend`),
   approve: (id, data) => api.post(`/tenants/${id}/approve`, data || {}),
+  renew: (id, data) => api.post(`/tenants/${id}/renew`, data || {}),
   reject: (id, reason) => api.post(`/tenants/${id}/reject`, { reason }),
   createTenantAdmin: (id, data) => api.post(`/tenants/${id}/tenant-admins`, data),
   getFeatures: (id) => api.get(`/tenants/${id}/features`),

@@ -72,6 +72,28 @@ const schemas = {
     website: z.string().optional(),
   }).strict(),
 
+  // Platform staff editing a gym. Every field optional; anything given must be sane (a negative
+  // branch limit or an unknown plan used to be stored as typed). Blank/null clears a date or the member cap.
+  tenantUpdate: z.object({
+    name: z.string().trim().min(1, 'is required').max(100, 'is too long'),
+    contactEmail: z.string().trim().email('must be a valid email').max(120),
+    contactPhone: z.string().trim().max(20, 'is too long'),
+    billingPlan: z.enum(['trial', 'basic', 'pro', 'enterprise']),
+    billingStatus: z.enum(['active', 'past_due', 'suspended', 'cancelled']),
+    maxBranches: z.coerce.number().int('must be a whole number').min(1, 'must be at least 1').max(100, 'is too large'),
+    maxMembers: z.union([z.literal(''), z.null(), z.coerce.number().int('must be a whole number').min(0).max(100000, 'is too large')]),
+    isActive: z.boolean(),
+    slug: z.string().trim().max(40, 'is too long'),
+    trialEndsAt: optionalDate.refine((v) => !v || (!Number.isNaN(new Date(v).getTime()) && new Date(v) >= yearsAgo(1) && new Date(v) <= new Date(Date.now() + 10 * 366 * 86400000)), 'must be a real date within the next 10 years'),
+    planEndsAt: optionalDate.refine((v) => !v || (!Number.isNaN(new Date(v).getTime()) && new Date(v) >= yearsAgo(1) && new Date(v) <= new Date(Date.now() + 10 * 366 * 86400000)), 'must be a real date within the next 10 years'),
+    packageId: z.union([z.literal(''), objectId]),
+  }).partial(),
+
+  tenantRenew: z.object({
+    months: z.coerce.number().int('must be a whole number').min(1).max(60),
+    amount: money,
+  }).partial(),
+
   // A subscription package (super-admin). `maxMembers: null` means unlimited.
   packageSave: z.object({
     name: z.string().trim().min(2, 'must be at least 2 characters').max(40, 'is too long'),

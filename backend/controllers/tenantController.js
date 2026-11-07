@@ -8,6 +8,9 @@ const { cleanSlug, changeSlug, isSlugFree } = require('../utils/subdomain');
 const { getSettings, whole } = require('../utils/platformSettings');
 const { templated } = require('../utils/mailer');
 const { gymLoginUrl } = require('../utils/links');
+const { addMonths } = require('../utils/subscription');
+const { ownerEmails, fmt } = require('../utils/expiryNotices');
+const TenantSubscriptionInvoice = require('../models/TenantSubscriptionInvoice');
 
 // Unlike every other collection (which has its own `tenantId` field pointing back to a
 // Tenant), a Tenant document's own identity IS the tenant id — its key is `_id`, not
@@ -88,7 +91,7 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { name, contactEmail, contactPhone, billingPlan, billingStatus, maxBranches, isActive, slug, trialEndsAt, maxMembers } = req.body;
+  const { name, contactEmail, contactPhone, billingPlan, billingStatus, maxBranches, isActive, slug, trialEndsAt, maxMembers, planEndsAt } = req.body;
   const changes = { name, contactEmail, contactPhone, billingPlan, billingStatus, maxBranches, isActive };
   // Moving to a paid plan ends the trial and lifts its member cap, unless told otherwise.
   if (billingPlan && billingPlan !== 'trial') {
@@ -97,6 +100,7 @@ exports.update = async (req, res) => {
   }
   if (trialEndsAt !== undefined) changes.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
   if (maxMembers !== undefined) changes.maxMembers = maxMembers ? Number(maxMembers) : null;
+  if (planEndsAt !== undefined) changes.planEndsAt = planEndsAt ? new Date(planEndsAt) : null;
   // Moving a gym onto a package gives it that package's limits and makes it live now (no new
   // trial), whatever plan or limits were typed alongside.
   if (req.body.packageId) {
@@ -105,6 +109,7 @@ exports.update = async (req, res) => {
     Object.assign(changes, {
       packageId: pkg._id, packageName: pkg.name, billingPlan: 'basic',
       maxBranches: pkg.maxBranches, maxMembers: pkg.maxMembers ?? null, trialEndsAt: null,
+      planEndsAt: addMonths(new Date(), pkg.billingMonths || 1),
     });
   }
   const tenant = await Tenant.findOneAndUpdate(tenantByIdFilter(req), changes, { new: true });
@@ -161,6 +166,9 @@ exports.approve = async (req, res) => {
   // Billing itself happens outside the app: a package with no trial is simply live from now.
   tenant.billingPlan = days > 0 ? 'trial' : 'basic';
   tenant.trialEndsAt = days > 0 ? new Date(Date.now() + days * 86400000) : undefined;
+  // A package with no trial is a paid period from today; a trial has no plan end yet.
+  tenant.planEndsAt = days === 0 && pkg ? addMonths(new Date(), pkg.billingMonths || 1) : undefined;
+  tenant.expiryNotice = undefined;
   await tenant.save();
   if (owner) {
     const limit = tenant.maxMembers ? `up to ${tenant.maxMembers} members` : 'unlimited members';
@@ -176,6 +184,47 @@ exports.approve = async (req, res) => {
   }
   logAudit(req, 'APPROVE_TENANT', { type: 'Tenant', id: tenant._id, metadata: { trialDays: days, maxMembers: tenant.maxMembers, maxBranches: tenant.maxBranches, package: pkg?.name, emailConfirmedByApprover: vouched } });
   res.json(tenant);
+};
+
+// Records a payment received outside the app and pushes the plan end forward. Works from today
+// when the plan has already run out (a late payer does not get the gap for free) and from the
+// current end otherwise (paying early loses nothing). On a trial it turns the gym into a paid one.
+exports.renew = async (req, res) => {
+  const tenant = await Tenant.findOne(tenantByIdFilter(req));
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  if (tenant.approvalStatus !== 'approved') return res.status(409).json({ message: 'Approve this gym before renewing it.' });
+  const pkg = tenant.packageId ? await SubscriptionPackage.findById(tenant.packageId) : null;
+  const body = req.body || {};
+  const months = whole(body.months ?? pkg?.billingMonths ?? 1, 'Months', 1, 60);
+  const amount = Number(body.amount ?? pkg?.price ?? 0);
+  if (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000) return res.status(400).json({ message: 'Amount must be between 0 and 1,00,00,000.' });
+
+  const now = new Date();
+  const wasTrial = tenant.billingPlan === 'trial';
+  const from = !wasTrial && tenant.planEndsAt && tenant.planEndsAt > now ? tenant.planEndsAt : now;
+  const end = addMonths(from, months);
+  tenant.planEndsAt = end;
+  tenant.expiryNotice = undefined;
+  if (wasTrial) {
+    tenant.billingPlan = 'basic';
+    tenant.trialEndsAt = undefined;
+    if (!tenant.packageId) tenant.maxMembers = undefined; // same rule as moving to a paid plan by hand
+  }
+  if (tenant.billingStatus === 'past_due') tenant.billingStatus = 'active';
+  await tenant.save();
+  const invoice = await TenantSubscriptionInvoice.create({
+    tenantId: tenant._id, billingPlan: tenant.packageName || tenant.billingPlan, periodStart: from, periodEnd: end, amount, status: 'paid',
+  });
+
+  const to = await ownerEmails(tenant);
+  await Promise.all(to.map((email) => templated({
+    to: email,
+    subject: `${tenant.name} is renewed until ${fmt(end)}`,
+    heading: 'Thank you, you are renewed',
+    body: `${tenant.name}${tenant.packageName ? ` (${tenant.packageName})` : ''} is active until ${fmt(end)}.`,
+  })));
+  logAudit(req, 'RENEW_TENANT', { type: 'Tenant', id: tenant._id, metadata: { months, amount, until: end } });
+  res.json({ tenant, invoice });
 };
 
 exports.reject = async (req, res) => {

@@ -17,7 +17,7 @@ const featuresForUser = async (user) => {
 // The gym's own look, so the website can theme itself even when reached on the main address.
 const subscriptionForUser = async (user) => {
   if (!user.tenantId) return undefined;
-  const tenant = await Tenant.findById(user.tenantId).select('billingPlan trialEndsAt maxMembers maxBranches');
+  const tenant = await Tenant.findById(user.tenantId).select('billingPlan trialEndsAt planEndsAt packageName maxMembers maxBranches');
   return tenant ? subscriptionOf(tenant) : undefined;
 };
 
