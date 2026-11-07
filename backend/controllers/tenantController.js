@@ -1,4 +1,5 @@
 const Tenant = require('../models/Tenant');
+const SubscriptionPackage = require('../models/SubscriptionPackage');
 const User = require('../models/User');
 const { logAudit } = require('../utils/audit');
 const { FEATURE_REGISTRY } = require('../config/featureRegistry');
@@ -30,7 +31,8 @@ const tenantByIdFilter = (req) => {
 };
 
 exports.list = async (req, res) => {
-  const tenants = await Tenant.find(scopeToTenantFilter(req.scope)).sort({ createdAt: -1 });
+  const tenants = await Tenant.find(scopeToTenantFilter(req.scope)).sort({ createdAt: -1 })
+    .populate('requestedPackageId', 'name price billingCycle trialDays maxBranches maxMembers');
   // For gyms awaiting approval, say whether the owner has confirmed their email yet.
   const pendingIds = tenants.filter((t) => t.approvalStatus === 'pending').map((t) => t._id);
   const owners = pendingIds.length
@@ -118,27 +120,42 @@ exports.approve = async (req, res) => {
   }
   const s = await getSettings();
   const body = req.body || {};
-  const days = whole(body.trialDays ?? s.trialDays, 'Trial length', 1, 365);
-  tenant.maxMembers = whole(body.maxMembers ?? s.trialMaxMembers, 'Member limit', 1, 100000);
-  tenant.maxBranches = whole(body.maxBranches ?? s.trialMaxBranches, 'Branch limit', 1, 100);
+  // The package the gym asked for, unless the approver picks another. Its terms are the
+  // defaults; anything the approver types for this one gym wins over them.
+  const wantedId = body.packageId || tenant.requestedPackageId;
+  const pkg = wantedId ? await SubscriptionPackage.findById(wantedId) : null;
+  if (body.packageId && !pkg) return res.status(400).json({ message: 'That package does not exist.' });
+  const terms = pkg
+    ? { days: pkg.trialDays, maxMembers: pkg.maxMembers ?? null, maxBranches: pkg.maxBranches }
+    : { days: s.trialDays, maxMembers: s.trialMaxMembers, maxBranches: s.trialMaxBranches };
+  // 0 trial days (packages only) means live from approval; null members means unlimited.
+  const days = whole(body.trialDays ?? terms.days, 'Trial length', pkg ? 0 : 1, 365);
+  const members = body.maxMembers === undefined ? terms.maxMembers : body.maxMembers === null ? null : whole(body.maxMembers, 'Member limit', 1, 100000);
+  tenant.maxMembers = members ?? undefined;
+  tenant.maxBranches = whole(body.maxBranches ?? terms.maxBranches, 'Branch limit', 1, 100);
   tenant.approvalStatus = 'approved';
   tenant.approvedAt = new Date();
   tenant.approvedBy = req.user._id;
   tenant.rejectionReason = undefined;
-  tenant.billingPlan = 'trial';
-  tenant.trialEndsAt = new Date(Date.now() + days * 86400000);
+  tenant.packageId = pkg ? pkg._id : undefined;
+  tenant.packageName = pkg ? pkg.name : undefined;
+  // Billing itself happens outside the app: a package with no trial is simply live from now.
+  tenant.billingPlan = days > 0 ? 'trial' : 'basic';
+  tenant.trialEndsAt = days > 0 ? new Date(Date.now() + days * 86400000) : undefined;
   await tenant.save();
   if (owner) {
+    const limit = tenant.maxMembers ? `up to ${tenant.maxMembers} members` : 'unlimited members';
+    const what = days > 0 ? `Your ${days}-day free trial` : `Your ${pkg?.name || 'plan'} package`;
     templated({
       to: owner.email,
       subject: `${tenant.name} is approved on FlexHub`,
       heading: 'You are in!',
-      body: `${tenant.name} has been approved. Your ${days}-day free trial starts now (up to ${tenant.maxMembers} members). Sign in with the email and password you registered with.`,
+      body: `${tenant.name} has been approved. ${what} starts now (${limit}). Sign in with the email and password you registered with.`,
       buttonText: 'Sign in',
       buttonUrl: gymLoginUrl(tenant, req),
     });
   }
-  logAudit(req, 'APPROVE_TENANT', { type: 'Tenant', id: tenant._id, metadata: { trialDays: days, maxMembers: tenant.maxMembers, maxBranches: tenant.maxBranches } });
+  logAudit(req, 'APPROVE_TENANT', { type: 'Tenant', id: tenant._id, metadata: { trialDays: days, maxMembers: tenant.maxMembers, maxBranches: tenant.maxBranches, package: pkg?.name } });
   res.json(tenant);
 };
 

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const Tenant = require('../models/Tenant');
+const SubscriptionPackage = require('../models/SubscriptionPackage');
 const User = require('../models/User');
 const Branch = require('../models/Branch');
 const AuditLog = require('../models/AuditLog');
@@ -7,6 +8,7 @@ const { cleanSlug, isSlugFree, RESERVED } = require('../utils/subdomain');
 const { getSettings } = require('../utils/platformSettings');
 const { templated, configured: mailConfigured } = require('../utils/mailer');
 const { publicOrigin } = require('../utils/links');
+const { activePackages } = require('./packageController');
 
 const VERIFY_HOURS = 24;
 const RESEND_GAP_MS = 60 * 1000;
@@ -41,11 +43,12 @@ const sendVerification = (req, user, token, gymName) => templated({
 // Staff who can act on a registration are told when one is ready (email confirmed).
 const notifyPlatformStaff = async (req, tenant, owner) => {
   const staff = await User.find({ role: { $in: ['super-admin', 'platform-admin'] }, isActive: true }).select('email').lean();
+  const pkg = tenant.requestedPackageId ? await SubscriptionPackage.findById(tenant.requestedPackageId).select('name').lean() : null;
   await Promise.all(staff.map((s) => templated({
     to: s.email,
     subject: `New gym awaiting approval: ${tenant.name}`,
     heading: 'A new gym is waiting for approval',
-    body: `${tenant.name} (owner: ${owner.name}, ${owner.email}, ${tenant.contactPhone || 'no phone'}) has confirmed their email. Review it under Tenants > Pending approval.`,
+    body: `${tenant.name} (owner: ${owner.name}, ${owner.email}, ${tenant.contactPhone || 'no phone'}) has confirmed their email${pkg ? ` and chose the ${pkg.name} package` : ''}. Review it under Tenants > Pending approval.`,
     buttonText: 'Open Tenants',
     buttonUrl: `${publicOrigin(req)}/tenants`,
   })));
@@ -57,7 +60,10 @@ exports.config = async (req, res) => {
   const s = await getSettings();
   const deliverable = mailConfigured() || process.env.NODE_ENV !== 'production';
   const enabled = s.selfSignupEnabled && deliverable && !req.hostTenant && !req.unknownHost;
-  res.json({ enabled, trialDays: s.trialDays, maxMembers: s.trialMaxMembers, maxBranches: s.trialMaxBranches });
+  // With packages on offer the page shows them and each package carries its own terms;
+  // the platform-wide trial numbers are only the fallback when none are set up.
+  const packages = enabled ? await activePackages() : [];
+  res.json({ enabled, trialDays: s.trialDays, maxMembers: s.trialMaxMembers, maxBranches: s.trialMaxBranches, packages });
 };
 
 /**
@@ -73,8 +79,16 @@ exports.signup = async (req, res) => {
   if (!mailConfigured() && process.env.NODE_ENV === 'production') {
     return res.status(503).json({ message: 'Sign-up is temporarily unavailable.' });
   }
-  const { gymName, ownerName, email, phone, password, slug: requestedSlug, website } = req.body;
+  const { gymName, ownerName, email, phone, password, slug: requestedSlug, website, packageId } = req.body;
   if (website) return res.status(400).json({ message: 'Could not create your account.' }); // honeypot
+
+  // Once any package is on offer, choosing one is part of registering; it must be one still offered.
+  const offered = await activePackages();
+  const chosen = packageId ? offered.find((p) => String(p._id) === String(packageId)) : undefined;
+  if (offered.length && !chosen) {
+    return res.status(400).json({ message: packageId ? 'That package is no longer available. Please choose another.' : 'Please choose a package.', code: 'PACKAGE_REQUIRED' });
+  }
+  if (!offered.length && packageId) return res.status(400).json({ message: 'That package is no longer available.', code: 'PACKAGE_REQUIRED' });
 
   const cleanEmail = email.toLowerCase();
   const existing = await User.findOne({ email: cleanEmail }).select('emailVerified');
@@ -101,7 +115,9 @@ exports.signup = async (req, res) => {
     const tenant = await Tenant.create({
       name: gymName, slug, contactEmail: cleanEmail, contactPhone: phone,
       billingPlan: 'trial', billingStatus: 'active',
-      maxBranches: settings.trialMaxBranches, maxMembers: settings.trialMaxMembers,
+      maxBranches: chosen ? chosen.maxBranches : settings.trialMaxBranches,
+      maxMembers: chosen ? chosen.maxMembers : settings.trialMaxMembers,
+      requestedPackageId: chosen ? chosen._id : undefined,
       approvalStatus: 'pending', signupSource: 'self',
     });
     created.push(tenant);

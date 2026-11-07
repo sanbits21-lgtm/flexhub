@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import ThemeToggle from '../components/ThemeToggle';
+import { limitsLabel, priceLabel, trialLabel } from '../utils/packages';
 
 const inputClass = 'w-full border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100';
 const labelClass = 'block text-sm text-gray-600 dark:text-gray-300 mb-1';
@@ -15,14 +16,25 @@ export default function Signup() {
   const [resent, setResent] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  useEffect(() => { authAPI.signupConfig().then((r) => setConfig(r.data)).catch(() => setConfig({ enabled: false })); }, []);
+  const [packageId, setPackageId] = useState('');
+
+  useEffect(() => {
+    authAPI.signupConfig().then((r) => {
+      setConfig(r.data);
+      const offered = r.data.packages || [];
+      setPackageId((offered.find((p) => p.isFeatured) || offered[0])?._id || '');
+    }).catch(() => setConfig({ enabled: false }));
+  }, []);
+
+  const packages = config?.packages || [];
+  const chosen = packages.find((p) => p._id === packageId);
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      const res = await authAPI.signup(form);
+      const res = await authAPI.signup(packages.length ? { ...form, packageId } : form);
       setSentTo(res.data.email);
     } catch (err) {
       const d = err.response?.data;
@@ -50,7 +62,7 @@ export default function Signup() {
       <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-md space-y-4">
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Check your email</h1>
         <p className="text-gray-700 dark:text-gray-200">We sent a confirmation link to <strong>{sentTo}</strong>. Click it to confirm your address.</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">After that, our team reviews every new gym. We'll email you as soon as yours is approved, and your {config?.trialDays}-day free trial starts then, not before.</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">After that, our team reviews every new gym. We'll email you as soon as yours is approved, and {chosen ? (chosen.trialDays > 0 ? `your ${chosen.trialDays}-day free trial` : `your ${chosen.name} package`) : `your ${config?.trialDays}-day free trial`} starts then, not before.</p>
         <button type="button" onClick={resend} className="text-sm underline text-gray-700 dark:text-accent">Didn't get it? Send it again</button>
         {resent && <p role="status" className="text-sm text-green-700 dark:text-green-400">If that address is waiting for confirmation, a new link is on its way.</p>}
         <div><Link to="/login" className="text-sm underline text-gray-700 dark:text-gray-300">Back to log in</Link></div>
@@ -69,11 +81,36 @@ export default function Signup() {
   }
 
   return shell(
-    <form onSubmit={submit} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-md space-y-4">
+    <form onSubmit={submit} className={`bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full space-y-4 ${packages.length ? 'max-w-3xl' : 'max-w-md'}`}>
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Start your free trial</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{config.trialDays} days free, up to {config.maxMembers} members. No card needed. New gyms are approved by our team after you confirm your email.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{packages.length ? 'Register your gym' : 'Start your free trial'}</h1>
+        {packages.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{config.trialDays} days free, up to {config.maxMembers} members. No card needed. </p>}
+        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">New gyms are approved by our team after you confirm your email, and nothing is charged by registering.</p>
       </div>
+      {packages.length > 0 && (
+        <fieldset>
+          <legend className={labelClass}>Choose a package</legend>
+          <div role="radiogroup" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {packages.map((p) => {
+              const on = p._id === packageId;
+              return (
+                <label key={p._id} className={`relative cursor-pointer rounded-2xl border p-4 space-y-1 ${on ? 'border-accent ring-2 ring-accent bg-accent/5' : 'border-gray-300 dark:border-gray-600'}`}>
+                  <input type="radio" name="package" value={p._id} checked={on} onChange={() => setPackageId(p._id)} className="sr-only" />
+                  {p.isFeatured && <span className="absolute -top-2 right-3 text-xs font-semibold rounded-full px-2 py-0.5 bg-accent text-accent-ink">Most popular</span>}
+                  <div className="font-bold text-gray-900 dark:text-gray-100">{p.name}</div>
+                  <div className="text-xl font-extrabold text-gray-900 dark:text-gray-100">{priceLabel(p)}</div>
+                  {p.description && <div className="text-sm text-gray-600 dark:text-gray-300">{p.description}</div>}
+                  <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{trialLabel(p)}</div>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc pl-5">
+                    <li>{limitsLabel(p)}</li>
+                    {p.highlights.map((h) => <li key={h}>{h}</li>)}
+                  </ul>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
       {error && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</div>}
       <div><label htmlFor="s-gym" className={labelClass}>Gym name</label><input id="s-gym" required minLength={2} maxLength={60} value={form.gymName} onChange={set('gymName')} className={inputClass} /></div>
       <div><label htmlFor="s-owner" className={labelClass}>Your name</label><input id="s-owner" required autoComplete="name" value={form.ownerName} onChange={set('ownerName')} className={inputClass} /></div>
@@ -86,7 +123,7 @@ export default function Signup() {
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px' }}>
         <label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={set('website')} /></label>
       </div>
-      <button type="submit" disabled={busy} className="w-full bg-gray-900 text-white rounded-xl py-2.5 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">{busy ? 'Registering...' : 'Register my gym'}</button>
+      <button type="submit" disabled={busy} className="w-full bg-gray-900 text-white rounded-xl py-2.5 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">{busy ? 'Registering...' : chosen ? `Register with ${chosen.name}` : 'Register my gym'}</button>
       <p className="text-sm text-center text-gray-600 dark:text-gray-300">Already registered? <Link to="/login" className="font-semibold underline dark:text-accent">Log in</Link></p>
     </form>,
   );

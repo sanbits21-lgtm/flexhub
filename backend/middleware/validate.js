@@ -68,8 +68,24 @@ const schemas = {
     phone,
     password: z.string().min(8, 'must be at least 8 characters').max(72, 'must be 72 characters or fewer'),
     slug: z.string().trim().max(40).optional(),
+    packageId: objectId.optional(),
     website: z.string().optional(),
   }).strict(),
+
+  // A subscription package (super-admin). `maxMembers: null` means unlimited.
+  packageSave: z.object({
+    name: z.string().trim().min(2, 'must be at least 2 characters').max(40, 'is too long'),
+    description: z.string().trim().max(200, 'is too long'),
+    price: money,
+    billingCycle: z.enum(['monthly', 'quarterly', 'yearly']),
+    trialDays: z.coerce.number().int('must be a whole number').min(0).max(365),
+    maxBranches: z.coerce.number().int('must be a whole number').min(1).max(100),
+    maxMembers: z.coerce.number().int('must be a whole number').min(1).max(100000).nullable(),
+    highlights: z.array(z.string().trim().min(1).max(80, 'is too long')).max(10, 'can have at most 10 lines'),
+    isFeatured: z.boolean(),
+    isActive: z.boolean(),
+    sortOrder: z.coerce.number().int().min(0).max(1000),
+  }).partial().strict(),
 
   login: z.object({
     email: z.string().email('must be a valid email'),

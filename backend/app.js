@@ -107,6 +107,7 @@ app.use('/api/member-auth', memberAuthRoutes);
 app.use('/api/platform-admins', platformAdminRoutes);
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/platform-settings', require('./routes/platformSettings'));
+app.use('/api/packages', require('./routes/packages'));
 app.use('/api/branches', branchRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/members', memberRoutes);

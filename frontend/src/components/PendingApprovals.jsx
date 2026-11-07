@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { platformSettingsAPI, tenantsAPI } from '../services/api';
+import { packagesAPI, platformSettingsAPI, tenantsAPI } from '../services/api';
+import { priceLabel } from '../utils/packages';
 
 const inputClass = 'border rounded-lg px-2 py-1.5 w-24 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100';
 
@@ -11,21 +12,38 @@ export default function PendingApprovals({ tenants, onChanged }) {
   const pending = tenants.filter((t) => t.approvalStatus === 'pending');
   const rejected = tenants.filter((t) => t.approvalStatus === 'rejected');
 
-  useEffect(() => { platformSettingsAPI.get().then((r) => setDefaults(r.data)).catch(() => {}); }, []);
+  const [packages, setPackages] = useState([]);
+
+  useEffect(() => {
+    platformSettingsAPI.get().then((r) => setDefaults(r.data)).catch(() => {});
+    packagesAPI.list().then((r) => setPackages(r.data)).catch(() => {});
+  }, []);
   if (pending.length === 0 && rejected.length === 0) return null;
 
   const val = (id, key, fallback) => terms[id]?.[key] ?? fallback;
   const setTerm = (id, key, v) => setTerms({ ...terms, [id]: { ...terms[id], [key]: v } });
+  // The package being granted: the approver's pick, else what the gym asked for. Its terms
+  // pre-fill the boxes; typing in a box changes it for this gym only.
+  const pkgOf = (t) => packages.find((p) => p._id === val(t._id, 'packageId', t.requestedPackageId?._id));
+  const termDefault = (t, key, platformKey, pkgKey) => {
+    const p = pkgOf(t);
+    if (p) return p[pkgKey] ?? '';
+    return defaults?.[platformKey] ?? '';
+  };
 
   const act = async (fn) => {
     setError('');
     try { await fn(); onChanged(); } catch (e) { setError(e.response?.data?.message || 'That did not work.'); }
   };
-  const approve = (t) => act(() => tenantsAPI.approve(t._id, {
-    trialDays: Number(val(t._id, 'trialDays', defaults?.trialDays)),
-    maxMembers: Number(val(t._id, 'maxMembers', defaults?.trialMaxMembers)),
-    maxBranches: Number(val(t._id, 'maxBranches', defaults?.trialMaxBranches)),
-  }));
+  const approve = (t) => {
+    const members = val(t._id, 'maxMembers', termDefault(t, 'maxMembers', 'trialMaxMembers', 'maxMembers'));
+    return act(() => tenantsAPI.approve(t._id, {
+      ...(pkgOf(t) ? { packageId: pkgOf(t)._id } : {}),
+      trialDays: Number(val(t._id, 'trialDays', termDefault(t, 'trialDays', 'trialDays', 'trialDays'))),
+      maxMembers: members === '' ? null : Number(members), // blank = unlimited
+      maxBranches: Number(val(t._id, 'maxBranches', termDefault(t, 'maxBranches', 'trialMaxBranches', 'maxBranches'))),
+    }));
+  };
   const reject = (t) => {
     const reason = window.prompt(`Reject "${t.name}"? Optionally tell them why (they will see this):`, '');
     if (reason === null) return;
@@ -49,10 +67,23 @@ export default function PendingApprovals({ tenants, onChanged }) {
               {t.owner?.emailVerified ? 'Email confirmed' : 'Email not confirmed yet'}
             </span>
           </div>
+          {t.requestedPackageId && (
+            <div className="text-sm text-gray-700 dark:text-gray-200">
+              Chose <strong>{t.requestedPackageId.name}</strong> · {priceLabel(t.requestedPackageId)}
+            </div>
+          )}
           <div className="flex flex-wrap items-end gap-3 text-sm text-gray-700 dark:text-gray-200">
-            <label>Trial days<input type="number" min="1" max="365" value={val(t._id, 'trialDays', defaults?.trialDays ?? '')} onChange={(e) => setTerm(t._id, 'trialDays', e.target.value)} className={`${inputClass} block`} /></label>
-            <label>Members<input type="number" min="1" value={val(t._id, 'maxMembers', defaults?.trialMaxMembers ?? '')} onChange={(e) => setTerm(t._id, 'maxMembers', e.target.value)} className={`${inputClass} block`} /></label>
-            <label>Branches<input type="number" min="1" value={val(t._id, 'maxBranches', defaults?.trialMaxBranches ?? '')} onChange={(e) => setTerm(t._id, 'maxBranches', e.target.value)} className={`${inputClass} block`} /></label>
+            {packages.length > 0 && (
+              <label>Package
+                <select value={pkgOf(t)?._id ?? ''} onChange={(e) => setTerms({ ...terms, [t._id]: { packageId: e.target.value } })} className={`${inputClass} block w-40`}>
+                  {!t.requestedPackageId && <option value="">None (free trial)</option>}
+                  {packages.map((p) => <option key={p._id} value={p._id}>{p.name}{p.isActive ? '' : ' (hidden)'}</option>)}
+                </select>
+              </label>
+            )}
+            <label>Trial days<input type="number" min={pkgOf(t) ? 0 : 1} max="365" value={val(t._id, 'trialDays', termDefault(t, 'trialDays', 'trialDays', 'trialDays'))} onChange={(e) => setTerm(t._id, 'trialDays', e.target.value)} className={`${inputClass} block`} /></label>
+            <label>Members<input type="number" min="1" placeholder="Unlimited" value={val(t._id, 'maxMembers', termDefault(t, 'maxMembers', 'trialMaxMembers', 'maxMembers'))} onChange={(e) => setTerm(t._id, 'maxMembers', e.target.value)} className={`${inputClass} block`} /></label>
+            <label>Branches<input type="number" min="1" value={val(t._id, 'maxBranches', termDefault(t, 'maxBranches', 'trialMaxBranches', 'maxBranches'))} onChange={(e) => setTerm(t._id, 'maxBranches', e.target.value)} className={`${inputClass} block`} /></label>
             <button type="button" disabled={!t.owner?.emailVerified} onClick={() => approve(t)} title={t.owner?.emailVerified ? '' : 'Waiting for the owner to confirm their email'} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">Approve</button>
             <button type="button" onClick={() => reject(t)} className="border rounded px-4 py-2 text-red-700 dark:text-red-400 dark:border-gray-600">Reject</button>
           </div>

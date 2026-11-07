@@ -35,6 +35,11 @@ const tenantSchema = new mongoose.Schema({
   // Self-registered gyms wait here until a platform administrator approves them. Everything
   // else (and every gym that existed before approvals) is 'approved'.
   approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
+  // The package picked on the registration page, and the one actually granted at approval
+  // (name kept as a snapshot so renaming or deleting a package never rewrites history).
+  requestedPackageId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPackage' },
+  packageId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPackage' },
+  packageName: { type: String, trim: true },
   approvedAt: { type: Date },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   rejectionReason: { type: String, trim: true, maxlength: 200 },

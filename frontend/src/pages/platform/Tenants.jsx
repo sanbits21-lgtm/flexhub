@@ -131,7 +131,7 @@ export default function Tenants() {
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'slug', label: 'Slug' },
-          { key: 'billingPlan', label: 'Plan' },
+          { key: 'billingPlan', label: 'Plan', render: (row) => (row.packageName ? `${row.packageName} (${row.billingPlan})` : row.billingPlan) },
           { key: 'billingStatus', label: 'Status' },
           { key: 'maxBranches', label: 'Max Branches' },
           {

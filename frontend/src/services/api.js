@@ -138,6 +138,13 @@ export const reportsAPI = {
   summary: (branchId) => api.get('/reports/summary', { params: branchId ? { branchId } : {} }),
 };
 
+export const packagesAPI = {
+  list: () => api.get('/packages'),
+  create: (data) => api.post('/packages', data),
+  update: (id, data) => api.put(`/packages/${id}`, data),
+  remove: (id) => api.delete(`/packages/${id}`),
+};
+
 export const platformSettingsAPI = {
   get: () => api.get('/platform-settings'),
   update: (data) => api.put('/platform-settings', data),
