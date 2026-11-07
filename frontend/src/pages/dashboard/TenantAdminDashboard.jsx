@@ -39,22 +39,16 @@ export default function TenantAdminDashboard({ data, reload }) {
     </div>
   );
 
-  const kpis = (
-    <>
-      <StatCard compact label="Active members" value={view.activeMembers} />
-      <StatCard compact label="Revenue this month" value={`₹${view.revenueThisMonth}`} />
-      {branchRow ? (
-        <>
-          <StatCard compact label="Equipment" value={branchRow.equipmentCount} />
-          <StatCard compact label="Trainers" value={branchRow.trainerCount} />
-        </>
-      ) : (
-        <StatCard compact label="Branches" value={data.branchCount ?? 0} />
-      )}
-      <StatCard compact label="Expiring soon" value={view.expiringSoonCount ?? 0} />
-      <StatCard compact label="Expired" value={view.expiredCount ?? 0} />
-    </>
-  );
+  const stat = (id, label, value) => ({ id, title: label, node: <StatCard compact label={label} value={value} /> });
+  const kpis = [
+    stat('active', 'Active members', view.activeMembers),
+    stat('revenue', 'Revenue this month', `₹${view.revenueThisMonth}`),
+    ...(branchRow
+      ? [stat('equipment', 'Equipment', branchRow.equipmentCount), stat('trainers', 'Trainers', branchRow.trainerCount)]
+      : [stat('branches', 'Branches', data.branchCount ?? 0)]),
+    stat('expiring', 'Expiring soon', view.expiringSoonCount ?? 0),
+    stat('expired', 'Expired', view.expiredCount ?? 0),
+  ];
 
   const { expiringNode, expiredNode, modal } = useExpiryTiles({
     expiring: view.expiringSoonMembers || [],
@@ -64,10 +58,10 @@ export default function TenantAdminDashboard({ data, reload }) {
   });
 
   const tiles = [
-    { id: 'members-chart', span: 'lg:col-span-3', node: <BarChartCard fill title="Members joining, monthly" data={view.membersByMonth || []} dataKey="count" colorKey="blue" /> },
-    { id: 'collections-chart', span: 'lg:col-span-3', node: <BarChartCard fill title="Collections, monthly" data={view.collectionsByMonth || []} dataKey="amount" colorKey="aqua" valueFormatter={(v) => `₹${v}`} /> },
-    { id: 'checkins-chart', span: 'lg:col-span-3', node: <BarChartCard fill title="Check-ins, last 7 days" data={checkins} dataKey="count" xKey="day" colorKey="violet" /> },
-    { id: 'branches', span: 'lg:col-span-3', node: (
+    { id: 'members-chart', title: 'Members joining, monthly', span: 'lg:col-span-3', node: <BarChartCard fill title="Members joining, monthly" data={view.membersByMonth || []} dataKey="count" colorKey="blue" /> },
+    { id: 'collections-chart', title: 'Collections, monthly', span: 'lg:col-span-3', node: <BarChartCard fill title="Collections, monthly" data={view.collectionsByMonth || []} dataKey="amount" colorKey="aqua" valueFormatter={(v) => `₹${v}`} /> },
+    { id: 'checkins-chart', title: 'Check-ins, last 7 days', span: 'lg:col-span-3', node: <BarChartCard fill title="Check-ins, last 7 days" data={checkins} dataKey="count" xKey="day" colorKey="violet" /> },
+    { id: 'branches', title: 'Branches', span: 'lg:col-span-3', node: (
       <Widget title="Branches">
         <DataTable
           tableId="dash.ta.branches"
@@ -85,13 +79,13 @@ export default function TenantAdminDashboard({ data, reload }) {
         />
       </Widget>
     ) },
-    { id: 'collections', span: 'lg:col-span-4', node: (
+    { id: 'collections', title: 'Collections', span: 'lg:col-span-4', node: (
       <Widget title={`Collections ${branchId ? '' : '(all branches)'}`}>
         <DataTable tableId="dash.ta.collections" embedded rows={payments} columns={paymentColumns} />
       </Widget>
     ) },
-    { id: 'expiring', span: 'lg:col-span-4', node: expiringNode },
-    { id: 'expired', span: 'lg:col-span-4', node: expiredNode },
+    { id: 'expiring', title: 'Expiring soon', span: 'lg:col-span-4', node: expiringNode },
+    { id: 'expired', title: 'Expired', span: 'lg:col-span-4', node: expiredNode },
   ];
 
   return (

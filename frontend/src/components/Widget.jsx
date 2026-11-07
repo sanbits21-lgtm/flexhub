@@ -22,6 +22,17 @@ export default function Widget({ title, action = null, className = '', bodyClass
         <div className="flex items-center gap-2">
           {action}
           <div ref={setSlot} />
+          {tile?.remove && (
+            <button
+              type="button"
+              onClick={tile.remove}
+              aria-label={`Remove ${typeof title === 'string' ? title : 'widget'} from the dashboard`}
+              title="Remove from dashboard (add it back from Widgets)"
+              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
           {tile && (
             <button
               type="button"

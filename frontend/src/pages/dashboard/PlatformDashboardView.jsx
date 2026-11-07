@@ -14,16 +14,15 @@ export default function PlatformDashboardView({ data }) {
     orEmpty(auditLogsAPI.list({ page: 1, limit: 50 }), { logs: [] }).then((r) => setLogs(r.data.logs));
   }, []);
 
-  const kpis = (
-    <>
-      <StatCard compact label="Total tenants" value={data.totalTenants} />
-      <StatCard compact label="Active tenants" value={data.activeTenants} />
-      <StatCard compact label="MRR" value={`₹${data.mrr}`} />
-    </>
-  );
+  const stat = (id, label, value) => ({ id, title: label, node: <StatCard compact label={label} value={value} /> });
+  const kpis = [
+    stat('total-tenants', 'Total tenants', data.totalTenants),
+    stat('active-tenants', 'Active tenants', data.activeTenants),
+    stat('mrr', 'MRR', `₹${data.mrr}`),
+  ];
 
   const tiles = [
-    { id: 'plans', span: 'lg:col-span-4', node: (
+    { id: 'plans', title: 'Tenants by plan', span: 'lg:col-span-4', node: (
       <Widget title="Tenants by plan">
         <DataTable
           tableId="dash.platform.plans"
@@ -37,7 +36,7 @@ export default function PlatformDashboardView({ data }) {
         />
       </Widget>
     ) },
-    { id: 'tenants', span: 'lg:col-span-8', node: (
+    { id: 'tenants', title: 'Tenants', span: 'lg:col-span-8', node: (
       <Widget title="Tenants">
         <DataTable
           tableId="dash.platform.tenants"
@@ -53,7 +52,7 @@ export default function PlatformDashboardView({ data }) {
         />
       </Widget>
     ) },
-    { id: 'activity', span: 'lg:col-span-12', node: (
+    { id: 'activity', title: 'Recent activity', span: 'lg:col-span-12', node: (
       <Widget title="Recent activity">
         <DataTable
           tableId="dash.platform.activity"

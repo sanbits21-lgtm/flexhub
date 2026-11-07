@@ -17,15 +17,14 @@ export default function TrainerDashboard({ data }) {
   const lowIds = new Set((data.lowAttendanceMemberIds || []).map(String));
   const needsAttention = members.filter((m) => lowIds.has(String(m._id)));
 
-  const kpis = (
-    <>
-      <StatCard compact label="Assigned members" value={data.assignedMemberCount} />
-      <StatCard compact label="Low attendance" value={lowIds.size} />
-    </>
-  );
+  const stat = (id, label, value) => ({ id, title: label, node: <StatCard compact label={label} value={value} /> });
+  const kpis = [
+    stat('assigned', 'Assigned members', data.assignedMemberCount),
+    stat('low-attendance', 'Low attendance', lowIds.size),
+  ];
 
   const tiles = [
-    { id: 'members', span: 'lg:col-span-8 lg:row-span-2', node: (
+    { id: 'members', title: 'My members', span: 'lg:col-span-8 lg:row-span-2', node: (
       <Widget title="My members">
         <DataTable
           tableId="dash.trainer.members"
@@ -41,7 +40,7 @@ export default function TrainerDashboard({ data }) {
         />
       </Widget>
     ) },
-    { id: 'attention', span: 'lg:col-span-4', node: (
+    { id: 'attention', title: 'Needs attention', span: 'lg:col-span-4', node: (
       <Widget title={`Needs attention (under 3 visits in 14 days) · ${needsAttention.length}`}>
         <DataTable
           tableId="dash.trainer.attention"
@@ -54,7 +53,7 @@ export default function TrainerDashboard({ data }) {
         />
       </Widget>
     ) },
-    { id: 'checkins', span: 'lg:col-span-4', node: (
+    { id: 'checkins', title: 'Recent check-ins', span: 'lg:col-span-4', node: (
       <Widget title="Recent check-ins">
         <DataTable tableId="dash.trainer.checkins" embedded rows={checkins} columns={checkinColumns} />
       </Widget>

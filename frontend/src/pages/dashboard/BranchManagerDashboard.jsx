@@ -16,16 +16,15 @@ export default function BranchManagerDashboard({ data, reload }) {
     orEmpty(equipmentAPI.maintenanceDue(), []).then((r) => setMaintenance(r.data));
   }, []);
 
-  const kpis = (
-    <>
-      <StatCard compact label="Active members" value={data.activeMembers} />
-      <StatCard compact label="Today's check-ins" value={data.todaysCheckins} />
-      <StatCard compact label="Expiring soon" value={data.expiringSoon} />
-      <StatCard compact label="Expired" value={data.expiredCount ?? 0} />
-      <StatCard compact label="Maintenance due" value={data.maintenanceDue} />
-      <StatCard compact label="Revenue this month" value={`₹${data.revenueThisMonth}`} />
-    </>
-  );
+  const stat = (id, label, value) => ({ id, title: label, node: <StatCard compact label={label} value={value} /> });
+  const kpis = [
+    stat('active', 'Active members', data.activeMembers),
+    stat('todays-checkins', "Today's check-ins", data.todaysCheckins),
+    stat('expiring', 'Expiring soon', data.expiringSoon),
+    stat('expired', 'Expired', data.expiredCount ?? 0),
+    stat('maintenance', 'Maintenance due', data.maintenanceDue),
+    stat('revenue', 'Revenue this month', `₹${data.revenueThisMonth}`),
+  ];
 
   const { expiringNode, expiredNode, modal } = useExpiryTiles({
     expiring: data.expiringSoonMembers || [],
@@ -34,19 +33,19 @@ export default function BranchManagerDashboard({ data, reload }) {
   });
 
   const tiles = [
-    { id: 'expiring', span: 'lg:col-span-4', node: expiringNode },
-    { id: 'expired', span: 'lg:col-span-4', node: expiredNode },
-    { id: 'checkins', span: 'lg:col-span-4', node: (
+    { id: 'expiring', title: 'Expiring soon', span: 'lg:col-span-4', node: expiringNode },
+    { id: 'expired', title: 'Expired', span: 'lg:col-span-4', node: expiredNode },
+    { id: 'checkins', title: 'Recent check-ins', span: 'lg:col-span-4', node: (
       <Widget title="Recent check-ins">
         <DataTable tableId="dash.bm.checkins" embedded rows={checkins} columns={checkinColumns} />
       </Widget>
     ) },
-    { id: 'payments', span: 'lg:col-span-8', node: (
+    { id: 'payments', title: 'Recent payments', span: 'lg:col-span-8', node: (
       <Widget title="Recent payments">
         <DataTable tableId="dash.bm.payments" embedded rows={payments} columns={paymentColumns} />
       </Widget>
     ) },
-    { id: 'maintenance', span: 'lg:col-span-4', node: (
+    { id: 'maintenance', title: 'Maintenance due', span: 'lg:col-span-4', node: (
       <Widget title={`Maintenance due · ${maintenance.length}`}>
         <DataTable
           tableId="dash.bm.maintenance"
