@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { z } = require('zod');
 const Member = require('../models/Member');
+const generateToken = require('../utils/generateToken');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
 const MemberPlan = require('../models/MemberPlan');
@@ -227,9 +228,10 @@ exports.changePassword = async (req, res) => {
   // answer that by signing the member out.
   if (!(await member.matchPassword(currentPassword))) return res.status(400).json({ message: 'Current password is incorrect.' });
   member.password = newPassword;
+  member.passwordResetAt = new Date(); // other phones/browsers are signed out; this one gets a fresh token
   await member.save();
   logAudit(req, 'MEMBER_CHANGE_PASSWORD', { type: 'Member', id: member._id });
-  res.json({ message: 'Password updated' });
+  res.json({ message: 'Password updated', token: generateToken(member._id, 'member') });
 };
 // ---------- delete my account ----------
 

@@ -19,6 +19,8 @@ type AuthState = {
   can: (feature: string) => boolean;
   signIn: (identifier: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** After a password change the server signs every other device out and issues this one a new token. */
+  replaceToken: (token: string) => Promise<void>;
 };
 const Ctx = createContext<AuthState | null>(null);
 
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setName(result.name);
     },
     signOut,
+    replaceToken: async (t) => { setToken(t); await store.set(TOKEN_KEY, t); },
   }), [ready, role, name, features]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

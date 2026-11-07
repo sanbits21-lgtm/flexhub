@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { memberApi, errorText } from '../api';
+import { memberApi, errorText, TOKEN_KEY } from '../api';
 import { useMemberAuth } from '../MemberAuth';
 import { useLoad } from '../useLoad';
 import { useTheme } from '../../context/ThemeContext';
@@ -128,7 +128,8 @@ export default function Profile() {
     setPwBusy(true);
     setPwMsg({ ok: false, text: '' });
     try {
-      await memberApi.put('/member-app/me/password', { currentPassword: pw.current, newPassword: pw.next });
+      const { data } = await memberApi.put('/member-app/me/password', { currentPassword: pw.current, newPassword: pw.next });
+      if (data?.token) localStorage.setItem(TOKEN_KEY, data.token); // other devices are signed out; this one stays in
       setPw({ current: '', next: '' });
       setPwMsg({ ok: true, text: 'Password changed. Use it next time you sign in.' });
     } catch (err) {

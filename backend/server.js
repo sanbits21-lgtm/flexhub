@@ -16,6 +16,13 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
+// Links in emails (confirm your email, a new gym is waiting) are built from PUBLIC_URL. Without it
+// they would use whatever Host header the request carried, which an attacker can choose.
+if (process.env.NODE_ENV === 'production' && !/^https?:\/\/[^\s/]+/i.test(process.env.PUBLIC_URL || '')) {
+  console.error('PUBLIC_URL must be set in production, for example https://app.example.com (no trailing path).');
+  process.exit(1);
+}
+
 connectDB().then(() => require('./utils/migrations').run()).then(() => require('./utils/bootstrapAdmin').bootstrapSuperAdmin()).then(() => {
   const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   require('./utils/expiryNotices').startExpiryScheduler();

@@ -86,6 +86,12 @@ const allowActors = ({ member = false, roles = [] }) => (req, res, next) => {
 // Computes req.scope, the Mongo filter base every controller must use for reads.
 // Generalizes the 2-role storeScope pattern to the 6-actor hierarchy.
 const scopeContext = (req, res, next) => {
+  // These two come from the query string, which can carry objects (?branchId[$ne]=x). They are
+  // used in database filters below, so anything that is not a plain string stops here.
+  if ((req.query.tenantId !== undefined && typeof req.query.tenantId !== 'string')
+    || (req.query.branchId !== undefined && typeof req.query.branchId !== 'string')) {
+    return res.status(400).json({ message: 'One of the values in your request is not valid.' });
+  }
   if (req.actorType === 'member') {
     req.scope = {
       memberId: req.member._id,

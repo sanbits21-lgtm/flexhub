@@ -15,9 +15,12 @@ const DURATIONS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['half_ye
 const NEW_FIELD = '__new__';
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
+// A cell starting with = + - @ (or a tab/CR) would run as a formula when the file is opened in
+// Excel or Sheets; a leading apostrophe makes it plain text. Phone numbers may legitimately start with +.
+const safeCell = (v) => { const s = String(v); return /^[=+\-@\t\r]/.test(s) && !/^\+?[0-9][0-9\s\-()]*$/.test(s) ? `'${s}` : s; };
 const toCsv = (rows) => {
   const header = 'row,name,phone,email,error\n';
-  const body = rows.map((r) => [r.row + 1, r.name || '', r.phone || '', r.email || '', r.error].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const body = rows.map((r) => [r.row + 1, r.name || '', r.phone || '', r.email || '', r.error].map((v) => `"${safeCell(v).replace(/"/g, '""')}"`).join(',')).join('\n');
   return header + body;
 };
 

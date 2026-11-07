@@ -85,6 +85,9 @@ exports.changePassword = async (req, res) => {
     return res.status(400).json({ message: 'Current password is incorrect' });
   }
   user.password = newPassword;
+  // Sessions started before this moment stop working (a stolen token must not outlive a password
+  // change); the caller gets a fresh one so they stay signed in.
+  user.passwordResetAt = new Date();
   await user.save();
-  res.json({ message: 'Password updated' });
+  res.json({ message: 'Password updated', token: generateToken(user._id, 'user') });
 };

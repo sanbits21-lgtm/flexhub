@@ -7,7 +7,7 @@ import { say } from '../lib/dialog';
 
 /** Change password and sign out: the same for trainers and managers (staff accounts). */
 export function AccountCard() {
-  const { signOut } = useAuth();
+  const { signOut, replaceToken } = useAuth();
   const [pw, setPw] = useState({ current: '', next: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +16,8 @@ export function AccountCard() {
     setBusy(true);
     setError(null);
     try {
-      await api.post('/auth/change-password', { currentPassword: pw.current, newPassword: pw.next });
+      const r = await api.post<{ token?: string }>('/auth/change-password', { currentPassword: pw.current, newPassword: pw.next });
+      if (r?.token) await replaceToken(r.token);
       setPw({ current: '', next: '' });
       say('Password changed', 'Use your new password next time you sign in.');
     } catch (e) {

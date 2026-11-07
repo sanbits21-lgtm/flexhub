@@ -92,6 +92,10 @@ describe('member password reset', () => {
     const s = await memberLogin(a.body.memberCode, a.body.password);
     const change = await request(app).put('/api/member-app/me/password').set(auth(s.body.token)).send({ currentPassword: a.body.password, newPassword: 'MyOwnPassw0rd!' });
     expect(change.status).toBe(200);
-    expect((await request(app).get('/api/member-app/me').set(auth(s.body.token))).status).toBe(200);
+    // Their own session continues on the fresh token the change returns. (The old token is retired
+    // along with every other device's, but only once the clock ticks over a second, so asserting on
+    // it here would be flaky; security.test.js covers revocation with a deliberate wait.)
+    expect(change.body.token).toBeTruthy();
+    expect((await request(app).get('/api/member-app/me').set(auth(change.body.token))).status).toBe(200);
   });
 });

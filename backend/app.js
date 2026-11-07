@@ -55,16 +55,22 @@ app.use(cors({
     : (process.env.NODE_ENV === 'production' ? false : true),
 }));
 
-app.use(express.json({ limit: '5mb' })); // bulk member upload can post hundreds of rows
+// A request body is read before anyone is authenticated, so the default is small. Only a bulk
+// member import (hundreds of rows) and a profile photo (base64, up to 1 MB) need more.
+const bigBody = express.json({ limit: '5mb' });
+const smallBody = express.json({ limit: '100kb' });
+app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo)/.test(req.path) ? bigBody : smallBody)(req, res, next));
 
 // Which gym is this address? (iron.example.com). Before static files so a renamed gym's old
 // address can redirect to the new one.
 app.use(require('./middleware/tenantHost'));
-app.use('/api/public', require('./routes/public'));
 
 // Rate limiting is skipped under test: the suite fires hundreds of requests from one
 // address, including deliberate bad logins, and would otherwise trip its own limiter.
-if (process.env.NODE_ENV !== 'test') {
+// (test/rateLimit.test.js switches it back on.) It MUST be mounted before the public routes:
+// a route that answers first never reaches a limiter that comes after it, which is how the
+// sign-up limits once sat there doing nothing.
+if (process.env.NODE_ENV !== 'test' || process.env.FORCE_RATE_LIMIT === 'on') {
   // Generous ceiling on the whole API — defends against accidental/abusive floods
   // without getting in normal users' way.
   app.use('/api', rateLimit({
@@ -99,6 +105,8 @@ if (process.env.NODE_ENV !== 'test') {
   app.use('/api/auth/login', loginLimiter);
   app.use('/api/member-auth/login', loginLimiter);
 }
+
+app.use('/api/public', require('./routes/public'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

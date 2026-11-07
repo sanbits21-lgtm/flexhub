@@ -48,7 +48,7 @@ const age = (dob: string) => {
 const say = (title: string, msg: string) => (Platform.OS === 'web' ? window.alert(`${title}\n${msg}`) : Alert.alert(title, msg));
 
 export default function ProfileScreen() {
-  const { signOut } = useAuth();
+  const { signOut, replaceToken } = useAuth();
   const { data: profile, loading, error, reload, setData } = useLoad(() => api.get<Profile>('/member-app/me'));
   const [form, setForm] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
@@ -116,7 +116,8 @@ export default function ProfileScreen() {
     setPwBusy(true);
     setPwError(null);
     try {
-      await api.put('/member-app/me/password', { currentPassword: pw.current, newPassword: pw.next });
+      const r = await api.put<{ token?: string }>('/member-app/me/password', { currentPassword: pw.current, newPassword: pw.next });
+      if (r?.token) await replaceToken(r.token);
       setPw({ current: '', next: '' });
       say('Password changed', 'Use your new password next time you sign in.');
     } catch (e) {
