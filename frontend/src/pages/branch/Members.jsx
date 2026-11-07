@@ -24,6 +24,9 @@ const getEmptyForm = () => ({
   amount: '', emergencyContactName: '', emergencyContactPhone: '', customFields: {},
 });
 
+// "This number is already used by Asha Rao (GYM-ABC) and Ravi Kumar (GYM-DEF)."
+const duplicatePhoneMessage = (matches) => `This phone number is already used by ${matches.map((m) => `${m.name} (${m.memberCode})`).join(' and ')}.`;
+
 // Server messages are the useful ones here (duplicate email, plan not found, field-level
 // validation), so surface those and only fall back to a generic line.
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
@@ -95,6 +98,8 @@ export default function Members() {
   const [appAccess, setAppAccess] = useState(null); // { member, creds?, error? }
   const [plansMember, setPlansMember] = useState(null);
   const [memberFields, setMemberFields] = useState([]); // the gym's own extra fields
+  const [phoneMatches, setPhoneMatches] = useState([]); // members who already use the phone typed in the add form
+  const [editingPhone, setEditingPhone] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingBranchId, setEditingBranchId] = useState('');
   const [editForm, setEditForm] = useState(emptyEditForm);
@@ -116,6 +121,19 @@ export default function Members() {
   const finalAmount = Number(form.amount) || 0;
 
   useEffect(() => { if (urlBranchId) setBranchFilter(urlBranchId); }, [urlBranchId]);
+
+  // Warn (never block) when the phone typed into the add form already belongs to a member.
+  useEffect(() => {
+    const digits = form.phone.replace(/\D/g, '');
+    if (!showAddModal || digits.length < 6) { setPhoneMatches([]); return undefined; }
+    let cancelled = false;
+    const t = setTimeout(() => {
+      membersAPI.phoneCheck({ phone: form.phone })
+        .then((res) => { if (!cancelled) setPhoneMatches(res.data.matches); })
+        .catch(() => { if (!cancelled) setPhoneMatches([]); });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [form.phone, showAddModal]);
 
   const filterParams = () => {
     const params = {};
@@ -225,6 +243,7 @@ export default function Members() {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (saving) return; // a double-click would otherwise create the member twice
+    if (phoneMatches.length > 0 && !window.confirm(`${duplicatePhoneMessage(phoneMatches)}\n\nAdd this member anyway?`)) return;
     setSaving(true);
     setFormError('');
     try {
@@ -317,6 +336,7 @@ export default function Members() {
 
   const startEdit = (member) => {
     setEditingId(member._id);
+    setEditingPhone(member.phone);
     setEditingBranchId(member.branchId);
     setEditForm({
       name: member.name,
@@ -335,6 +355,10 @@ export default function Members() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (editForm.phone.trim() !== editingPhone.trim()) {
+      const { data } = await membersAPI.phoneCheck({ phone: editForm.phone, excludeId: editingId }).catch(() => ({ data: { matches: [] } }));
+      if (data.matches.length > 0 && !window.confirm(`${duplicatePhoneMessage(data.matches)}\n\nSave this number anyway?`)) return;
+    }
     await membersAPI.update(editingId, {
       ...editForm,
       customFields: payloadFromForm(memberFields, editForm.customFields, { clearBlank: true }),
@@ -497,6 +521,11 @@ export default function Members() {
                 required
                 className={`${inputClass} w-full`}
               />
+              {phoneMatches.length > 0 && (
+                <p role="status" className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                  {duplicatePhoneMessage(phoneMatches)} You can still add this member.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Email (optional)</label>

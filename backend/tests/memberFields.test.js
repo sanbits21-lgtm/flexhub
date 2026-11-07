@@ -154,3 +154,37 @@ describe('bulk import', () => {
     expect(other.body.existing).toEqual([]);
   });
 });
+
+describe('phone check (warn before a second member is added on one number)', () => {
+  const check = (token, body) => request(app).post('/api/members/phone-check').set(auth(token)).send(body);
+  let existing;
+
+  beforeAll(async () => {
+    existing = await createMember(A.managerToken, { ...plansAndBranch(A), name: 'Shares A Phone', phone: '9600000001' });
+  });
+
+  it('lists members already using the number, ignoring spaces and a +91 prefix', async () => {
+    const res = await check(A.managerToken, { phone: '+91 96000 00001' });
+    expect(res.status).toBe(200);
+    expect(res.body.matches).toEqual([{ _id: existing._id, name: 'Shares A Phone', memberCode: existing.memberCode }]);
+  });
+
+  it('finds nothing for a new number or a too-short one', async () => {
+    expect((await check(A.managerToken, { phone: '9600000099' })).body.matches).toEqual([]);
+    expect((await check(A.managerToken, { phone: '123' })).body.matches).toEqual([]);
+  });
+
+  it('leaves out the member being edited, and deactivated members', async () => {
+    expect((await check(A.managerToken, { phone: '9600000001', excludeId: existing._id })).body.matches).toEqual([]);
+    const gone = await createMember(A.managerToken, { ...plansAndBranch(A), name: 'Left', phone: '9600000002' });
+    await request(app).delete(`/api/members/${gone._id}`).set(auth(A.managerToken));
+    expect((await check(A.managerToken, { phone: '9600000002' })).body.matches).toEqual([]);
+  });
+
+  it("never shows another gym's members, and is closed to the member app", async () => {
+    expect((await check(B.managerToken, { phone: '9600000001' })).body.matches).toEqual([]);
+    const access = await request(app).post(`/api/members/${existing._id}/app-access`).set(auth(A.managerToken));
+    const login = await request(app).post('/api/member-auth/login').send({ identifier: access.body.memberCode, password: access.body.password });
+    expect((await check(login.body.token, { phone: '9600000001' })).status).toBe(403);
+  });
+});

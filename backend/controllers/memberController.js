@@ -308,6 +308,19 @@ exports.bulkCreate = async (req, res) => {
   res.status(201).json({ results, succeeded, failed: results.length - succeeded, paymentsRecorded });
 };
 
+// Members of this gym who already use a phone number, so the add/edit forms can warn. A warning
+// and not a rule on purpose: a family can share one number. `excludeId` is the member being edited.
+exports.phoneCheck = async (req, res) => {
+  const key = phoneKey(req.body?.phone);
+  if (key.length < 6) return res.json({ matches: [] });
+  const filter = { tenantId: req.body.tenantId, isActive: true };
+  if (require('mongoose').isValidObjectId(req.body.excludeId)) filter._id = { $ne: req.body.excludeId };
+  const members = await Member.find(filter).select('phone name memberCode').lean();
+  const matches = members.filter((m) => phoneKey(m.phone) === key).slice(0, 5)
+    .map((m) => ({ _id: m._id, name: m.name, memberCode: m.memberCode }));
+  res.json({ matches });
+};
+
 // Which rows of an about-to-be-imported file already match a member of this gym by phone,
 // so the import screen can warn before anything is written.
 exports.bulkCheck = async (req, res) => {

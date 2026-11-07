@@ -79,6 +79,7 @@ export const membersAPI = {
   create: (data) => api.post('/members', data),
   bulkCreate: (data) => api.post('/members/bulk', data),
   bulkCheck: (data) => api.post('/members/bulk/check', data),
+  phoneCheck: (data) => api.post('/members/phone-check', data),
   update: (id, data) => api.put(`/members/${id}`, data),
   remove: (id) => api.delete(`/members/${id}`),
   renew: (id, data) => api.post(`/members/${id}/renew`, data),
