@@ -6,7 +6,7 @@ const PlatformSettings = require('../models/PlatformSettings');
 const { outbox } = require('../utils/mailer');
 
 let superAdmin; let platformAdmin;
-const make = (over = {}) => ({ name: `Plan ${uniq('p')}`.slice(0, 40), description: 'For one gym', price: 999, billingCycle: 'monthly', trialDays: 14, maxBranches: 2, maxMembers: 100, highlights: ['QR check-in'], ...over });
+const make = (over = {}) => ({ name: `Plan ${uniq('p')}`.slice(0, 40), description: 'For one gym', price: 999, billingMonths: 1, trialDays: 14, maxBranches: 2, maxMembers: 100, highlights: ['QR check-in'], ...over });
 const createPkg = async (over = {}) => {
   const res = await request(app).post('/api/packages').set(auth(superAdmin.token)).send(make(over));
   expect(res.status).toBe(201);
@@ -48,13 +48,20 @@ afterAll(async () => {
 describe('managing packages', () => {
   it('lets the super-admin create, edit and list packages', async () => {
     const pkg = await createPkg({ name: 'Starter', price: 499 });
-    expect(pkg).toMatchObject({ name: 'Starter', price: 499, billingCycle: 'monthly', trialDays: 14, maxBranches: 2, maxMembers: 100, isActive: true });
+    expect(pkg).toMatchObject({ name: 'Starter', price: 499, billingMonths: 1, trialDays: 14, maxBranches: 2, maxMembers: 100, isActive: true });
     const edited = await request(app).put(`/api/packages/${pkg._id}`).set(auth(superAdmin.token)).send({ price: 599, highlights: ['A', 'B'] });
     expect(edited.status).toBe(200);
     expect(edited.body).toMatchObject({ name: 'Starter', price: 599, highlights: ['A', 'B'], maxMembers: 100 });
     const list = await request(app).get('/api/packages').set(auth(superAdmin.token));
     expect(list.body).toHaveLength(1);
     expect(list.body[0].gyms).toBe(0);
+  });
+
+  it('allows any billing period, not just monthly/quarterly/yearly', async () => {
+    const pkg = await createPkg({ billingMonths: 6 });
+    expect(pkg.billingMonths).toBe(6);
+    expect((await request(app).put(`/api/packages/${pkg._id}`).set(auth(superAdmin.token)).send({ billingMonths: 24 })).body.billingMonths).toBe(24);
+    expect((await config()).packages[0].billingMonths).toBe(24);
   });
 
   it('treats a null member limit as unlimited', async () => {
@@ -80,7 +87,9 @@ describe('managing packages', () => {
     expect((await put(make({ price: -5 }))).status).toBe(400);
     expect((await put(make({ maxBranches: 0 }))).status).toBe(400);
     expect((await put(make({ trialDays: 400 }))).status).toBe(400);
-    expect((await put(make({ billingCycle: 'weekly' }))).status).toBe(400);
+    expect((await put(make({ billingMonths: 0 }))).status).toBe(400);
+    expect((await put(make({ billingMonths: 61 }))).status).toBe(400);
+    expect((await put(make({ billingMonths: 1.5 }))).status).toBe(400);
     expect((await put(make({ name: 'x' }))).status).toBe(400);
     expect((await put(make({ highlights: Array(11).fill('x') }))).status).toBe(400);
     expect((await put({ price: 10 })).status).toBe(400); // no name
@@ -230,6 +239,21 @@ describe('approving a gym that chose a package', () => {
     expect(await Tenant.findById(tenantId)).toMatchObject({ packageName: 'Studio', maxMembers: 100 });
     const list = await request(app).get('/api/packages').set(auth(superAdmin.token));
     expect(list.body[0].gyms).toBe(1);
+  });
+
+  it('moves an existing gym onto a package: its limits, live now, no trial', async () => {
+    const { tenantId } = await register();
+    await approve(tenantId); // on the plain free trial
+    const pkg = await createPkg({ name: 'Studio', maxBranches: 6, maxMembers: null });
+    const res = await request(app).put(`/api/tenants/${tenantId}`).set(auth(superAdmin.token)).send({ packageId: pkg._id, maxBranches: 1 });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ packageName: 'Studio', packageId: pkg._id, billingPlan: 'basic', maxBranches: 6 });
+    expect(res.body.trialEndsAt).toBeFalsy();
+    expect(res.body.maxMembers).toBeFalsy();
+    expect((await request(app).put(`/api/tenants/${tenantId}`).set(auth(superAdmin.token)).send({ packageId: '64b000000000000000000000' })).status).toBe(400);
+    // An ordinary edit without a packageId leaves the package alone.
+    const plain = await request(app).put(`/api/tenants/${tenantId}`).set(auth(superAdmin.token)).send({ name: 'New Name' });
+    expect(plain.body).toMatchObject({ name: 'New Name', packageName: 'Studio', maxBranches: 6 });
   });
 
   it('keeps using the platform trial terms for a gym that chose nothing', async () => {

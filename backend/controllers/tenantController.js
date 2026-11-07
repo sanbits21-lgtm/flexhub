@@ -32,7 +32,7 @@ const tenantByIdFilter = (req) => {
 
 exports.list = async (req, res) => {
   const tenants = await Tenant.find(scopeToTenantFilter(req.scope)).sort({ createdAt: -1 })
-    .populate('requestedPackageId', 'name price billingCycle trialDays maxBranches maxMembers');
+    .populate('requestedPackageId', 'name price billingMonths trialDays maxBranches maxMembers');
   // For gyms awaiting approval, say whether the owner has confirmed their email yet.
   const pendingIds = tenants.filter((t) => t.approvalStatus === 'pending').map((t) => t._id);
   const owners = pendingIds.length
@@ -97,6 +97,16 @@ exports.update = async (req, res) => {
   }
   if (trialEndsAt !== undefined) changes.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
   if (maxMembers !== undefined) changes.maxMembers = maxMembers ? Number(maxMembers) : null;
+  // Moving a gym onto a package gives it that package's limits and makes it live now (no new
+  // trial), whatever plan or limits were typed alongside.
+  if (req.body.packageId) {
+    const pkg = await SubscriptionPackage.findById(req.body.packageId);
+    if (!pkg) return res.status(400).json({ message: 'That package does not exist.' });
+    Object.assign(changes, {
+      packageId: pkg._id, packageName: pkg.name, billingPlan: 'basic',
+      maxBranches: pkg.maxBranches, maxMembers: pkg.maxMembers ?? null, trialEndsAt: null,
+    });
+  }
   const tenant = await Tenant.findOneAndUpdate(tenantByIdFilter(req), changes, { new: true });
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
   // Platform staff may rename a gym's address at any time (the old one redirects for 90 days).

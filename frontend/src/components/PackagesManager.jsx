@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { packagesAPI } from '../services/api';
-import { CYCLES, limitsLabel, priceLabel, trialLabel } from '../utils/packages';
+import { BILLING_PRESETS, limitsLabel, priceLabel, trialLabel } from '../utils/packages';
 
 const inputClass = 'border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 w-full';
 const labelClass = 'block text-sm text-gray-600 dark:text-gray-300 mb-1';
-const EMPTY = { name: '', description: '', price: 0, billingCycle: 'monthly', trialDays: 14, maxBranches: 1, maxMembers: 100, unlimited: false, highlights: '', isFeatured: false, isActive: true, sortOrder: 0 };
+const EMPTY = { name: '', description: '', price: 0, billingMonths: 1, trialDays: 14, maxBranches: 1, maxMembers: 100, unlimited: false, highlights: '', isFeatured: false, isActive: true, sortOrder: 0 };
 
 const toForm = (p) => ({ ...EMPTY, ...p, unlimited: !p.maxMembers, maxMembers: p.maxMembers || 100, highlights: (p.highlights || []).join('\n') });
 const toPayload = (f) => ({
   name: f.name,
   description: f.description,
   price: Number(f.price),
-  billingCycle: f.billingCycle,
+  billingMonths: Number(f.billingMonths),
   trialDays: Number(f.trialDays),
   maxBranches: Number(f.maxBranches),
   maxMembers: f.unlimited ? null : Number(f.maxMembers),
@@ -75,7 +75,18 @@ export default function PackagesManager() {
           <div><label htmlFor="pk-desc" className={labelClass}>Short description</label><input id="pk-desc" maxLength={200} value={form.description} onChange={set('description')} className={inputClass} /></div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div><label htmlFor="pk-price" className={labelClass}>Price (₹, 0 = free)</label><input id="pk-price" type="number" min="0" value={form.price} onChange={set('price')} className={inputClass} /></div>
-            <div><label htmlFor="pk-cycle" className={labelClass}>Billed</label><select id="pk-cycle" value={form.billingCycle} onChange={set('billingCycle')} className={inputClass}>{CYCLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+            <div>
+              <label htmlFor="pk-cycle" className={labelClass}>Billed every</label>
+              <div className="flex gap-2">
+                <input id="pk-cycle" type="number" min="1" max="60" required value={form.billingMonths} onChange={set('billingMonths')} className={inputClass} aria-describedby="pk-cycle-hint" />
+                <span className="self-center text-sm text-gray-600 dark:text-gray-300 shrink-0">months</span>
+              </div>
+              <div id="pk-cycle-hint" className="flex flex-wrap gap-1 mt-1">
+                {BILLING_PRESETS.map(([m, l]) => (
+                  <button key={m} type="button" onClick={() => setForm({ ...form, billingMonths: m })} className={`text-xs rounded-full border px-2 py-0.5 ${Number(form.billingMonths) === m ? 'border-accent bg-accent/15 dark:text-accent' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>{l}</button>
+                ))}
+              </div>
+            </div>
             <div><label htmlFor="pk-trial" className={labelClass}>Free trial days (0 = none)</label><input id="pk-trial" type="number" min="0" max="365" value={form.trialDays} onChange={set('trialDays')} className={inputClass} /></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

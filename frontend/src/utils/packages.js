@@ -1,9 +1,12 @@
-const CYCLE = { monthly: 'month', quarterly: 'quarter', yearly: 'year' };
+const COMMON = { 1: 'month', 3: 'quarter', 6: '6 months', 12: 'year' };
 
-export const CYCLES = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+/** Billing periods offered as one-tap choices; anything else is typed as a number of months. */
+export const BILLING_PRESETS = [[1, 'Monthly'], [3, 'Quarterly'], [6, 'Every 6 months'], [12, 'Yearly']];
+
+const period = (months) => COMMON[months] || `${months} months`;
 
 /** "Free", or "₹999 / month". */
-export const priceLabel = (p) => (Number(p.price) > 0 ? `₹${Number(p.price).toLocaleString('en-IN')} / ${CYCLE[p.billingCycle] || 'month'}` : 'Free');
+export const priceLabel = (p) => (Number(p.price) > 0 ? `₹${Number(p.price).toLocaleString('en-IN')} / ${period(p.billingMonths || 1)}` : 'Free');
 
 /** "14-day free trial" or "Live from approval". */
 export const trialLabel = (p) => (p.trialDays > 0 ? `${p.trialDays}-day free trial` : 'Live from approval');

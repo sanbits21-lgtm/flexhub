@@ -8,7 +8,8 @@ const subscriptionPackageSchema = new mongoose.Schema({
   description: { type: String, trim: true, maxlength: 200, default: '' },
   // 0 = free. Shown on the registration page; billing itself is handled outside the app.
   price: { type: Number, min: 0, default: 0 },
-  billingCycle: { type: String, enum: ['monthly', 'quarterly', 'yearly'], default: 'monthly' },
+  // Months per bill: 1, 3 and 12 are the usual, but any whole number up to 5 years is allowed.
+  billingMonths: { type: Number, min: 1, max: 60, default: 1 },
   // Free days from approval. 0 = no trial: the package is live as soon as it is approved.
   trialDays: { type: Number, min: 0, max: 365, default: 0 },
   maxBranches: { type: Number, min: 1, max: 100, default: 1 },

@@ -3,7 +3,7 @@ const Tenant = require('../models/Tenant');
 const { logAudit } = require('../utils/audit');
 
 // What the registration page may show: nothing internal, nothing about other gyms.
-const PUBLIC_FIELDS = '_id name description price billingCycle trialDays maxBranches maxMembers highlights isFeatured';
+const PUBLIC_FIELDS = '_id name description price billingMonths trialDays maxBranches maxMembers highlights isFeatured';
 
 const activePackages = () => SubscriptionPackage.find({ isActive: true }).sort({ sortOrder: 1, price: 1, createdAt: 1 }).select(PUBLIC_FIELDS).lean();
 

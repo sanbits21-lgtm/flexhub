@@ -77,7 +77,7 @@ const schemas = {
     name: z.string().trim().min(2, 'must be at least 2 characters').max(40, 'is too long'),
     description: z.string().trim().max(200, 'is too long'),
     price: money,
-    billingCycle: z.enum(['monthly', 'quarterly', 'yearly']),
+    billingMonths: z.coerce.number().int('must be a whole number').min(1).max(60),
     trialDays: z.coerce.number().int('must be a whole number').min(0).max(365),
     maxBranches: z.coerce.number().int('must be a whole number').min(1).max(100),
     maxMembers: z.coerce.number().int('must be a whole number').min(1).max(100000).nullable(),

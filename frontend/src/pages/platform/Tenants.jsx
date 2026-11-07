@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { tenantsAPI } from '../../services/api';
+import { packagesAPI, tenantsAPI } from '../../services/api';
+import { limitsLabel } from '../../utils/packages';
 import DataTable from '../../components/DataTable';
 import PendingApprovals from '../../components/PendingApprovals';
 
@@ -21,8 +22,11 @@ export default function Tenants() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyEditForm);
 
+  const [packages, setPackages] = useState([]);
+  const [heldPackage, setHeldPackage] = useState(''); // what the gym had when editing began
+
   const load = () => tenantsAPI.list().then((res) => setTenants(res.data));
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); packagesAPI.list().then((r) => setPackages(r.data)).catch(() => {}); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -33,7 +37,9 @@ export default function Tenants() {
 
   const startEdit = (tenant) => {
     setEditingId(tenant._id);
+    setHeldPackage(tenant.packageId || '');
     setEditForm({
+      packageId: tenant.packageId || '',
       name: tenant.name,
       contactEmail: tenant.contactEmail,
       contactPhone: tenant.contactPhone || '',
@@ -48,7 +54,9 @@ export default function Tenants() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    await tenantsAPI.update(editingId, editForm);
+    // Only a changed package is sent: it overrides the plan and limits typed beside it.
+    const { packageId, ...rest } = editForm;
+    await tenantsAPI.update(editingId, packageId && packageId !== heldPackage ? { ...rest, packageId } : rest);
     cancelEdit();
     load();
   };
@@ -108,6 +116,12 @@ export default function Tenants() {
               <option value="pro">Pro</option>
               <option value="enterprise">Enterprise</option>
             </select>
+            {packages.length > 0 && (
+              <select aria-label="Package" value={editForm.packageId} onChange={(e) => setEditForm({ ...editForm, packageId: e.target.value })} className={inputClass}>
+                <option value="">{heldPackage ? 'Package: (unchanged)' : 'Package: none'}</option>
+                {packages.map((p) => <option key={p._id} value={p._id}>{p.name} · {limitsLabel(p)}</option>)}
+              </select>
+            )}
             <select value={editForm.billingStatus} onChange={(e) => setEditForm({ ...editForm, billingStatus: e.target.value })} className={inputClass}>
               <option value="active">Active</option>
               <option value="past_due">Past due</option>
