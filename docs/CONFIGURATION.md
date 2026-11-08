@@ -31,8 +31,11 @@ Sign-up confirmation, approval notices, renewal receipts and plan-ending reminde
 Without email, **sign-up closes itself in production** (confirmation links could not be
 delivered). In development the email is printed to the server log instead.
 
+**Two ways to send. Pick one.** The first is simpler (one key) and works on hosts that block SMTP.
+
 | Setting | What it does |
 |---|---|
+| `BREVO_API_KEY` | **Brevo web API.** One key (starts with `xkeysib-`), created under *SMTP & API > API Keys* in Brevo. Sends over ordinary HTTPS (port 443), so no host blocks it. Wins over the SMTP settings if both are set. Needs `MAIL_FROM` to be a sender verified in Brevo. |
 | `SMTP_URL` | e.g. `smtps://user:password@smtp.example.com:465`. Or use the four below. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | The same thing spelled out (`SMTP_PORT` defaults to 587). |
 | `MAIL_FROM` | The sender, e.g. `FlexHub <no-reply@example.com>`. Most providers only accept an address or domain you have verified with them. |

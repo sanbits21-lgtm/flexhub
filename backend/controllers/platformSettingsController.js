@@ -25,7 +25,7 @@ exports.emailStatus = async (req, res) => {
 exports.sendTestEmail = async (req, res) => {
   const status = mailStatus();
   if (!status.configured) {
-    return res.json({ ok: false, to: req.user.email, hint: 'No mail settings found. Set SMTP_URL (or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) and MAIL_FROM, then redeploy.' });
+    return res.json({ ok: false, to: req.user.email, hint: 'No mail settings found. Set BREVO_API_KEY (or SMTP_URL / SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) and MAIL_FROM, then redeploy.' });
   }
   const check = await verifyMail();
   if (!check.ok) return res.json({ ...check, to: req.user.email });

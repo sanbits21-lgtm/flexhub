@@ -42,15 +42,16 @@ export default function EmailCheck() {
       {!status && !loadError && <p className="text-sm text-gray-500 dark:text-gray-400">Checking the mail server (this can take up to 10 seconds)...</p>}
       {status && !status.configured && (
         <div role="alert" className={bad}>
-          Email is not set up. Set <code>SMTP_URL</code> (or <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASS</code>) and <code>MAIL_FROM</code> in the service's environment, then redeploy. Until then, sign-up stays closed in production.
+          Email is not set up. Set <code>BREVO_API_KEY</code> (or <code>SMTP_URL</code>, or <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASS</code>) and <code>MAIL_FROM</code> in the service's environment, then redeploy. Until then, sign-up stays closed in production.
         </div>
       )}
       {status && status.configured && (
         <div className="space-y-2 text-sm text-gray-800 dark:text-gray-100">
-          <div>Sending through <strong>{status.host || 'unknown host'}</strong>{status.port ? `:${status.port}` : ''} ({status.via}) as <strong>{status.from || 'FlexHub <no-reply@localhost>'}</strong>.</div>
+          <div>Sending {status.via === 'BREVO_API_KEY' ? <>through <strong>Brevo's web API</strong></> : <>through <strong>{status.host || 'unknown host'}</strong>{status.port ? `:${status.port}` : ''} ({status.via})</>} as <strong>{status.from || 'FlexHub <no-reply@localhost>'}</strong>.</div>
           {!status.from && <div className={bad}>MAIL_FROM is not set. Most providers refuse the default sender; set it to an address you have verified with them.</div>}
           {status.urlProblem && <div role="alert" className={bad}>{status.urlProblem}</div>}
-          {status.check?.ok && <div className={good}>The mail server accepted the connection and login.</div>}
+          {status.keyProblem && <div role="alert" className={bad}>{status.keyProblem}</div>}
+          {status.check?.ok && <div className={good}>{status.via === 'BREVO_API_KEY' ? 'Brevo accepted the API key.' : 'The mail server accepted the connection and login.'}</div>}
           {status.check && !status.check.ok && (
             <div role="alert" className={bad}>
               The mail server could not be used: {status.check.hint}

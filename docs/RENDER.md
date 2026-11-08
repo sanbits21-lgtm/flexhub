@@ -73,14 +73,28 @@ The whole product (API + staff website) is one Docker web service; the database 
   snapshots). Your data itself is in Atlas, so enable Atlas backups.
 
 ## If sign-up says "We couldn't send your confirmation email"
-The server reached for your mail provider and failed. Sign in as the super-admin and open
+The server reached for your mail provider and failed.
+
+**Easiest setup: Brevo's web API (one key, nothing to encode, no ports):**
+1. In Brevo, open **SMTP & API > API Keys > Generate a new API key**. Copy it (it starts with `xkeysib-`).
+2. In Brevo, open **Senders, Domains & Dedicated IPs > Senders** and add and confirm the address you
+   will send from.
+3. In Render > **Environment**, set `BREVO_API_KEY` to the key and `MAIL_FROM` to
+   `FlexHub <that verified address>`. Delete `SMTP_URL`, `SMTP_HOST` and the other `SMTP_*` values if
+   you added them earlier.
+4. Save, let it redeploy, then check **Platform Settings > Email**.
+
+Sign in as the super-admin and open
 **Platform Settings > Email**: it shows what the server is configured to send with, whether the
 mail server accepts the login, and **why** the last send failed. **Send a test email to me** checks the
 whole chain. (The server log also has an `Email send failed:` line with the same reason.)
 
 | What the Email card says | Usual fix |
 |---|---|
-| "Email is not set up" | Set `SMTP_URL` (or `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) and `MAIL_FROM` in the service's Environment, then redeploy. |
+| "Email is not set up" | Set `BREVO_API_KEY` (or `SMTP_URL`, or `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) and `MAIL_FROM` in the service's Environment, then redeploy. |
+| "Brevo rejected the API key" | Use an **API key** (`xkeysib-...`) from *SMTP & API > API Keys*. An SMTP key (`xsmtpsib-...`) or your account password will not work. Paste it with no quotes or spaces. |
+| "Brevo blocked this server's address" | In Brevo, *Security > Authorised IPs*: deactivate the blocking (Render's outgoing address changes, so it cannot be listed). |
+| "Brevo refused the sender address" | `MAIL_FROM` must be a sender verified in Brevo. |
 | "rejected the username or password" | Use the provider's **SMTP key or app password**, not your account password. In `SMTP_URL`, special characters in the password must be percent-encoded (`@` → `%40`, `#` → `%23`, `/` → `%2F`). Gmail app passwords have no spaces. |
 | "could not reach the mail server" | Check host and port. Some hosting plans block outgoing mail on ports 25, 465 and 587; use port **2525** if your provider offers it (Brevo, Mailgun and SendGrid do), or a paid instance. |
 | "port and the security setting do not match" | Port 465 needs `smtps://` (or `SMTP_SECURE=true`); 587 and 2525 use `smtp://` with `SMTP_SECURE=false`. |
