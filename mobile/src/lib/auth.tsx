@@ -101,8 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         result = { token: m.token, refreshToken: m.refreshToken, role: 'member', name: m.member.name, features: m.features };
       } catch (memberErr) {
         // Staff sign in with their email. Anything that is not an email can only be a member code.
-        if (!(memberErr instanceof ApiError) || memberErr.status !== 401 || !identifier.includes('@')) throw memberErr;
-        const s = await api.post<{ token: string; refreshToken?: string; user: { name: string; role: string }; features?: Features }>('/auth/login', { email: identifier, password });
+        // A locked member side (429) does not stop a staff sign-in: staff always pass through it first.
+        if (!(memberErr instanceof ApiError) || (memberErr.status !== 401 && memberErr.status !== 429) || !identifier.includes('@')) throw memberErr;
+        let s: { token: string; refreshToken?: string; user: { name: string; role: string }; features?: Features };
+        try {
+          s = await api.post<{ token: string; refreshToken?: string; user: { name: string; role: string }; features?: Features }>('/auth/login', { email: identifier, password });
+        } catch (staffErr) {
+          // Not staff either: a member locked out should be told so, not "wrong password".
+          if (memberErr.status === 429 && staffErr instanceof ApiError && staffErr.status === 401) throw memberErr;
+          throw staffErr;
+        }
         if (!STAFF_ROLES.includes(s.user.role as Role)) {
           throw new ApiError('This account is for the FlexHub website. The app is for members, trainers and gym managers.', 403);
         }

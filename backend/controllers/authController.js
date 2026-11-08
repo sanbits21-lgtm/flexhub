@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
 const { startSession, deliver, revokeActor } = require('../utils/sessions');
+const throttle = require('../utils/loginThrottle');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
 const { subscriptionOf, approvalBlock } = require('../utils/subscription');
@@ -35,10 +36,18 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   // An address under our domain that belongs to no gym is not a place to sign in.
   if (req.unknownHost) return res.status(401).json({ message: 'Invalid credentials' });
+  // Per-account lock: too many wrong passwords for this email, whether or not it exists.
+  const throttleKey = throttle.keyFor('user', email);
+  const lock = await throttle.check(throttleKey);
+  if (lock.locked) return throttle.lockedResponse(res, lock);
   const user = await User.findOne({ email: email?.toLowerCase() });
-  if (!user || !user.isActive || !(await user.matchPassword(password))) {
+  // Always spend the time of a password check, so an unknown email is not faster than a known one.
+  const passwordOk = user && user.isActive ? await user.matchPassword(password) : (await throttle.burn(password), false);
+  if (!passwordOk) {
+    await throttle.fail(throttleKey);
     return res.status(401).json({ message: 'Invalid credentials' });
   }
+  await throttle.clear(throttleKey);
   // On a gym's own address only that gym's people may sign in. Same message as a wrong
   // password, so the address cannot be used to discover who works where. Platform staff
   // (no tenant) may sign in anywhere.

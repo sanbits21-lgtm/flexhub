@@ -36,12 +36,12 @@ const app = express();
 const trustProxyHops = Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1;
 app.set('trust proxy', trustProxyHops);
 
-// CSP is off by default: helmet's default policy is tuned for server-rendered HTML and
-// will need real tuning against the built Vite bundle (hashed asset URLs, etc.) once this
-// is actually deployed and testable in a browser — shipping an untested CSP risks a
-// silent white-screen in production. The other headers (HSTS, X-Frame-Options,
-// X-Content-Type-Options, etc.) are safe, non-breaking defaults and stay on.
+// Helmet's other headers (HSTS, X-Frame-Options, X-Content-Type-Options, ...) are safe defaults.
+// The Content-Security-Policy is built for this app's own bundle in middleware/csp.js
+// (CSP_MODE=report-only to log instead of block, off to disable).
 app.use(helmet({ contentSecurityPolicy: false }));
+const csp = require('./middleware/csp');
+app.use(csp.csp());
 
 // CORS_ORIGIN is a comma-separated allow-list (e.g. "https://app.example.com").
 // Unset in development = allow any origin, for convenience with the Vite dev server.
@@ -113,6 +113,7 @@ if (process.env.NODE_ENV !== 'test' || process.env.FORCE_RATE_LIMIT === 'on') {
 }
 
 app.use('/api/public', require('./routes/public'));
+app.post('/api/csp-report', csp.reportBody, csp.report);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

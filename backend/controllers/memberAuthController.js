@@ -1,6 +1,7 @@
 const Member = require('../models/Member');
 const Tenant = require('../models/Tenant');
 const { startSession, deliver } = require('../utils/sessions');
+const throttle = require('../utils/loginThrottle');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
 
@@ -10,6 +11,12 @@ exports.login = async (req, res) => {
   const { identifier, email, password } = req.body;
   if (req.unknownHost) return res.status(401).json({ message: 'Invalid credentials' });
   const id = String(identifier || email || '').trim();
+  // Per-account lock (see utils/loginThrottle.js): the same answer whether or not this member exists.
+  const throttleKey = id ? throttle.keyFor('member', id, req.hostTenant ? String(req.hostTenant._id) : '') : null;
+  if (throttleKey) {
+    const lock = await throttle.check(throttleKey);
+    if (lock.locked) return throttle.lockedResponse(res, lock);
+  }
   // An email is unique within a gym, not across gyms, so it can match several members; the
   // password (or a member code, which is globally unique) decides which one this is.
   let member = null;
@@ -21,8 +28,13 @@ exports.login = async (req, res) => {
     for (const c of candidates) {
       if (await c.matchPassword(password)) { member = c; break; }
     }
+    if (!candidates.length) await throttle.burn(password); // no such member: take as long as a real check
   }
-  if (!member) return res.status(401).json({ message: 'Invalid credentials' });
+  if (!member) {
+    if (throttleKey) await throttle.fail(throttleKey);
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+  await throttle.clear(throttleKey);
   const tenant = await Tenant.findById(member.tenantId).select('features name slug brand');
   const issued = await startSession('member', member, req);
   res.json({
