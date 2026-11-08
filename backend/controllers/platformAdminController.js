@@ -9,6 +9,8 @@ exports.list = async (req, res) => {
 
 exports.create = async (req, res) => {
   const { name, email, phone, password } = req.body;
+  const weak = require('../utils/passwordPolicy').passwordProblem(password, { name, email, phone });
+  if (weak) return res.status(400).json({ message: weak });
   const admin = await User.create({ name, email, phone, password, role: 'platform-admin' });
   logAudit(req, 'CREATE_PLATFORM_ADMIN', { type: 'User', id: admin._id });
   res.status(201).json({ ...admin.toObject(), password: undefined });

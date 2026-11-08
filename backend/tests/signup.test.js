@@ -9,13 +9,13 @@ const { outbox } = require('../utils/mailer');
 let superAdmin; let platformAdmin;
 const body = (over = {}) => {
   const id = uniq('reg').toLowerCase();
-  return { gymName: `Iron ${id} Fitness`, ownerName: 'Asha Owner', email: `owner-${id}@example.com`, phone: '9800001111', password: 'Password123!', ...over };
+  return { gymName: `Iron ${id} Fitness`, ownerName: 'Asha Owner', email: `owner-${id}@example.com`, phone: '9800001111', password: 'Orchid-Lantern-47!', ...over };
 };
 const signup = (b, host) => { const r = request(app).post('/api/public/signup'); if (host) r.set('Host', host); return r.send(b); };
 const mailsTo = (to) => outbox.filter((m) => m.to === to);
 const tokenIn = (mail) => mail.text.match(/token=([0-9a-f]{64})/)[1];
 const verify = (token) => request(app).post('/api/public/verify-email').send({ token });
-const ownerLogin = (email) => request(app).post('/api/auth/login').send({ email, password: 'Password123!' });
+const ownerLogin = (email) => request(app).post('/api/auth/login').send({ email, password: 'Orchid-Lantern-47!' });
 const approve = (id, over = {}) => request(app).post(`/api/tenants/${id}/approve`).set(auth(superAdmin.token)).send(over);
 
 // Registers, confirms the email and (optionally) gets approved; returns a working owner session.
@@ -91,14 +91,65 @@ describe('registering a gym', () => {
     expect((await signup(body({ slug: 'Bad Name' }))).status).toBe(400);
   });
 
-  it('refuses a duplicate email and leaves nothing half-made', async () => {
+  it('answers a duplicate email exactly like a new one, and creates nothing', async () => {
     const b = body();
-    expect((await signup(b)).status).toBe(201);
+    const first = await signup(b);
+    expect(first.status).toBe(201);
     const before = await Tenant.countDocuments();
     const again = await signup({ ...b, gymName: 'Another Gym Name' });
-    expect(again.status).toBe(409);
-    expect(again.body.code).toBe('UNVERIFIED_EXISTS');
+    expect(again.status).toBe(201);
+    expect(again.body).toEqual(first.body); // nothing to tell it apart by
     expect(await Tenant.countDocuments()).toBe(before);
+    expect(await User.countDocuments({ email: b.email })).toBe(1);
+  });
+
+  it('sends a still-unconfirmed owner a fresh link (not more than one a minute)', async () => {
+    const b = body();
+    await signup(b);
+    expect(mailsTo(b.email)).toHaveLength(1);
+    await signup(b); // within the minute: nothing more is sent
+    expect(mailsTo(b.email)).toHaveLength(1);
+    await User.updateOne({ email: b.email }, { emailVerifySentAt: new Date(Date.now() - 5 * 60000) });
+    await signup(b);
+    expect(mailsTo(b.email)).toHaveLength(2);
+    expect(mailsTo(b.email)[1].subject).toMatch(/confirm/i);
+  });
+
+  it('tells the owner of a confirmed account about the attempt by email, once in ten minutes', async () => {
+    const { b } = await register();
+    outbox.length = 0;
+    const again = await signup(body({ email: b.email }));
+    expect(again.status).toBe(201);
+    expect(again.body.email).toBe(b.email);
+    expect(mailsTo(b.email)).toHaveLength(1);
+    expect(mailsTo(b.email)[0].subject).toMatch(/already have a FlexHub account/i);
+    expect(mailsTo(b.email)[0].text).toMatch(/\/login/);
+    await signup(body({ email: b.email }));
+    expect(mailsTo(b.email)).toHaveLength(1); // not again within ten minutes
+    await User.updateOne({ email: b.email }, { accountNoticeSentAt: new Date(Date.now() - 11 * 60000) });
+    await signup(body({ email: b.email }));
+    expect(mailsTo(b.email)).toHaveLength(2);
+  });
+
+  it('gives no way to tell a registered address from a new one', async () => {
+    const { b } = await register();
+    const known = await signup(body({ email: b.email }));
+    const fresh = await signup(body());
+    expect(known.status).toBe(fresh.status);
+    expect(Object.keys(known.body).sort()).toEqual(Object.keys(fresh.body).sort());
+    expect(known.body.message).toBe(fresh.body.message);
+  });
+
+  it('refuses a password that is too easy to guess, saying why', async () => {
+    for (const weak of ['Password123!', 'qwertyuiop', 'aaaaaaaaaa', 'Welcome2024!']) {
+      const res = await signup(body({ password: weak }));
+      expect([weak, res.status]).toEqual([weak, 400]);
+      expect(res.body.message).toMatch(/password/i);
+    }
+    const mine = body();
+    const withName = await signup({ ...mine, password: `${mine.ownerName.split(' ')[0]}-secret-77` });
+    expect(withName.status).toBe(400);
+    expect(withName.body.message).toMatch(/name, email or phone/);
   });
 
   it('validates input, rejects smuggled fields, and catches bots', async () => {

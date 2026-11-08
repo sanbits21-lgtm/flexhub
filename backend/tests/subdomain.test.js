@@ -156,7 +156,7 @@ describe('branding and changing the address', () => {
     it('validates the address when a gym is created', async () => {
       const mk = (slug) => request(app).post('/api/tenants').set(auth(superAdmin.token)).send({
         name: 'New Gym', slug, contactEmail: 'new@example.com',
-        admin: { name: 'N', email: `n-${slug}@example.com`, phone: '9000000009', password: 'Password123!' },
+        admin: { name: 'N', email: `n-${slug}@example.com`, phone: '9000000009', password: 'Orchid-Lantern-47!' },
       });
       expect((await mk('api')).status).toBe(400);
       expect((await mk('second-gym')).status).toBe(409);

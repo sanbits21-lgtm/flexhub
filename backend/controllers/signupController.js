@@ -12,6 +12,11 @@ const { activePackages } = require('./packageController');
 
 const VERIFY_HOURS = 24;
 const RESEND_GAP_MS = 60 * 1000;
+const NOTICE_GAP_MS = 10 * 60 * 1000;
+
+// Registering answers the same whether or not the email already has an account. Saying "that email
+// is taken" would let anyone check who uses FlexHub; the address's owner hears about it by email.
+const signupReply = (email) => ({ email, message: 'Check your email to confirm your address.' });
 
 const sha256 = (v) => crypto.createHash('sha256').update(v).digest('hex');
 const newToken = () => crypto.randomBytes(32).toString('hex');
@@ -91,14 +96,10 @@ exports.signup = async (req, res) => {
   if (!offered.length && packageId) return res.status(400).json({ message: 'That package is no longer available.', code: 'PACKAGE_REQUIRED' });
 
   const cleanEmail = email.toLowerCase();
-  const existing = await User.findOne({ email: cleanEmail }).select('emailVerified');
+  const existing = await User.findOne({ email: cleanEmail }).select('emailVerified emailVerifySentAt tenantId accountNoticeSentAt email');
   if (existing) {
-    return res.status(409).json({
-      message: existing.emailVerified === false
-        ? 'This email is already registered but not confirmed. Check your inbox, or use "resend" on the next screen.'
-        : 'An account with this email already exists. Try logging in.',
-      code: existing.emailVerified === false ? 'UNVERIFIED_EXISTS' : 'EXISTS',
-    });
+    await noticeToExistingAccount(req, existing);
+    return res.status(201).json(signupReply(cleanEmail));
   }
 
   let slug;
@@ -135,14 +136,15 @@ exports.signup = async (req, res) => {
       tenantId: tenant._id, actorId: user._id, actorRole: 'tenant-admin', actorName: user.name, actorEmail: user.email,
       action: 'SELF_SIGNUP', targetType: 'Tenant', targetId: tenant._id, metadata: { slug }, ip: req.ip,
     }).catch(() => {});
-    res.status(201).json({ email: cleanEmail, message: 'Check your email to confirm your address.' });
+    res.status(201).json(signupReply(cleanEmail));
   } catch (err) {
     // No transactions in this codebase: undo whatever was created so a half-made gym never lingers.
     await Promise.all(created.map((doc) => doc.constructor.deleteOne({ _id: doc._id }).catch(() => {})));
     if (err.mail) return res.status(503).json({ message: "We couldn't send your confirmation email. Please try again in a few minutes." });
     if (err.code === 11000) {
-      const clash = err.keyPattern && (err.keyPattern.slug ? 'That address is already taken.' : 'An account with this email already exists. Try logging in.');
-      return res.status(409).json({ message: clash || 'That already exists.' });
+      // Two sign-ups with one email at the same moment: the other one won. Answer as for any sign-up.
+      if (!err.keyPattern || !err.keyPattern.slug) return res.status(201).json(signupReply(cleanEmail));
+      return res.status(409).json({ message: 'That address is already taken.' });
     }
     throw err;
   }
@@ -165,19 +167,41 @@ exports.verifyEmail = async (req, res) => {
   res.json({ verified: true, approvalStatus: tenant?.approvalStatus });
 };
 
-// Always answers the same, so it cannot be used to find out who has registered.
-exports.resend = async (req, res) => {
-  const reply = { message: 'If that address is waiting for confirmation, a new link is on its way.' };
-  const user = await User.findOne({ email: req.body.email.toLowerCase(), emailVerified: false });
-  if (!user) return res.json(reply);
-  if (user.emailVerifySentAt && Date.now() - user.emailVerifySentAt.getTime() < RESEND_GAP_MS) return res.json(reply);
+// A new confirmation link for an owner who has not confirmed yet (at most one a minute).
+const reissueVerification = async (req, user) => {
+  if (user.emailVerifySentAt && Date.now() - user.emailVerifySentAt.getTime() < RESEND_GAP_MS) return;
   const tenant = await Tenant.findById(user.tenantId).select('name approvalStatus');
-  if (!tenant || tenant.approvalStatus !== 'pending') return res.json(reply);
+  if (!tenant || tenant.approvalStatus !== 'pending') return;
   const token = newToken();
   user.emailVerifyHash = sha256(token);
   user.emailVerifyExpires = new Date(Date.now() + VERIFY_HOURS * 3600000);
   user.emailVerifySentAt = new Date();
   await user.save();
   await sendVerification(req, user, token, tenant.name);
+};
+
+// Someone registered with an address that already has an account. Nothing is created. If the
+// account is still waiting for its confirmation, that link is sent again; otherwise the owner is
+// told they already have an account (at most once every ten minutes, so this cannot be used to
+// flood an inbox).
+const noticeToExistingAccount = async (req, user) => {
+  if (user.emailVerified === false) return reissueVerification(req, user);
+  if (user.accountNoticeSentAt && Date.now() - user.accountNoticeSentAt.getTime() < NOTICE_GAP_MS) return undefined;
+  await User.updateOne({ _id: user._id }, { accountNoticeSentAt: new Date() });
+  return templated({
+    to: user.email,
+    subject: 'You already have a FlexHub account',
+    heading: 'You already have an account',
+    body: 'Someone, hopefully you, tried to register a new gym with this email address. Because it already has a FlexHub account, nothing was created. If it was you, just sign in. If it was not, you can ignore this email.',
+    buttonText: 'Sign in',
+    buttonUrl: `${publicOrigin(req)}/login`,
+  });
+};
+
+// Always answers the same, so it cannot be used to find out who has registered.
+exports.resend = async (req, res) => {
+  const reply = { message: 'If that address is waiting for confirmation, a new link is on its way.' };
+  const user = await User.findOne({ email: req.body.email.toLowerCase(), emailVerified: false });
+  if (user) await reissueVerification(req, user);
   res.json(reply);
 };

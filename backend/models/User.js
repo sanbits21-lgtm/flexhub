@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
   emailVerifyHash: { type: String },
   emailVerifyExpires: { type: Date },
   emailVerifySentAt: { type: Date },
+  // When we last told this address "you already have an account" (see signupController.noticeToExistingAccount).
+  accountNoticeSentAt: { type: Date },
 }, { timestamps: true });
 userSchema.index({ emailVerifyHash: 1 }, { sparse: true });
 

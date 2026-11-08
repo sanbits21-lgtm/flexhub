@@ -3,6 +3,7 @@ const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
 const { startSession, deliver, revokeActor } = require('../utils/sessions');
 const throttle = require('../utils/loginThrottle');
+const { passwordProblem } = require('../utils/passwordPolicy');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
 const { subscriptionOf, approvalBlock } = require('../utils/subscription');
@@ -95,6 +96,8 @@ exports.changePassword = async (req, res) => {
   if (!(await user.matchPassword(currentPassword))) {
     return res.status(400).json({ message: 'Current password is incorrect' });
   }
+  const weak = passwordProblem(newPassword, user);
+  if (weak) return res.status(400).json({ message: weak });
   user.password = newPassword;
   // Sessions started before this moment stop working (a stolen token must not outlive a password
   // change); the caller gets a fresh one so they stay signed in.

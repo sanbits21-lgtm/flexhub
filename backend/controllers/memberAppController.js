@@ -5,6 +5,7 @@ const { z } = require('zod');
 const Member = require('../models/Member');
 const generateToken = require('../utils/generateToken');
 const { revokeActor } = require('../utils/sessions');
+const { passwordProblem } = require('../utils/passwordPolicy');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
 const MemberPlan = require('../models/MemberPlan');
@@ -228,6 +229,8 @@ exports.changePassword = async (req, res) => {
   // 400, not 401: a wrong password here is a bad request. 401 means the SESSION is bad, and the apps
   // answer that by signing the member out.
   if (!(await member.matchPassword(currentPassword))) return res.status(400).json({ message: 'Current password is incorrect.' });
+  const weak = passwordProblem(newPassword, member);
+  if (weak) return res.status(400).json({ message: weak });
   member.password = newPassword;
   member.passwordResetAt = new Date(); // other phones/browsers are signed out; this one gets a fresh token
   await member.save();

@@ -163,6 +163,8 @@ exports.create = async (req, res) => {
   // Staff no longer set a member's password at onboarding time — a random one is
   // stamped here as a placeholder until the WhatsApp self-onboarding flow (member sets
   // their own password via a link) is built; a member can't log in with it as-is.
+  const weak = password ? require('../utils/passwordPolicy').passwordProblem(password, { name, email, phone }) : null;
+  if (weak) return res.status(400).json({ message: weak });
   const initialPassword = password || crypto.randomBytes(16).toString('hex');
 
   let member;

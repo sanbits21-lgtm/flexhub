@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { checkPassword } = require('../utils/passwordPolicy');
 
 // Centralized request-body validation. Controllers previously hand-checked whatever
 // they happened to think of, so coverage was uneven and bad input surfaced as either a
@@ -58,10 +59,18 @@ const MEMBERSHIP_STATUSES = ['active', 'expired', 'frozen', 'cancelled'];
 const DURATION_UNITS = ['monthly', 'quarterly', 'half_yearly', 'yearly'];
 const CLASS_SESSION_STATUSES = ['scheduled', 'cancelled', 'completed'];
 
+// Adds the "too easy to guess" check to a schema that has a password. `pick` finds the object that
+// holds password (and the person's name/email/phone) and `path` is where to report it.
+const withPasswordPolicy = (schema, pick, path) => schema.superRefine((value, ctx) => {
+  const who = pick(value) || {};
+  const problem = checkPassword(who.password, { email: who.email, name: who.name ?? who.ownerName, phone: who.phone });
+  if (problem) ctx.addIssue({ code: 'custom', path, message: problem });
+});
+
 const schemas = {
   verifyEmail: z.object({ token: z.string().regex(/^[0-9a-f]{64}$/, 'is not valid') }).strict(),
   resendVerification: z.object({ email: z.string().trim().email('must be a valid email').max(120) }).strict(),
-  signup: z.object({
+  signup: withPasswordPolicy(z.object({
     gymName: z.string().trim().min(2, 'must be at least 2 characters').max(60, 'is too long'),
     ownerName: personName,
     email: z.string().trim().email('must be a valid email').max(120),
@@ -70,7 +79,7 @@ const schemas = {
     slug: z.string().trim().max(40).optional(),
     packageId: objectId.optional(),
     website: z.string().optional(),
-  }).strict(),
+  }).strict(), (v) => v, ['password']),
 
   // Platform staff editing a gym. Every field optional; anything given must be sane (a negative
   // branch limit or an unknown plan used to be stored as typed). Blank/null clears a date or the member cap.
@@ -162,7 +171,7 @@ const schemas = {
     price: money,
   }).passthrough(),
 
-  tenantCreate: z.object({
+  tenantCreate: withPasswordPolicy(z.object({
     name: z.string().trim().min(1, 'is required'),
     slug: z.string().trim().min(1, 'is required'),
     contactEmail: z.string().email('must be a valid email'),
@@ -173,9 +182,9 @@ const schemas = {
       phone: z.string().trim().min(1, 'is required'),
       password: z.string().min(8, 'must be at least 8 characters'),
     }),
-  }).passthrough(),
+  }).passthrough(), (v) => v.admin, ['admin', 'password']),
 
-  staffCreate: z.object({
+  staffCreate: withPasswordPolicy(z.object({
     name: personName,
     email: z.string().email('must be a valid email').max(120),
     phone,
@@ -183,7 +192,7 @@ const schemas = {
     role: z.enum(['branch-manager', 'trainer']).optional(),
     branchId: optionalObjectId,
     salary: z.coerce.number().min(0).optional().nullable(),
-  }).passthrough(),
+  }).passthrough(), (v) => v, ['password']),
 
   equipmentCreate: z.object({
     name: z.string().trim().min(1, 'is required'),

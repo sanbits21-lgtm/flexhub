@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import RoleRoute from './components/RoleRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -91,6 +91,9 @@ export default function App() {
           <Route path="/payments" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><Payments /></AppLayout></RoleRoute>} />
 
           <Route path="/my-members" element={<RoleRoute allow={['trainer']}><AppLayout><MyMembers /></AppLayout></RoleRoute>} />
+
+          {/* A mistyped or outdated address goes home (or to the login page when signed out), not to a blank screen. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -314,6 +314,8 @@ exports.createTenantAdmin = async (req, res) => {
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
 
   const { name, email, phone, password } = req.body;
+  const weak = require('../utils/passwordPolicy').passwordProblem(password, { name, email, phone });
+  if (weak) return res.status(400).json({ message: weak });
   const tenantAdmin = await User.create({
     name, email, phone, password, role: 'tenant-admin', tenantId: tenant._id,
   });

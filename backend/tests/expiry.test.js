@@ -96,7 +96,7 @@ describe('plan dates when a package is granted', () => {
     for (const p of [live, await pkg({ name: 'Trialled', trialDays: 14 })]) {
       const id = uniq('reg').toLowerCase();
       const email = `owner-${id}@example.com`;
-      await request(app).post('/api/public/signup').send({ gymName: `Exp ${id} Fitness`, ownerName: 'Asha', email, phone: '9800001111', password: 'Password123!', packageId: String(p._id) });
+      await request(app).post('/api/public/signup').send({ gymName: `Exp ${id} Fitness`, ownerName: 'Asha', email, phone: '9800001111', password: 'Orchid-Lantern-47!', packageId: String(p._id) });
       const token = outbox.filter((m) => m.to === email)[0].text.match(/token=([0-9a-f]{64})/)[1];
       await request(app).post('/api/public/verify-email').send({ token });
       const tenantId = (await User.findOne({ email })).tenantId.toString();

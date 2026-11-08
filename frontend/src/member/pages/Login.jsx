@@ -17,7 +17,12 @@ export default function MemberLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  if (ready && member) return <Navigate to="/member" replace />;
+  // Where to go once signed in: the page they were sent here from, else the home screen. Used by
+  // both exits below, so the "already signed in" redirect cannot override the one after sign-in.
+  const from = location.state?.from;
+  const destination = typeof from === 'string' && from.startsWith('/member') && !from.startsWith('/member/login') ? from : '/member';
+
+  if (ready && member) return <Navigate to={destination} replace />;
 
   if (unknownGym) {
     return (
@@ -37,7 +42,7 @@ export default function MemberLogin() {
     setError('');
     try {
       await signIn(identifier, password);
-      navigate(location.state?.from?.startsWith('/member') ? location.state.from : '/member', { replace: true });
+      navigate(destination, { replace: true });
     } catch (err) {
       setError(errorText(err, 'Could not sign in.'));
     } finally {

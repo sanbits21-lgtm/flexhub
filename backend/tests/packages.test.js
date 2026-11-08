@@ -14,7 +14,7 @@ const createPkg = async (over = {}) => {
 };
 const body = (over = {}) => {
   const id = uniq('reg').toLowerCase();
-  return { gymName: `Pkg ${id} Fitness`, ownerName: 'Asha Owner', email: `owner-${id}@example.com`, phone: '9800001111', password: 'Password123!', ...over };
+  return { gymName: `Pkg ${id} Fitness`, ownerName: 'Asha Owner', email: `owner-${id}@example.com`, phone: '9800001111', password: 'Orchid-Lantern-47!', ...over };
 };
 const signup = (b) => request(app).post('/api/public/signup').send(b);
 const config = async () => (await request(app).get('/api/public/signup-config')).body;
@@ -160,7 +160,7 @@ describe('choosing a package when registering', () => {
     expect(String(tenant.requestedPackageId)).toBe(pkg._id);
     expect(tenant).toMatchObject({ approvalStatus: 'pending', maxBranches: 3, maxMembers: 250 });
     expect(tenant.packageId).toBeUndefined(); // nothing is granted before approval
-    const login = await request(app).post('/api/auth/login').send({ email: b.email, password: 'Password123!' });
+    const login = await request(app).post('/api/auth/login').send({ email: b.email, password: 'Orchid-Lantern-47!' });
     expect(login.status).toBe(403);
   });
 
@@ -191,7 +191,7 @@ describe('approving a gym whose email was never confirmed', () => {
     expect((await approve(tenantId, { confirmEmail: false })).status).toBe(400);
     expect((await approve(tenantId, { confirmEmail: true })).status).toBe(200);
     expect(await User.findOne({ email: b.email })).toMatchObject({ emailVerified: true });
-    expect((await request(app).post('/api/auth/login').send({ email: b.email, password: 'Password123!' })).status).toBe(200);
+    expect((await request(app).post('/api/auth/login').send({ email: b.email, password: 'Orchid-Lantern-47!' })).status).toBe(200);
   });
 });
 
@@ -212,7 +212,7 @@ describe('approving a gym that chose a package', () => {
     expect(res.body).toMatchObject({ approvalStatus: 'approved', billingPlan: 'trial', maxBranches: 4, maxMembers: 200, packageName: 'Studio', packageId: pkg._id });
     const days = Math.round((new Date(res.body.trialEndsAt) - Date.now()) / 86400000);
     expect(days).toBe(30);
-    expect((await request(app).post('/api/auth/login').send({ email: b.email, password: 'Password123!' })).status).toBe(200);
+    expect((await request(app).post('/api/auth/login').send({ email: b.email, password: 'Orchid-Lantern-47!' })).status).toBe(200);
     expect(outbox.some((m) => m.to === b.email && /30-day free trial/.test(m.text))).toBe(true);
   });
 
@@ -224,7 +224,7 @@ describe('approving a gym that chose a package', () => {
     expect(res.body).toMatchObject({ billingPlan: 'basic', maxBranches: 10, packageName: 'Pro' });
     expect(res.body.trialEndsAt).toBeUndefined();
     expect(res.body.maxMembers).toBeUndefined();
-    const owner = await request(app).post('/api/auth/login').send({ email: b.email, password: 'Password123!' });
+    const owner = await request(app).post('/api/auth/login').send({ email: b.email, password: 'Orchid-Lantern-47!' });
     expect(owner.status).toBe(200);
     expect(owner.body.subscription).toMatchObject({ onTrial: false, trialExpired: false });
     expect(outbox.some((m) => m.to === b.email && /Pro package starts now/.test(m.text) && /unlimited members/.test(m.text))).toBe(true);

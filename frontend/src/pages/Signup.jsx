@@ -61,7 +61,7 @@ export default function Signup() {
     return shell(
       <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-md space-y-4">
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Check your email</h1>
-        <p className="text-gray-700 dark:text-gray-200">We sent a confirmation link to <strong>{sentTo}</strong>. Click it to confirm your address.</p>
+        <p className="text-gray-700 dark:text-gray-200">We sent an email to <strong>{sentTo}</strong>. Open it to confirm your address. (If that address already has an account, the email says so and links to the sign-in page.)</p>
         <p className="text-sm text-gray-600 dark:text-gray-300">After that, our team reviews every new gym. We'll email you as soon as yours is approved, and {chosen ? (chosen.trialDays > 0 ? `your ${chosen.trialDays}-day free trial` : `your ${chosen.name} package`) : `your ${config?.trialDays}-day free trial`} starts then, not before.</p>
         <button type="button" onClick={resend} className="text-sm underline text-gray-700 dark:text-accent">Didn't get it? Send it again</button>
         {resent && <p role="status" className="text-sm text-green-700 dark:text-green-400">If that address is waiting for confirmation, a new link is on its way.</p>}

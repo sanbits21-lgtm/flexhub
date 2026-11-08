@@ -20,6 +20,11 @@ const bootstrapSuperAdmin = async (env = process.env, log = console) => {
     log.warn(`SUPER_ADMIN_PASSWORD must be at least ${MIN_PASSWORD} characters; skipping super-admin bootstrap.`);
     return null;
   }
+  const weak = require('./passwordPolicy').passwordProblem(password, { email });
+  if (weak) {
+    log.warn(`SUPER_ADMIN_PASSWORD is not safe to use: ${weak} Skipping super-admin bootstrap.`);
+    return null;
+  }
   if (await User.exists({ email })) return null;
 
   await User.create({
