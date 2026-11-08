@@ -18,6 +18,9 @@ if (process.env.NODE_ENV === 'production') {
 
 // Links in emails (confirm your email, a new gym is waiting) are built from PUBLIC_URL. Without it
 // they would use whatever Host header the request carried, which an attacker can choose.
+// Render tells every web service its own address (RENDER_EXTERNAL_URL), so that works with no
+// setup; a custom domain still needs PUBLIC_URL, which always wins.
+if (!process.env.PUBLIC_URL && process.env.RENDER_EXTERNAL_URL) process.env.PUBLIC_URL = process.env.RENDER_EXTERNAL_URL;
 if (process.env.NODE_ENV === 'production' && !/^https?:\/\/[^\s/]+/i.test(process.env.PUBLIC_URL || '')) {
   console.error('PUBLIC_URL must be set in production, for example https://app.example.com (no trailing path).');
   process.exit(1);

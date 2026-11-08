@@ -31,7 +31,8 @@ services:
         generateValue: true
       - key: MONGODB_URI
         sync: false
-      # Public address of the site, e.g. https://app.yourdomain.com (used in email links)
+      # Public address of the site, e.g. https://app.yourdomain.com (used in email links). Leave it
+      # empty to use the *.onrender.com address Render gives the service; set it once you add a custom domain.
       - key: PUBLIC_URL
         sync: false
       # Set to your root domain (yourdomain.com) to give each gym its own subdomain. Leave empty otherwise.

@@ -106,4 +106,15 @@ describe('starting in production', () => {
     const r = start({ PUBLIC_URL: 'https://app.example.com' });
     expect(r.stderr).not.toMatch(/PUBLIC_URL must be set/);
   });
+
+  it("on Render, falls back to the address Render gives the service, so no setup is needed", () => {
+    const r = start({ RENDER_EXTERNAL_URL: 'https://flexhub.onrender.com' });
+    expect(r.stderr).not.toMatch(/PUBLIC_URL must be set/);
+  });
+
+  it('ignores a nonsense address and still refuses', () => {
+    const r = start({ PUBLIC_URL: 'app.example.com' }); // no https://
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/PUBLIC_URL must be set/);
+  });
 });
