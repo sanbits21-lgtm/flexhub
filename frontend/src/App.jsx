@@ -12,6 +12,7 @@ import Signup from './pages/Signup';
 const MemberApp = lazy(() => import('./member/MemberApp'));
 import VerifyEmail from './pages/VerifyEmail';
 import PlatformSettings from './pages/platform/PlatformSettings';
+import Packages from './pages/platform/Packages';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/packages" element={<RoleRoute allow={['super-admin', 'platform-admin']}><AppLayout><Packages /></AppLayout></RoleRoute>} />
           <Route path="/platform-settings" element={<RoleRoute allow={['super-admin']}><AppLayout><PlatformSettings /></AppLayout></RoleRoute>} />
 
           <Route path="/" element={<RoleRoute><AppLayout><Dashboard /></AppLayout></RoleRoute>} />

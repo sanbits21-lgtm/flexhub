@@ -22,7 +22,7 @@ const toPayload = (f) => ({
 });
 
 /** The plans a new gym can pick on the registration page. Super-admin only. */
-export default function PackagesManager() {
+export default function PackagesManager({ readOnly = false }) {
   const [packages, setPackages] = useState(null);
   const [form, setForm] = useState(null); // null = closed; { _id? ...fields }
   const [error, setError] = useState('');
@@ -59,9 +59,9 @@ export default function PackagesManager() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold text-gray-900 dark:text-gray-100">Subscription packages</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Shown on the registration page. A gym gets its package's limits when you approve it; edits here only affect future approvals.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Shown on the registration page. A gym gets its package's limits when you approve it; edits here only affect future approvals.{readOnly ? ' Only the super-admin can change packages.' : ''}</p>
         </div>
-        {!form && <button type="button" onClick={() => setForm({ ...EMPTY })} className="bg-gray-900 text-white rounded-xl px-4 py-2 shrink-0 dark:bg-accent dark:text-accent-ink dark:font-semibold">Add package</button>}
+        {!form && !readOnly && <button type="button" onClick={() => setForm({ ...EMPTY })} className="bg-gray-900 text-white rounded-xl px-4 py-2 shrink-0 dark:bg-accent dark:text-accent-ink dark:font-semibold">Add package</button>}
       </div>
       {error && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</div>}
 
@@ -110,7 +110,7 @@ export default function PackagesManager() {
       )}
 
       {packages === null && !error && <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>}
-      {packages && packages.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">No packages yet. Until you add one, new gyms register for the plain free trial above.</p>}
+      {packages && packages.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">No packages yet. Until one is added, new gyms register for the plain free trial set in Platform Settings.</p>}
       {packages && packages.length > 0 && (
         <ul className="divide-y dark:divide-gray-700">
           {packages.map((p) => (
@@ -124,11 +124,13 @@ export default function PackagesManager() {
                 <div className="text-sm text-gray-600 dark:text-gray-300">{limitsLabel(p)} · {trialLabel(p)}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">{p.gyms} gym{p.gyms === 1 ? '' : 's'}</div>
               </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => { setError(''); setForm(toForm(p)); }} className={btn}>Edit</button>
-                <button type="button" onClick={() => toggle(p)} className={btn}>{p.isActive ? 'Hide' : 'Show'}</button>
-                <button type="button" onClick={() => remove(p)} className="text-red-600 dark:text-red-400 hover:underline text-sm">Delete</button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => { setError(''); setForm(toForm(p)); }} className={btn}>Edit</button>
+                  <button type="button" onClick={() => toggle(p)} className={btn}>{p.isActive ? 'Hide' : 'Show'}</button>
+                  <button type="button" onClick={() => remove(p)} className="text-red-600 dark:text-red-400 hover:underline text-sm">Delete</button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

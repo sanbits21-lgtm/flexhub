@@ -6,10 +6,10 @@ Multi-tenant B2B Gym Management SaaS. Each gym brand is a **Tenant** with N **Br
 
 | Layer | Technology |
 |---|---|
-| Backend | Node.js, Express 4, Mongoose 8, JWT (jsonwebtoken), bcryptjs |
-| Frontend | React 18, React Router v6, Tailwind CSS, Axios, Recharts, Vite |
+| Backend | Node.js, Express 4, Mongoose 8, bcryptjs, JWT access tokens (jsonwebtoken) + rotating refresh sessions, Helmet, Zod |
+| Frontend | React 18, React Router v7, Tailwind CSS, Axios, Recharts, Vite (installable PWA) |
 | Database | MongoDB (shared DB, app-layer tenant/branch scoping) |
-| Mobile (planned) | React Native / Expo, member-only |
+| Mobile | React Native / Expo (`mobile/`): members, trainers and branch managers; the member screens also exist as a web app at `/member` (see `docs/MEMBER_APP.md`) |
 
 ## Environment
 
@@ -20,6 +20,8 @@ JWT_SECRET=...
 PORT=5000
 SEED_EMAIL / SEED_PASSWORD / SEED_NAME / SEED_PHONE   # for the seed script
 ```
+Everything else (sessions, lockout, content-security policy, email, trial, reminders, production
+address) is listed with its default in [docs/CONFIGURATION.md](./docs/CONFIGURATION.md).
 
 ## Running the App
 
@@ -40,13 +42,22 @@ Tests hit a **separate database on the same cluster** — `MONGODB_URI`'s db nam
 `-test` suffix (override via `MONGODB_URI_TEST`). `tests/helpers.js` refuses to run
 against any database whose name doesn't end in `-test`, and wipes collections between
 suites (the Atlas user has read/write but not `dropDatabase`, so cleanup is deletes, not
-a drop). `NODE_ENV=test` disables rate limiting, which the suite would otherwise trip.
+a drop). `NODE_ENV=test` disables rate limiting, which the suite would otherwise trip
+(`FORCE_RATE_LIMIT=on` turns it back on for the suites that test it).
 
 Coverage: RBAC role matrix and validation errors (`rbac.test.js`), cross-tenant/branch
 isolation and `enforceWriteScope` tampering (`scoping.test.js`), membership date
 derivation, derived expiry status, expiry-window filters and soft delete
 (`members.test.js`), payment lifecycle, filters, pagination and renewal date rules
-(`payments.test.js`).
+(`payments.test.js`). Later suites cover: self-registration, email confirmation and approval
+(`signup.test.js`), subscription packages and approval terms (`packages.test.js`), plan expiry,
+renewal, reminder emails and tenant-edit validation (`expiry.test.js`), access/refresh sessions
+(`sessions.test.js`), the per-account lockout (`lockout.test.js`), rate limits, request size and the
+production start-up check (`security.test.js`), the content-security policy (`csp.test.js`), the
+password policy (`passwordPolicy.test.js`), the member web app's API (`memberPwa.test.js`), custom
+member fields and bulk upload, the first super-admin from the environment, and more. About 390 tests
+in 27 suites at the time of writing. `security.test.js` sets `FORCE_RATE_LIMIT=on` because limits are
+otherwise off under test.
 
 ## PWA (installable mobile app)
 
@@ -89,17 +100,17 @@ Set `NODE_ENV=production` in `.env` for this deploy target. `server.js` only ser
 (comma-separated) is only needed if the frontend is hosted on a different origin than the
 API — see `.env.example`.
 
-**Hardening already in place** (`backend/server.js`): `helmet()` (CSP explicitly off until
-tuned against the real built bundle — see comment in the file), rate limiting (300 req/15min
-per IP on all of `/api`, tighter 10 req/15min on the two login endpoints specifically),
-`trust proxy` set for correct client-IP detection behind a reverse proxy, and a `GET /health`
-check for uptime monitoring.
+**Hardening already in place:** Helmet headers plus a **Content-Security-Policy** built for this bundle
+(`backend/middleware/csp.js`, hash-allowed inline blocks, `CSP_MODE`), rate limits mounted *before* the
+public routes (sign-up 5/h, confirmation 20/h, sign-in 10 failed/15 min, refresh 120/15 min, `/api` 300/15 min),
+`trust proxy` for correct client addresses, a small default request body (5 MB only for bulk import and
+photos), `GET /health`, and a start-up check that refuses production without a strong `JWT_SECRET` and a
+public address (`PUBLIC_URL`, falling back to Render's own). Full list: `docs/SECURITY.md`.
 
-**Still needed before a real public launch** — no password-reset flow for staff or
-members; no error-tracking service wired up; CSP is still disabled in helmet; the
-platform cannot bill its own tenants (`TenantSubscriptionInvoice` is only ever read); and
-the member-facing experience doesn't exist (see Deferred follow-ups). Also: **rotate the
-MongoDB Atlas password** in `.env` before going live — it's a weak, guessable value.
+**Still needed before a real public launch:** no "forgot password" flow for staff or members; no
+error-tracking service; no payment gateway for the platform's own billing (renewals are recorded by
+hand); real email delivery and the mobile app's new sessions are untested on a device; and **rotate the
+MongoDB Atlas password** in `.env` before going live if it was ever weak.
 
 ---
 
@@ -110,8 +121,8 @@ Six actors, strictly nested: **Super Admin** → **Platform Admin** → **Tenant
 Staff (first five) share one `User` collection with a `role` enum. `Member` is a separate collection (different auth client — mobile — different field set and volume).
 
 ### `backend/middleware/auth.js`
-- `protect` — verifies JWT, branches on `decoded.actorType` (`'member'` vs `'user'`) to load `req.member` or `req.user`.
-- `scopeContext` — computes `req.scope`, the Mongo filter base every controller must spread into its queries:
+- `protect` — verifies the (15-minute) access JWT, branches on `decoded.actorType` (`'member'` vs `'user'`) to load `req.member` or `req.user`, and records `req.sid` (which login this is). An expired token answers 401 `TOKEN_EXPIRED` so clients refresh and retry; any other 401 means the session is gone. Also applies the gym-state gate: unapproved or rejected (403), suspended (403), and read-only after a trial or paid plan ends (402 `TRIAL_ENDED` / `PLAN_EXPIRED`, writes by staff only).
+- `scopeContext` — computes `req.scope`, the Mongo filter base every controller must spread into its queries (a `tenantId`/`branchId` query value that is not a plain string is rejected with 400):
   - `member` → `{ memberId, tenantId, branchId }`
   - `super-admin` → `{}` (optional `?tenantId=` override)
   - `platform-admin` → `{ tenantId: { $in: managedTenantIds } }` or unscoped (`{}`,
@@ -164,13 +175,49 @@ The Member is deliberately the lowest-privilege actor — **never** trainer/bran
 
 ---
 
+## Authentication and sessions
+
+Signing in (`POST /api/auth/login`, `/api/member-auth/login`) starts a **session**: a 15-minute
+access JWT (`{id, actorType, sid}`) plus a random refresh token whose **hash** is stored in the
+`Session` collection (`backend/utils/sessions.js`). The website gets the refresh token as an
+`httpOnly`, `SameSite=Strict`, path-limited cookie (and must send `X-Requested-With: flexhub` to use
+it); the native app sends `X-Client: native` and receives it in the response body instead.
+
+`POST /refresh` rotates: the used token is retired (kept 24 h so reuse is detectable) and a new
+one issued in the same family. A retired token presented after the 20-second grace window ends
+the whole family. A refresh re-checks everything login checks (active person, gym address, email
+confirmed, approved, not suspended). Logins end after 30 days unused or 180 days in total.
+`logout`, `logout-all`, a password change (other devices), a forced reset, deactivation and
+account deletion remove sessions (`revokeActor`). Tokens made before `passwordResetAt` are also
+rejected by `protect`.
+
+Sign-in is guarded by a per-IP limiter and a **per-account lockout** (`utils/loginThrottle.js`,
+`LoginAttempt`): keyed by what was typed, so an unknown account behaves identically, with a dummy
+password check for equal timing. Passwords pass `utils/passwordPolicy.js`. Registration answers the
+same whether or not the email exists. Settings: `docs/CONFIGURATION.md`; behaviour and gaps:
+`docs/SECURITY.md`.
+
+## Self-registration, packages and the plan lifecycle
+
+`/signup` → `signupController` creates a **pending** tenant, branch and unconfirmed owner, and emails
+a confirmation link. When the owner confirms, platform staff are emailed. **Approve**
+(`tenantController.approve`) grants the chosen `SubscriptionPackage`'s limits (or the platform trial),
+sets `trialEndsAt` (package with trial days) or `planEndsAt` = now + `billingMonths`
+(package with none), and emails the owner. `confirmEmail: true` ("Approve anyway") confirms the
+owner's email on their behalf. **Renew** adds months to `planEndsAt` (from today if it had lapsed, from
+the current end otherwise), records a paid `TenantSubscriptionInvoice`, converts a trial to a paid
+plan and resets reminders. `utils/subscription.js` holds the rules (`subscriptionOf`, `expiryBlock`,
+`addMonths`; 3 grace days for paid plans, none for trials). `utils/expiryNotices.js` emails owners at
+7 days, 1 day and at the end (claimed with one conditional write so several servers never double-send)
+and runs every 6 hours from `server.js`. Details for operators: `docs/PLATFORM_ADMIN.md`.
+
 ## Database Models (`backend/models/`)
 
 | Model | Key fields |
 |---|---|
-| `Tenant` | name, slug (unique), contactEmail/Phone, billingPlan, billingStatus, maxBranches, isActive, upiId, upiPaymentLink |
+| `Tenant` | name, slug (unique, = the gym's address), brand{color,color2,gradientAngle,logoUrl,tagline}, memberFields[] (custom member fields), contactEmail/Phone, billingPlan, billingStatus, maxBranches, maxMembers, trialEndsAt, **planEndsAt**, **approvalStatus** (pending/approved/rejected), signupSource, **requestedPackageId / packageId / packageName**, expiryNotice (which reminder was sent), features (Map), isActive, upiId, upiPaymentLink |
 | `Branch` | tenantId, name, address{}, phone, timezone, capacity, isActive |
-| `User` | name, email (unique), phone, password (bcrypt), role enum, tenantId, branchId, managedTenantIds[], specialization (trainer), assignedMembers[] (trainer) |
+| `User` | name, email (unique), phone, password (bcrypt), role enum, tenantId, branchId, managedTenantIds[], specialization (trainer), salary, emailVerified (+ confirmation hash/expiry), passwordResetAt, accountNoticeSentAt |
 | `Member` | tenantId, branchId, memberCode (unique), name, email, phone, password (bcrypt), membershipPlanId, membershipStart/End, membershipStatus, bodyMetrics[], assignedTrainerId, qrCode (unique) |
 | `MembershipPlan` | tenantId, name, durationUnit (monthly/quarterly/half_yearly/yearly), price, features[] |
 | `Equipment` | tenantId, branchId, name, category, status, nextServiceDue |
@@ -178,6 +225,12 @@ The Member is deliberately the lowest-privilege actor — **never** trainer/bran
 | `MemberPayment` | tenantId, branchId, memberId, amount, status, invoiceNumber (unique) |
 | `TenantSubscriptionInvoice` | tenantId, billingPlan, periodStart/End, amount, status — the platform's own SaaS billing of tenants |
 | `AuditLog` | tenantId, actorId, actorRole, action, targetType/Id, metadata, createdAt |
+| `SubscriptionPackage` | name, description, price, **billingMonths** (1-60), trialDays (0 = live at approval), maxBranches, maxMembers (unset = unlimited), highlights[], isFeatured, isActive, sortOrder — the plans gyms pick when registering |
+| `Session` | actorType (user/member), actorId, familyId, tokenHash, startedAt, expiresAt (TTL), rotatedAt — one row per **refresh token**; a login is a family of rotated tokens |
+| `LoginAttempt` | key (account typed, real or not), failures, windowStart, lockedUntil, lockCount, expiresAt (TTL) — the per-account lockout |
+| `PlatformSettings` | one document: selfSignupEnabled, trialDays, trialMaxMembers, trialMaxBranches (override the env defaults) |
+| `MemberPlan` | a member's stored workout or diet plan (from a trainer, or generated) |
+| `ClassType`, `ClassSession`, `Booking`, `PtSession` | group classes, their schedule and bookings; one-to-one personal training |
 
 ---
 
@@ -185,10 +238,14 @@ The Member is deliberately the lowest-privilege actor — **never** trainer/bran
 
 | Base path | Roles | Notes |
 |---|---|---|
-| `/api/auth` | public/JWT | staff login, `/me`, change-password |
-| `/api/member-auth` | public/JWT | member login (mobile), `/me` |
+| `/api/public` | public | `GET /tenant` (a gym's name and look for its login page), `GET /signup-config` (incl. the offered packages), `POST /signup`, `POST /verify-email`, `POST /resend-verification`; `GET /member.webmanifest` is served separately |
+| `/api/auth` | public/JWT | staff `POST /login`, `POST /refresh`, `POST /logout`, `POST /logout-all`, `GET /me`, `POST /change-password` |
+| `/api/member-auth` | public/JWT | member `POST /login`, `POST /refresh`, `POST /logout`, `POST /logout-all`, `GET /me` |
+| `/api/packages` | super-admin (write), platform-admin (read) | subscription packages: list, create, update, delete (refused while any gym uses it) |
+| `/api/platform-settings` | super-admin (write), platform staff (read) | trial terms and whether self-registration is open |
+| `/api/csp-report` | public | browsers post content-security-policy violation reports here; logged, size-limited |
 | `/api/platform-admins` | super-admin | CRUD platform admins |
-| `/api/tenants` | super-admin, platform-admin | onboard tenant + first tenant-admin, suspend, add more tenant-admins |
+| `/api/tenants` | super-admin, platform-admin | list, onboard tenant + first tenant-admin, edit (validated; a `packageId` applies a package), suspend, add more tenant-admins; **`POST /:id/approve`** (takes optional `packageId`, term overrides, and `confirmEmail: true` for "Approve anyway"), `POST /:id/reject`, **`POST /:id/renew`** (months + amount: extends the plan, records a paid invoice, emails the owner) |
 | `/api/branches` | tenant-admin (own), read for platform/super | CRUD, `POST /:id/managers` creates a branch-manager |
 | `/api/staff` | tenant-admin (read), branch-manager (CUD trainers) | `role` query filters; `GET /:id/assigned-members` |
 | `/api/members` | branch-manager (CUD), tenant-admin/trainer (read, scoped) | `GET /me` for member self-service, `GET /:id/progress`, `POST /:id/body-metrics`, `POST /:id/renew` (extends dates + records payment atomically) |
@@ -199,7 +256,7 @@ The Member is deliberately the lowest-privilege actor — **never** trainer/bran
 | `/api/tenant-settings` | tenant-admin (read/write), branch-manager (read) | tenant's own UPI collection details (`upiId`, `upiPaymentLink`) — no payment gateway |
 | `/api/tenants/:id/features` | super-admin, platform-admin | Workspace — get/update per-tenant feature flags (see below) |
 
-All routes except the two `/login` endpoints go through `protect → scopeContext`; write routes add `enforceWriteScope` + `requireRole(...)`.
+Routes under `/api/public`, the `/login`, `/refresh` and `/logout` endpoints, and `/api/csp-report` are public. Everything else goes through `protect → scopeContext`; write routes add `enforceWriteScope` + `requireRole(...)`. Also mounted: `/api/member-app` (the member's own screens: profile, photo, plans, sessions, pass, payments), `/api/class-types`, `/api/class-sessions`, `/api/bookings`, `/api/pt-sessions`, `/api/payments`, `/api/reports`, `/api/audit-logs`.
 
 ### Dashboard (`backend/controllers/dashboardController.js`)
 One `getSummary` branches on `req.user.role` / `req.actorType`:
@@ -361,7 +418,8 @@ individual pages/features/fields on or off **per tenant**, independent of
 ## Frontend Structure (`frontend/src/`)
 
 ```
-context/AuthContext.jsx      # user, login/logout, rehydrates via GET /api/auth/me
+context/AuthContext.jsx      # user, login/logout; on load renews the in-memory access token from the refresh cookie, then GET /api/auth/me
+services/authToken.js        # the access token, held in memory only (never localStorage)
 services/api.js              # axios instance + one API module per resource
 components/RoleRoute.jsx     # <RoleRoute allow={[...]}> — generalized role route guard
 components/FeatureRoute.jsx  # wraps page CONTENT inside AppLayout (not the route) — sidebar link stays visible
@@ -370,23 +428,28 @@ components/StatCard.jsx, DataTable.jsx   # shared dashboard/table primitives
 hooks/useFeature.js          # useFeature('pages:reports') — reads AuthContext, true if absent (super/platform-admin)
 pages/
   Login.jsx, Dashboard.jsx   # Dashboard branches its rendering on user.role
-  platform/  PlatformAdmins.jsx, Tenants.jsx, Workspace.jsx, PlatformDashboard.jsx
-  tenant/    Branches.jsx, MembershipPlans.jsx, TrainerReport.jsx, Reports.jsx, PaymentSettings.jsx
+  platform/  PlatformAdmins.jsx, Tenants.jsx (approvals, renew, edit), Packages.jsx, PlatformSettings.jsx, AuditLogs.jsx, Workspace.jsx, PlatformDashboard.jsx
+  member/    (the member web app at /member: MemberApp.jsx, MemberAuth.jsx, Shell.jsx, api.js, pages/{Home,Sessions,Plans,Gym,Pass,Payments,Profile,Login}.jsx)
+  tenant/    Branches.jsx, MembershipPlans.jsx, TrainerReport.jsx, Reports.jsx, PaymentSettings.jsx, Branding.jsx
+  dashboard/ role dashboards (widgets can be removed and re-added from a slide-in library)
   branch/    Members.jsx, Trainers.jsx, Equipment.jsx, Attendance.jsx, Payments.jsx
   trainer/   MyMembers.jsx
 utils/upi.js                 # buildUpiLink({upiId, payeeName, amount, note}) -> upi://pay deep link
+utils/packages.js            # price / trial / limits labels for packages
+utils/receipt.js, bulkImport.js, memberFields.js, brand.js   # printable/WhatsApp receipts, bulk-upload mapping, custom fields, brand colours + gradient
+components/                  # also: ListToolbar (title+count, search, filters), PackagesManager, PendingApprovals, TrialBanner, WidgetLibrary, Modal
 ```
 
-Auth flow: login → JWT in `localStorage` → Axios request interceptor attaches `Authorization: Bearer` → `AuthContext` rehydrates via `GET /api/auth/me` on refresh.
+Auth flow: login returns a 15-minute access token (kept in memory) and sets an `httpOnly` refresh cookie → the Axios interceptor attaches `Authorization: Bearer` → when the server answers 401 `TOKEN_EXPIRED` the interceptor makes **one** shared `POST /api/auth/refresh` and repeats the failed requests → on a page load `AuthContext` renews from the cookie, then calls `GET /api/auth/me`. The member app (`frontend/src/member/api.js`) does the same with its own cookie and also keeps the user signed in while offline. The native app keeps the refresh token in `SecureStore` and sends `X-Client: native`. See "Authentication and sessions" below.
 
-**Not yet built**: WorkoutPlan/DietPlan pages, and the member-only mobile app (`mobile/`, planned React Native/Expo — see plan file for screen list). (Payments UI, a Trainer Collections/Salary report, and tenant-admin branch drill-down are now built — see Frontend Structure below.)
+**Built since this file was first written:** the Expo app (`mobile/`), the member web app, payments UI, Trainer Collections/Salary report, branch drill-down, workout/diet plans, class and personal-training scheduling, bulk upload with custom fields, branding, widgets, packages, approvals and renewals.
 
 ### Deferred follow-ups (intentionally out of scope so far)
 
 - **Member self-onboarding via WhatsApp link.** `memberController.create` no longer takes a password from staff — it stamps a random placeholder (`crypto.randomBytes`) that nobody knows, so the member can't log in with it. The real flow (WhatsApp message with a link, member sets their own password) isn't built. Natural landing spot: a token-based `POST /api/member-auth/set-password` plus whatever sends the WhatsApp message.
-- **Actual notification sending.** The Dashboard's Expiring Soon / Expired sections (`dashboardController.js` → `tenantSummary`/`branchSummary`) surface *who* needs contacting, but nothing sends anything — staff still act manually (call/WhatsApp). No email/SMS/WhatsApp integration exists yet.
-- **Platform can't bill its tenants.** `TenantSubscriptionInvoice` is only ever read (for the platform MRR chart) — nothing creates or manages them, so the SaaS side of the business has no billing flow. Tenants also can't be deleted, only suspended.
-- **No password reset** for staff or members, and no error-tracking service.
+- **Member-facing notifications.** The Dashboard's Expiring Soon / Expired sections (`dashboardController.js` → `tenantSummary`/`branchSummary`) surface *who* needs contacting, but nothing is sent to members — staff still act manually (call/WhatsApp). Email exists (`utils/mailer.js`) and is used for sign-up, approvals, renewals and the **gym-owner plan-ending reminders**, but there is no SMS/WhatsApp/push to members.
+- **No payment gateway for the platform's own billing.** Packages carry a price and billing period, and **Renew** records a paid `TenantSubscriptionInvoice` (which feeds the platform dashboard's monthly total), but the money is collected outside the app and entered by hand. Tenants also can't be deleted, only suspended.
+- **No "forgot password" flow** for staff or members (a manager re-issues a member's app login), no two-factor sign-in, no list of signed-in devices, and no error-tracking service.
 - **Member-facing self-service expansion** (see Member role section above) — self-update profile (weight/height/age/health notes, all optional), profile photo upload (needs a storage decision first), read-only equipment/trainer visibility for their own branch, and a "for now" AI-suggested basic workout feature (needs a data model + an actual AI integration — none exists in the app today).
 
 ## First-Time Setup Flow
@@ -397,3 +460,5 @@ Auth flow: login → JWT in `localStorage` → Axios request interceptor attache
 4. Platform Admin (or Super Admin) → **Tenants** page → onboard a Tenant (creates the Tenant + its first Tenant Admin in one call).
 5. Tenant Admin logs in → **Branches** page → create a Branch, then **+ Add Manager** to create its Branch Manager.
 6. Branch Manager logs in → **Members**/**Trainers**/**Equipment** pages to onboard the branch.
+
+**Or let gyms register themselves:** the super-admin creates subscription packages (**Packages**), a gym registers at `/signup` and confirms its email, a platform admin approves it (**Tenants > Pending approval**), and the owner signs in. Later, **Renew** extends the plan. See `docs/PLATFORM_ADMIN.md`.

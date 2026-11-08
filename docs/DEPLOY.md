@@ -13,7 +13,10 @@
    - `MONGODB_URI` (Atlas, or `mongodb://mongo:27017/flexhub` with `--profile db`)
    - `JWT_SECRET`: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
      The container refuses to start in production with a short or placeholder secret.
+   - `PUBLIC_URL`, your site's `https://` address. **Required in production**: the server will not
+     start without it (email links are built from it).
    - `DOMAIN` if using the Caddy profile; `ANTHROPIC_API_KEY` is optional.
+   - Every other setting is in [CONFIGURATION.md](./CONFIGURATION.md).
 2. `docker compose up -d --build` (add `--profile db` and/or `--profile proxy`).
 3. Create the platform owner once:
    `docker compose run --rm app node scripts/seedSuperAdmin.js` (uses `SEED_*` vars), then
@@ -86,14 +89,33 @@ The **trial starts at approval**, not at registration. Its terms are a setting, 
 self-registration is open at all. When approving, platform staff can change the terms for that one
 gym. The `TRIAL_*` / `SELF_SIGNUP` variables in `.env` are only the starting defaults.
 
+**Subscription packages** (the **Packages** page, super-admin) replace those plain trial terms:
+each package has a price, billing period in months, trial days, branch and member limits. The
+registration page shows them and the gym must pick one; approving the gym grants that package.
+Full guide: [PLATFORM_ADMIN.md](./PLATFORM_ADMIN.md).
+
 **Email must be configured** (`SMTP_URL` or `SMTP_HOST`..., `MAIL_FROM`, `PUBLIC_URL`; see
 `.env.example`). Without it, in production the signup page closes itself, because confirmation
 links could not be delivered. In development the email is printed to the server log instead.
 
 - **When the trial ends** the owner can still sign in and view everything, but cannot change
   anything (HTTP 402). Members are not affected. Suspended gyms are locked out completely.
-- **To keep a gym:** in *Tenants*, Edit it and pick a paid plan. That ends the trial and lifts the
-  member cap. *+7 days* extends a trial. Billing itself is manual: there is no payment gateway yet.
+- **To keep a gym:** in *Tenants*, press **Renew** (**Activate plan** for a trial gym), enter the
+  months and the amount you received. Paid plans end on a date, keep working for **3 grace days**
+  after it, then go read-only; owners are emailed 7 days before, 1 day before and when it ends.
+  *+7 days* extends a trial. Billing itself is manual: there is no payment gateway, the app only
+  records what you were paid. See [PLATFORM_ADMIN.md](./PLATFORM_ADMIN.md).
+- **"Approve anyway":** if the owner never confirmed their email (e.g. mail is not set up), the
+  approve button lets a platform admin vouch for it; tell the owner yourself that they can sign in.
 - **Abuse limits:** 5 registrations per network address per hour, a hidden honeypot field, unknown
   fields rejected, and every gym needs human approval.
 - Gyms created by platform staff need no approval and have no trial end date.
+- Registering with an email that already has an account creates nothing and looks identical to a
+  new registration; that address is emailed instead (so the form cannot be used to find out who is
+  registered).
+
+## Security and sign-in
+Sessions use a short-lived key plus a rotating refresh cookie, wrong passwords lock an account
+temporarily, weak passwords are refused, and the browser is restricted to the site's own scripts
+(Content-Security-Policy). All of it, the settings, what to check after deploying, and what to do
+if a session is stolen: [SECURITY.md](./SECURITY.md).

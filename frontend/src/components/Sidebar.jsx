@@ -10,11 +10,13 @@ const NAV_BY_ROLE = {
   'super-admin': [
     { to: '/platform-admins', label: 'Platform Admins' },
     { to: '/tenants', label: 'Tenants' },
+    { to: '/packages', label: 'Packages' },
     { to: '/audit-logs', label: 'Audit Log' },
     { to: '/platform-settings', label: 'Platform Settings' },
   ],
   'platform-admin': [
     { to: '/tenants', label: 'Tenants' },
+    { to: '/packages', label: 'Packages' },
     { to: '/audit-logs', label: 'Audit Log' },
   ],
   'tenant-admin': [
