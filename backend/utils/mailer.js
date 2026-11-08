@@ -179,6 +179,11 @@ const verifyMail = async () => {
     else await getTransport().verify();
     return { ok: true };
   } catch (err) {
+    // Some Brevo keys are scoped and may not read the account, yet can still send. The key was
+    // recognised (it is not a 401), so do not call it broken: the test email is the real proof.
+    if (apiConfigured() && err.responseCode === 403 && /not authori[sz]ed for resource/i.test(String(err.message))) {
+      return { ok: true, note: 'Brevo recognised the key but does not let it read account details. Press "Send a test email to me" to confirm sending works.' };
+    }
     return { ok: false, code: err.code || null, message: String(err.message || '').slice(0, 300), hint: describeMailError(err) };
   }
 };

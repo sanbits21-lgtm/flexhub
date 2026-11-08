@@ -51,7 +51,7 @@ export default function EmailCheck() {
           {!status.from && <div className={bad}>MAIL_FROM is not set. Most providers refuse the default sender; set it to an address you have verified with them.</div>}
           {status.urlProblem && <div role="alert" className={bad}>{status.urlProblem}</div>}
           {status.keyProblem && <div role="alert" className={bad}>{status.keyProblem}</div>}
-          {status.check?.ok && <div className={good}>{status.via === 'BREVO_API_KEY' ? 'Brevo accepted the API key.' : 'The mail server accepted the connection and login.'}</div>}
+          {status.check?.ok && <div className={good}>{status.check.note || (status.via === 'BREVO_API_KEY' ? 'Brevo accepted the API key.' : 'The mail server accepted the connection and login.')}</div>}
           {status.check && !status.check.ok && (
             <div role="alert" className={bad}>
               The mail server could not be used: {status.check.hint}

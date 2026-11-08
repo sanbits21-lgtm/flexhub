@@ -147,3 +147,13 @@ describe('through the app', () => {
     expect(mailer.mailStatus().lastFailure.hint).toMatch(/API key/);
   });
 });
+
+describe('a scoped Brevo key', () => {
+  it('is not called broken when only the account lookup is refused', async () => {
+    useEnv({ BREVO_API_KEY: 'xkeysib-abc', MAIL_FROM: 'a@example.com' });
+    mockFetch(failResponse(403, 'api key is not authorized for resource "account"'));
+    const r = await mailer.verifyMail();
+    expect(r.ok).toBe(true);
+    expect(r.note).toMatch(/test email/);
+  });
+});
