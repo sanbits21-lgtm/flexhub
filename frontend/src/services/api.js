@@ -183,8 +183,9 @@ export const packagesAPI = {
 
 export const platformSettingsAPI = {
   get: () => api.get('/platform-settings'),
-  emailStatus: () => api.get('/platform-settings/email-status'),
-  testEmail: () => api.post('/platform-settings/test-email'),
+  // The server waits for the mail server (up to ~10 s), so these get a longer limit than a normal call.
+  emailStatus: () => api.get('/platform-settings/email-status', { timeout: 40000 }),
+  testEmail: () => api.post('/platform-settings/test-email', {}, { timeout: 40000 }),
   update: (data) => api.put('/platform-settings', data),
 };
 

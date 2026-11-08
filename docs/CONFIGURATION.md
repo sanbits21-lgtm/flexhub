@@ -36,6 +36,7 @@ delivered). In development the email is printed to the server log instead.
 | `SMTP_URL` | e.g. `smtps://user:password@smtp.example.com:465`. Or use the four below. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | The same thing spelled out (`SMTP_PORT` defaults to 587). |
 | `MAIL_FROM` | The sender, e.g. `FlexHub <no-reply@example.com>`. Most providers only accept an address or domain you have verified with them. |
+| `MAIL_TIMEOUT_SECONDS` | How long to wait for the mail server before giving up (default `10`). A blocked port used to leave sign-up and the Email check waiting two minutes; now they fail in about this long. |
 
 **To check it:** sign in as the super-admin, open **Platform Settings > Email**. It shows the host and
 port in use (never the password), whether the mail server accepts the connection and login, the

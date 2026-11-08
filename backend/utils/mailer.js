@@ -9,16 +9,25 @@ const outbox = [];
 
 const configured = () => !!(process.env.SMTP_URL || process.env.SMTP_HOST);
 
+// How long to wait for the mail server before giving up. nodemailer's own defaults are two minutes,
+// which is how a blocked port (the connection is silently dropped) looked like a frozen page.
+// MAIL_TIMEOUT_SECONDS adjusts it (default 10).
+const timeouts = () => {
+  const ms = (Number(process.env.MAIL_TIMEOUT_SECONDS) > 0 ? Number(process.env.MAIL_TIMEOUT_SECONDS) : 10) * 1000;
+  return { connectionTimeout: ms, greetingTimeout: ms, socketTimeout: ms * 2 };
+};
+
 let transport;
 const getTransport = () => {
   if (transport) return transport;
   transport = process.env.SMTP_URL
-    ? nodemailer.createTransport(process.env.SMTP_URL)
+    ? nodemailer.createTransport({ url: process.env.SMTP_URL, ...timeouts() })
     : nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
       secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
       auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+      ...timeouts(),
     });
   return transport;
 };

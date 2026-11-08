@@ -16,7 +16,9 @@ export default function EmailCheck() {
 
   const load = () => {
     setLoadError('');
-    platformSettingsAPI.emailStatus().then((r) => setStatus(r.data)).catch(() => setLoadError('Could not check email.'));
+    platformSettingsAPI.emailStatus().then((r) => setStatus(r.data)).catch((e) => setLoadError(
+      e.response?.data?.message || (e.response ? 'Could not check email.' : 'The check took too long or the server could not be reached. You can still send a test email below.'),
+    ));
   };
   useEffect(() => { load(); }, []);
 
@@ -37,7 +39,7 @@ export default function EmailCheck() {
         <p className="text-xs text-gray-500 dark:text-gray-400">Sign-up confirmations, approval notices, renewal receipts and plan reminders are sent by email. Gyms cannot register while it is not working.</p>
       </div>
       {loadError && <div role="alert" className={bad}>{loadError}</div>}
-      {!status && !loadError && <p className="text-sm text-gray-500 dark:text-gray-400">Checking...</p>}
+      {!status && !loadError && <p className="text-sm text-gray-500 dark:text-gray-400">Checking the mail server (this can take up to 10 seconds)...</p>}
       {status && !status.configured && (
         <div role="alert" className={bad}>
           Email is not set up. Set <code>SMTP_URL</code> (or <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASS</code>) and <code>MAIL_FROM</code> in the service's environment, then redeploy. Until then, sign-up stays closed in production.
@@ -63,7 +65,7 @@ export default function EmailCheck() {
         </div>
       )}
       <div className="flex items-center gap-3 flex-wrap">
-        <button type="button" onClick={test} disabled={testing || !status} className="border rounded-xl px-4 py-2 text-sm dark:border-gray-600 dark:text-gray-100 disabled:opacity-50">{testing ? 'Sending...' : 'Send a test email to me'}</button>
+        <button type="button" onClick={test} disabled={testing} className="border rounded-xl px-4 py-2 text-sm dark:border-gray-600 dark:text-gray-100 disabled:opacity-50">{testing ? 'Sending...' : 'Send a test email to me'}</button>
         {result?.ok && <span role="status" className={good}>Sent to {result.to}. Check your inbox (and spam).</span>}
         {result && !result.ok && <span role="alert" className={bad}>Not sent: {result.hint || result.message}</span>}
       </div>

@@ -4,7 +4,8 @@ const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const mailer = require('../utils/mailer');
 
-const ENV_KEYS = ['SMTP_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_SECURE', 'MAIL_FROM'];
+const net = require('net');
+const ENV_KEYS = ['SMTP_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_SECURE', 'MAIL_FROM', 'MAIL_TIMEOUT_SECONDS'];
 const saved = {};
 const useEnv = (env) => { ENV_KEYS.forEach((k) => delete process.env[k]); Object.assign(process.env, env); mailer.resetTransport(); };
 
@@ -133,5 +134,44 @@ describe('registering while email is broken', () => {
     expect(await User.exists({ email: body.email })).toBeNull();
     // ...and the super-admin can see why.
     expect(mailer.mailStatus().lastFailure.hint).toMatch(/could not reach/);
+  });
+});
+
+describe('a mail server that never answers', () => {
+  it('gives up within seconds instead of leaving the page hanging for minutes', async () => {
+    // Accepts the connection and then says nothing, like a firewall that swallows the conversation.
+    const silent = net.createServer(() => {});
+    await new Promise((resolve) => silent.listen(0, '127.0.0.1', resolve));
+    useEnv({ SMTP_HOST: '127.0.0.1', SMTP_PORT: String(silent.address().port), MAIL_TIMEOUT_SECONDS: '1', MAIL_FROM: 'a@example.com' });
+    const started = Date.now();
+    const check = await mailer.verifyMail();
+    const took = Date.now() - started;
+    silent.close();
+    expect(check.ok).toBe(false);
+    expect(took).toBeLessThan(6000);
+    expect(check.hint).toMatch(/port and the security setting/);
+  });
+
+  it('shows up as a clear error on the sign-up page, quickly, and leaves nothing behind', async () => {
+    const silent = net.createServer(() => {});
+    await new Promise((resolve) => silent.listen(0, '127.0.0.1', resolve));
+    useEnv({ SMTP_HOST: '127.0.0.1', SMTP_PORT: String(silent.address().port), MAIL_TIMEOUT_SECONDS: '1', MAIL_FROM: 'a@example.com' });
+    const id = uniq('hang').toLowerCase();
+    const started = Date.now();
+    const res = await request(app).post('/api/public/signup').send({ gymName: `Hang ${id} Fitness`, ownerName: 'Asha Owner', email: `owner-${id}@example.com`, phone: '9800001111', password: 'Orchid-Lantern-47!' });
+    silent.close();
+    expect(res.status).toBe(503);
+    expect(Date.now() - started).toBeLessThan(8000);
+    expect(await User.exists({ email: `owner-${id}@example.com` })).toBeNull();
+  });
+
+  it('is given short timeouts for both ways of configuring email (default 10 seconds)', async () => {
+    const create = jest.spyOn(nodemailer, 'createTransport').mockReturnValue({ verify: jest.fn().mockResolvedValue(true) });
+    useEnv({ SMTP_URL: 'smtp://u:p@smtp.example.com:587' });
+    await mailer.verifyMail();
+    expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ url: 'smtp://u:p@smtp.example.com:587', connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000 }));
+    useEnv({ SMTP_HOST: 'smtp.example.com', MAIL_TIMEOUT_SECONDS: '3' });
+    await mailer.verifyMail();
+    expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ host: 'smtp.example.com', connectionTimeout: 3000, greetingTimeout: 3000, socketTimeout: 6000 }));
   });
 });
