@@ -152,6 +152,13 @@ form shows the reason.
 5. **Is sign-up showing them?** The registration page lists only packages that are **offered**
    (not hidden), and only while self-registration is on in Platform Settings.
 
+## Email
+Gyms cannot register without working email (confirmation links), and approvals, renewals and reminders
+are emailed too. **Platform Settings > Email** (super-admin) shows whether email is set up, whether the
+mail server accepts the login, the reason for the last failure, and sends a test message to you.
+If a visitor sees "We couldn't send your confirmation email", look there first. Fixes by symptom:
+[RENDER.md](./RENDER.md#if-sign-up-says-we-couldnt-send-your-confirmation-email).
+
 ## Known limits
 
 - **No payment gateway.** Prices are informational; renewals are recorded by hand.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { platformSettingsAPI } from '../../services/api';
 import { Link } from 'react-router-dom';
+import EmailCheck from '../../components/EmailCheck';
 
 const inputClass = 'border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 w-full';
 const labelClass = 'block text-sm text-gray-600 dark:text-gray-300 mb-1';
@@ -45,6 +46,7 @@ export default function PlatformSettings() {
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Platform Settings</h1>
       <p className="text-sm text-gray-600 dark:text-gray-300">Subscription packages have their own page: <Link to="/packages" className="underline font-semibold dark:text-accent">Packages</Link>.</p>
+      <EmailCheck />
       <form onSubmit={save} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-4">
         <h2 className="font-semibold text-gray-900 dark:text-gray-100">Self-registration and free trial</h2>
         <label className="flex items-center gap-3 text-gray-800 dark:text-gray-100">

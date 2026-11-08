@@ -35,7 +35,12 @@ delivered). In development the email is printed to the server log instead.
 |---|---|
 | `SMTP_URL` | e.g. `smtps://user:password@smtp.example.com:465`. Or use the four below. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | The same thing spelled out (`SMTP_PORT` defaults to 587). |
-| `MAIL_FROM` | The sender, e.g. `FlexHub <no-reply@example.com>`. |
+| `MAIL_FROM` | The sender, e.g. `FlexHub <no-reply@example.com>`. Most providers only accept an address or domain you have verified with them. |
+
+**To check it:** sign in as the super-admin, open **Platform Settings > Email**. It shows the host and
+port in use (never the password), whether the mail server accepts the connection and login, the
+reason for the last failed send, and a **Send a test email to me** button. Common failures and fixes:
+see [RENDER.md](./RENDER.md#if-sign-up-says-we-couldnt-send-your-confirmation-email).
 
 ## Self-registration and free trial
 

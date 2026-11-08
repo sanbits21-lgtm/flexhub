@@ -183,6 +183,8 @@ export const packagesAPI = {
 
 export const platformSettingsAPI = {
   get: () => api.get('/platform-settings'),
+  emailStatus: () => api.get('/platform-settings/email-status'),
+  testEmail: () => api.post('/platform-settings/test-email'),
   update: (data) => api.put('/platform-settings', data),
 };
 

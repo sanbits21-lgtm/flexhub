@@ -23,6 +23,35 @@ const getTransport = () => {
   return transport;
 };
 
+/**
+ * Turns a mail-server failure into what to DO about it. The raw errors ("535 5.7.8", "ETIMEDOUT",
+ * "Greeting never received") mean little to whoever set up the deployment.
+ */
+const describeMailError = (err) => {
+  const code = String(err?.code || '');
+  const text = String(err?.message || (typeof err === 'string' ? err : ''));
+  const reply = Number(err?.responseCode) || 0;
+  if (code === 'EAUTH' || reply === 535 || /invalid login|authentication (failed|unsuccessful)|username and password not accepted/i.test(text)) {
+    return 'The mail server rejected the username or password. Check SMTP_URL (or SMTP_USER / SMTP_PASS). Many providers need an API key or app password, not your normal login, and special characters in a password inside SMTP_URL must be percent-encoded (@ becomes %40, # becomes %23).';
+  }
+  if (/greeting never received|wrong version number|ssl3_get_record|EPROTO/i.test(code + text)) {
+    return 'The port and the security setting do not match. Port 465 needs smtps:// (or SMTP_SECURE=true); ports 587 and 2525 use smtp:// with STARTTLS (SMTP_SECURE=false).';
+  }
+  if (['ECONNREFUSED', 'ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ENOTFOUND', 'EDNS', 'ECONNRESET'].includes(code) || /timed? ?out|getaddrinfo/i.test(text)) {
+    return 'The server could not reach the mail server. Check the host name and port. Some hosting plans block outgoing mail on ports 25, 465 and 587 (try port 2525 if your provider offers it, or use a paid instance).';
+  }
+  if (/self[- ]signed|certificate|CERT_/i.test(text + code)) {
+    return 'The mail server presented a certificate that could not be verified. Check the host name matches the provider\'s certificate.';
+  }
+  if ([550, 553, 554].includes(reply) || /sender|from address|not allowed to send|unverified|not verified/i.test(text)) {
+    return 'The provider refused the sender address. MAIL_FROM must be an address (or domain) you have verified with the provider.';
+  }
+  return text.slice(0, 300) || 'Unknown mail error.';
+};
+
+// What the last failed send said, so an admin can see it without digging through server logs.
+let lastFailure = null;
+
 const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Sends one message. Never throws: a failed email must not undo the action that triggered it. Returns true if handed off. */
@@ -35,12 +64,51 @@ const sendMail = async ({ to, subject, text, html }) => {
   }
   try {
     await getTransport().sendMail({ from, to, subject, text, html });
+    lastFailure = null;
     return true;
   } catch (err) {
-    console.error('Email send failed:', err.message);
+    console.error(`Email send failed: ${err.code || ''} ${err.message}`.trim());
+    lastFailure = { at: new Date(), code: err.code || null, message: String(err.message || '').slice(0, 300), hint: describeMailError(err) };
     return false;
   }
 };
+
+/** What the server is set up to send with. Never includes a password. */
+const mailStatus = () => {
+  const out = { configured: configured(), via: null, host: null, port: null, secure: null, from: process.env.MAIL_FROM || null, urlProblem: null, lastFailure };
+  if (process.env.SMTP_URL) {
+    out.via = 'SMTP_URL';
+    try {
+      const u = new URL(process.env.SMTP_URL);
+      out.host = u.hostname;
+      out.port = Number(u.port) || (u.protocol === 'smtps:' ? 465 : 587);
+      out.secure = u.protocol === 'smtps:';
+    } catch {
+      out.urlProblem = 'SMTP_URL is not a valid address. If the password contains @ # / ? or similar, those characters must be percent-encoded (@ becomes %40).';
+    }
+  } else if (process.env.SMTP_HOST) {
+    out.via = 'SMTP_HOST';
+    out.host = process.env.SMTP_HOST;
+    out.port = Number(process.env.SMTP_PORT) || 587;
+    out.secure = String(process.env.SMTP_SECURE).toLowerCase() === 'true';
+  }
+  return out;
+};
+
+/** Connects to the mail server (and logs in) without sending anything. */
+const verifyMail = async () => {
+  if (!configured()) return { ok: false, hint: 'No mail settings found. Set SMTP_URL (or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) and MAIL_FROM, then redeploy.' };
+  try {
+    await getTransport().verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, code: err.code || null, message: String(err.message || '').slice(0, 300), hint: describeMailError(err) };
+  }
+};
+
+// Tests only: the transport is built once from the environment, so a test that changes the
+// environment must be able to rebuild it.
+const resetTransport = () => { transport = undefined; lastFailure = null; };
 
 // A short, plain template: one heading, a paragraph, an optional button.
 const layout = ({ heading, body, buttonText, buttonUrl }) => `<!doctype html><html><body style="margin:0;background:#f3f4f7;font-family:system-ui,sans-serif;color:#1b1f27">
@@ -56,4 +124,4 @@ const templated = ({ to, subject, heading, body, buttonText, buttonUrl }) => sen
   html: layout({ heading, body, buttonText, buttonUrl }),
 });
 
-module.exports = { sendMail, templated, configured, outbox, escapeHtml };
+module.exports = { sendMail, templated, configured, outbox, escapeHtml, describeMailError, mailStatus, verifyMail, resetTransport };

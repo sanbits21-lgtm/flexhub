@@ -72,6 +72,26 @@ The whole product (API + staff website) is one Docker web service; the database 
 - Render's disk is not backed up by Atlas: member photos are only on that disk (Render offers disk
   snapshots). Your data itself is in Atlas, so enable Atlas backups.
 
+## If sign-up says "We couldn't send your confirmation email"
+The server reached for your mail provider and failed. Sign in as the super-admin and open
+**Platform Settings > Email**: it shows what the server is configured to send with, whether the
+mail server accepts the login, and **why** the last send failed. **Send a test email to me** checks the
+whole chain. (The server log also has an `Email send failed:` line with the same reason.)
+
+| What the Email card says | Usual fix |
+|---|---|
+| "Email is not set up" | Set `SMTP_URL` (or `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) and `MAIL_FROM` in the service's Environment, then redeploy. |
+| "rejected the username or password" | Use the provider's **SMTP key or app password**, not your account password. In `SMTP_URL`, special characters in the password must be percent-encoded (`@` → `%40`, `#` → `%23`, `/` → `%2F`). Gmail app passwords have no spaces. |
+| "could not reach the mail server" | Check host and port. Some hosting plans block outgoing mail on ports 25, 465 and 587; use port **2525** if your provider offers it (Brevo, Mailgun and SendGrid do), or a paid instance. |
+| "port and the security setting do not match" | Port 465 needs `smtps://` (or `SMTP_SECURE=true`); 587 and 2525 use `smtp://` with `SMTP_SECURE=false`. |
+| "refused the sender address" | `MAIL_FROM` must be an address or domain you have **verified** with the provider. |
+
+Typical `SMTP_URL` shapes: `smtp://LOGIN:KEY@smtp-relay.brevo.com:587` or
+`smtps://LOGIN:KEY@smtp.example.com:465`.
+
+Until email works, a gym can still be created by hand (**Tenants > Onboard Tenant**), and nothing is
+left half-made by a failed sign-up.
+
 ## If the deploy keeps restarting
 Open the service's **Logs**. The server prints one clear line before it exits:
 - `JWT_SECRET must be a random string of at least 32 characters in production` — Render generates it; only
