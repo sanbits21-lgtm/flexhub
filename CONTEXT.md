@@ -159,7 +159,7 @@ Every mutating controller call also fires `logAudit(req, action, target)` (`back
 
 ### Member role — intended self-service access (spec, not fully built)
 
-The Member is deliberately the lowest-privilege actor — **never** trainer/branch-manager/tenant-admin-level access (no managing other members, no equipment/trainer CRUD, no financial or admin visibility, no cross-branch reach). Onboarded by a tenant-admin, branch-manager or trainer (staff-created only, no self-registration). A trainer's new member is always placed in their branch and assigned to them, with no membership plan or payment (the front desk does that); a trainer then writes that member's workout and diet plans from **My Members**. Within that ceiling, intended self-service scope:
+The Member is deliberately the lowest-privilege actor — **never** trainer/branch-manager/tenant-admin-level access (no managing other members, no equipment/trainer CRUD, no financial or admin visibility, no cross-branch reach). Onboarded by a tenant-admin or branch-manager (staff-created only, no self-registration). Within that ceiling, intended self-service scope:
 
 **Can see/do (target state):**
 - View own profile — ✅ built (`GET /api/members/me`)

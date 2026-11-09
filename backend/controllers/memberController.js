@@ -134,14 +134,6 @@ exports.create = async (req, res) => {
   // field is hidden; a stale client shouldn't hard-fail over a disabled optional field.
   if (req.features && req.features['features:trainerAssignment'] === false) assignedTrainerId = undefined;
 
-  // A trainer onboarding someone always takes them on: a member assigned to nobody else would
-  // vanish from the trainer's own list (trainers only see their assigned members). Choosing a
-  // membership plan is a billing step, so it stays with the front desk, who renew and take payment.
-  if (req.actorType === 'user' && req.user.role === 'trainer') {
-    if (membershipPlanId) return res.status(403).json({ message: 'Trainers add members without a membership plan. The front desk assigns the plan and takes payment.' });
-    assignedTrainerId = req.user._id;
-  }
-
   // Branch-manager's own branch is stamped by enforceWriteScope; tenant-admin (who can
   // onboard into any branch of their tenant) must pick one, so validate it here.
   if (!req.body.branchId) return res.status(400).json({ message: 'branchId is required' });
@@ -327,10 +319,9 @@ exports.phoneCheck = async (req, res) => {
   const filter = { tenantId: req.body.tenantId, isActive: true };
   if (require('mongoose').isValidObjectId(req.body.excludeId)) filter._id = { $ne: req.body.excludeId };
   const members = await Member.find(filter).select('phone name memberCode').lean();
-  const found = members.filter((m) => phoneKey(m.phone) === key).slice(0, 5);
-  // A trainer sees only their own members, so they are told a number is taken, not whose it is.
-  if (req.actorType === 'user' && req.user.role === 'trainer') return res.json({ matches: [], duplicate: found.length > 0 });
-  res.json({ matches: found.map((m) => ({ _id: m._id, name: m.name, memberCode: m.memberCode })) });
+  const matches = members.filter((m) => phoneKey(m.phone) === key).slice(0, 5)
+    .map((m) => ({ _id: m._id, name: m.name, memberCode: m.memberCode }));
+  res.json({ matches });
 };
 
 // Which rows of an about-to-be-imported file already match a member of this gym by phone,

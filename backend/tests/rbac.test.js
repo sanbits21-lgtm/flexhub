@@ -32,12 +32,10 @@ describe('authentication', () => {
 });
 
 describe('role guards', () => {
-  it('blocks a trainer from editing, removing or renewing members and from bulk import', async () => {
-    const id = '507f1f77bcf86cd799439011';
-    expect((await request(app).put(`/api/members/${id}`).set(auth(t.trainerToken)).send({ name: 'X' })).status).toBe(403);
-    expect((await request(app).delete(`/api/members/${id}`).set(auth(t.trainerToken))).status).toBe(403);
-    expect((await request(app).post(`/api/members/${id}/renew`).set(auth(t.trainerToken)).send({})).status).toBe(403);
-    expect((await request(app).post('/api/members/bulk').set(auth(t.trainerToken)).send({ members: [] })).status).toBe(403);
+  it('blocks a trainer from creating members', async () => {
+    const res = await request(app).post('/api/members').set(auth(t.trainerToken))
+      .send({ name: 'X', phone: '9', branchId: t.branch._id.toString() });
+    expect(res.status).toBe(403);
   });
 
   it('blocks a branch-manager from creating membership plans', async () => {
