@@ -19,9 +19,11 @@ router.get('/:id', getOne);
 router.get('/:id/progress', getProgress);
 // enforceWriteScope runs before validate so the schema sees the server-stamped
 // branchId/tenantId, not whatever the client claimed.
-router.post('/', requireRole('tenant-admin', 'branch-manager'), enforceWriteScope, validate(schemas.memberCreate), create);
+// A trainer may onboard a member too; the controller assigns that member to them (and keeps
+// plans and payments with the front desk).
+router.post('/', requireRole('tenant-admin', 'branch-manager', 'trainer'), enforceWriteScope, validate(schemas.memberCreate), create);
 router.post('/bulk', requireRole('tenant-admin', 'branch-manager'), requireFeature('features:bulkUpload'), enforceWriteScope, bulkCreate);
-router.post('/phone-check', requireRole('tenant-admin', 'branch-manager'), enforceWriteScope, phoneCheck);
+router.post('/phone-check', requireRole('tenant-admin', 'branch-manager', 'trainer'), enforceWriteScope, phoneCheck);
 router.post('/bulk/check', requireRole('tenant-admin', 'branch-manager'), requireFeature('features:bulkUpload'), enforceWriteScope, bulkCheck);
 router.put('/:id', requireRole('tenant-admin', 'branch-manager'), enforceWriteScope, validate(schemas.memberUpdate), update);
 router.delete('/:id', requireRole('tenant-admin', 'branch-manager'), remove);
