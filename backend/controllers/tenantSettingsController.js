@@ -1,5 +1,6 @@
 const Tenant = require('../models/Tenant');
 const { logAudit } = require('../utils/audit');
+const { gymMemberAppUrl } = require('../utils/links');
 const { resolveFeatures } = require('../utils/features');
 const { MAX_FIELDS, cleanLabel, cleanType, uniqueKey } = require('../utils/memberFields');
 const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, baseDomain, REDIRECT_DAYS } = require('../utils/subdomain');
@@ -11,6 +12,14 @@ exports.getMine = async (req, res) => {
   const tenant = await Tenant.findById(req.scope.tenantId).select('name upiId upiPaymentLink');
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
   res.json(tenant);
+};
+
+// The address a member opens to use the member app, for the QR code at the front desk or on the
+// manager's screen. It is the gym's own address when subdomains are on, else the main site.
+exports.getMemberAppLink = async (req, res) => {
+  const tenant = await Tenant.findById(req.scope.tenantId).select('name slug');
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  res.json({ url: gymMemberAppUrl(tenant, req), gymName: tenant.name });
 };
 
 exports.updateMine = async (req, res) => {

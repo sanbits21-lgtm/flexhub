@@ -13,6 +13,14 @@ extra to deploy.
 - Opening a page while signed out (for example a bookmarked **My pass**) sends the member to sign
   in, then straight back to that page.
 
+## The front-desk QR code
+Owners and branch managers open **Member App QR** in the menu. It shows a QR code for the gym's member
+app address, with buttons to **Print poster** (stick it at the front desk), **Show full screen** (hold the
+manager's screen up to a member) and **Copy link**. A member points their phone camera at it, taps the
+link, and lands on the member sign-in page. The code holds only the public address (no member data, never
+expires) and signs nobody in. It is not the same as **My pass**, the member's own rotating code that the
+desk scans to check them in.
+
 ## What members get (same as the native app)
 Home (membership days left, visits, next session) · Sessions (personal training, classes, cancel) ·
 Workout and Diet (plan from the trainer, or make your own) · My gym (trainers, equipment) ·

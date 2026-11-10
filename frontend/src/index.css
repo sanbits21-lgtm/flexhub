@@ -87,6 +87,10 @@
   .receipt-print-area .receipt-thanks {
     color: #555 !important;
   }
+  /* The front-desk poster is a full page, not a till slip. */
+  .receipt-print-area.poster-print {
+    max-width: 640px;
+  }
   @page {
     margin: 14mm;
   }

@@ -198,6 +198,7 @@ export const platformSettingsAPI = {
 
 export const tenantSettingsAPI = {
   get: () => api.get('/tenant-settings'),
+  memberAppLink: () => api.get('/tenant-settings/member-app-link'),
   getBranding: () => api.get('/tenant-settings/branding'),
   updateBranding: (data) => api.put('/tenant-settings/branding', data),
   update: (data) => api.put('/tenant-settings', data),

@@ -25,6 +25,7 @@ const NAV_BY_ROLE = {
   'tenant-admin': [
     { to: '/branches', label: 'Branches' },
     { to: '/members', label: 'Members' },
+    { to: '/member-app-qr', label: 'Member App QR' },
     { to: '/equipment', label: 'Equipment' },
     { to: '/trainers', label: 'Trainers' },
     { to: '/trainer-report', label: 'Trainer Collections & Salary' },
@@ -36,6 +37,7 @@ const NAV_BY_ROLE = {
   ],
   'branch-manager': [
     { to: '/members', label: 'Members' },
+    { to: '/member-app-qr', label: 'Member App QR' },
     { to: '/trainers', label: 'Trainers' },
     { to: '/equipment', label: 'Equipment' },
     { to: '/attendance', label: 'Attendance' },
