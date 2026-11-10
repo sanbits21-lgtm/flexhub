@@ -105,6 +105,12 @@ const FEATURE_REGISTRY = {
     category: 'feature',
     default: false,
   },
+  'features:ratings': {
+    label: 'Ratings of the gym and its trainers',
+    description: 'Members rate their gym and the trainers who work with them (1-5 stars and an optional comment). Members see the gym average once 5 have rated; trainer scores and all comments are seen only by owners and branch managers, without the member\'s name.',
+    category: 'feature',
+    default: false,
+  },
   'features:memberPayments': {
     label: 'Payment history in the member app',
     description: 'Members can see their own payments and receipts in the app.',

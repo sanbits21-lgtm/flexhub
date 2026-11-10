@@ -90,6 +90,7 @@ exports.updateProfile = async (req, res) => {
       date: new Date(),
       weightKg: weightKg ?? last.find((m) => m.weightKg)?.weightKg,
       heightCm: heightCm ?? last.find((m) => m.heightCm)?.heightCm,
+      source: 'member',
     });
   }
   await member.save();

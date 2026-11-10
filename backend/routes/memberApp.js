@@ -3,6 +3,8 @@ const router = express.Router();
 const { protect, scopeContext } = require('../middleware/auth');
 const { attachFeatures, requireFeature } = require('../middleware/features');
 const c = require('../controllers/memberAppController');
+const progress = require('../controllers/memberProgressController');
+const ratings = require('../controllers/ratingController');
 
 // Member-only API for the mobile app. A separate router (rather than loosening
 // /api/equipment and /api/staff, which are staff-only on purpose) keeps the member's
@@ -31,5 +33,17 @@ router.get('/pass', requireFeature('features:qrCheckIn'), c.pass);
 router.get('/payments', requireFeature('features:memberPayments'), c.myPayments);
 router.get('/plans', c.getPlans);
 router.post('/plans/generate', c.generate);
+
+// Own body changes and badges (private to the member).
+router.get('/progress', progress.get);
+router.post('/progress', progress.add);
+router.delete('/progress/:entryId', progress.remove);
+
+// Rating the gym and its trainers (a per-gym feature).
+router.get('/ratings', requireFeature('features:ratings'), ratings.overview);
+router.put('/ratings/gym', requireFeature('features:ratings'), ratings.rateGym);
+router.delete('/ratings/gym', requireFeature('features:ratings'), ratings.withdrawGym);
+router.put('/ratings/trainers/:trainerId', requireFeature('features:ratings'), ratings.rateTrainer);
+router.delete('/ratings/trainers/:trainerId', requireFeature('features:ratings'), ratings.withdrawTrainer);
 
 module.exports = router;

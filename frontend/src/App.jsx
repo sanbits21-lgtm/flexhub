@@ -34,6 +34,7 @@ import Attendance from './pages/branch/Attendance';
 import Payments from './pages/branch/Payments';
 import MyMembers from './pages/trainer/MyMembers';
 import MemberAppQr from './pages/branch/MemberAppQr';
+import Ratings from './pages/branch/Ratings';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/payments" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><Payments /></AppLayout></RoleRoute>} />
 
           <Route path="/member-app-qr" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><MemberAppQr /></AppLayout></RoleRoute>} />
+          <Route path="/ratings" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><FeatureRoute feature="features:ratings"><Ratings /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/my-members" element={<RoleRoute allow={['trainer']}><AppLayout><MyMembers /></AppLayout></RoleRoute>} />
 
           {/* A mistyped or outdated address goes home (or to the login page when signed out), not to a blank screen. */}

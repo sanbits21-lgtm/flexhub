@@ -2,15 +2,20 @@ import { memberApi } from '../api';
 import { useLoad } from '../useLoad';
 import { Card, EmptyState, Initials, LoadState, Loading, Muted, Pill, Row, Screen, Section } from '../ui';
 import { cap } from '../format';
+import { useMemberAuth } from '../MemberAuth';
+import RatingsSection from '../RatingsSection';
 
 export default function Gym() {
+  const { can } = useMemberAuth();
+  const ratingsOn = can('features:ratings');
   const { data, loading, error, stale, reload } = useLoad('gym', async () => {
     // A gym can switch the equipment list off; that must not blank the trainers list.
     const [equipment, trainers] = await Promise.all([
       memberApi.get('/member-app/equipment').then((r) => r.data).catch(() => null),
       memberApi.get('/member-app/trainers').then((r) => r.data),
     ]);
-    return { equipment, ...trainers };
+    const ratings = ratingsOn ? await memberApi.get('/member-app/ratings').then((r) => r.data).catch(() => null) : null;
+    return { equipment, ratings, ...trainers };
   });
 
   if (loading) return <Loading />;
@@ -34,6 +39,8 @@ export default function Gym() {
           </div>
         )) : <EmptyState title="No trainers listed yet" />}
       </Card>
+
+      {ratingsOn && <RatingsSection data={data?.ratings} reload={reload} />}
 
       <Section title="Equipment" />
       {data?.equipment === null && <Card><Muted>Your gym has not turned on the equipment list.</Muted></Card>}

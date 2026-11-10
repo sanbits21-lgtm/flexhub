@@ -139,6 +139,7 @@ app.use('/api/class-sessions', classSessionRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/member-app', memberAppRoutes);
 app.use('/api/profile', require('./routes/profilePhoto'));
+app.use('/api/ratings', require('./routes/ratings'));
 app.use('/api/pt-sessions', ptSessionRoutes);
 
 // Single-service deployment: serve the built frontend from this same process when

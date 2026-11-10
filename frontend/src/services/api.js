@@ -196,6 +196,11 @@ export const platformSettingsAPI = {
   update: (data) => api.put('/platform-settings', data),
 };
 
+// Owners and branch managers: scores and anonymous comments (a per-gym feature).
+export const ratingsAPI = {
+  overview: () => api.get('/ratings'),
+};
+
 export const tenantSettingsAPI = {
   get: () => api.get('/tenant-settings'),
   memberAppLink: () => api.get('/tenant-settings/member-app-link'),

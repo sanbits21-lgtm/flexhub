@@ -26,6 +26,7 @@ const NAV_BY_ROLE = {
     { to: '/branches', label: 'Branches' },
     { to: '/members', label: 'Members' },
     { to: '/member-app-qr', label: 'Member App QR' },
+    { to: '/ratings', label: 'Ratings' },
     { to: '/equipment', label: 'Equipment' },
     { to: '/trainers', label: 'Trainers' },
     { to: '/trainer-report', label: 'Trainer Collections & Salary' },
@@ -38,6 +39,7 @@ const NAV_BY_ROLE = {
   'branch-manager': [
     { to: '/members', label: 'Members' },
     { to: '/member-app-qr', label: 'Member App QR' },
+    { to: '/ratings', label: 'Ratings' },
     { to: '/trainers', label: 'Trainers' },
     { to: '/equipment', label: 'Equipment' },
     { to: '/attendance', label: 'Attendance' },

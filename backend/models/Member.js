@@ -26,6 +26,8 @@ const memberSchema = new mongoose.Schema({
     heightCm: Number,
     bodyFatPct: Number,
     notes: String,
+    // Who recorded it: the member in the app, or (absent) staff. A member can delete only their own.
+    source: { type: String, enum: ['member', 'staff'] },
   }],
   // Values for the gym's own extra fields, keyed by Tenant.memberFields[].key. Staff-facing only:
   // never returned to the member app (see middleware/auth.js).

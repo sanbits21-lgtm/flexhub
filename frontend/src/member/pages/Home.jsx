@@ -72,7 +72,8 @@ export default function Home() {
         {can('features:qrCheckIn') && <Row to="/member/pass" icon={<Icon d={ICONS.qr} />} title="My pass" subtitle="Show this at the front desk" />}
         <Row to="/member/workout" icon={<Icon d={ICONS.barbell} />} title="Today's workout" subtitle="See or make a workout plan" />
         <Row to="/member/diet" icon={<Icon d={ICONS.nutrition} />} title="Meal plan" subtitle="Calories and meals for your goal" />
-        <Row to="/member/gym" icon={<Icon d={ICONS.gym} />} title="Trainers & equipment" subtitle="What your gym offers" last={!can('features:memberPayments')} />
+        <Row to="/member/progress" icon={<Icon d={ICONS.chart} />} title="Progress & badges" subtitle="Your weight, streaks and milestones" />
+        <Row to="/member/gym" icon={<Icon d={ICONS.gym} />} title="Trainers & equipment" subtitle={can('features:ratings') ? 'What your gym offers, and rate it' : 'What your gym offers'} last={!can('features:memberPayments')} />
         {can('features:memberPayments') && <Row to="/member/payments" icon={<Icon d={ICONS.receipt} />} title="Payment history" subtitle="Your receipts" last />}
       </Card>
 

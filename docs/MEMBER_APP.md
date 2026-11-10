@@ -27,6 +27,31 @@ Workout and Diet (plan from the trainer, or make your own) · My gym (trainers, 
 Profile (photo, details, goals, password, theme, delete account) · My pass (rotating QR for the
 front desk; needs *QR check-in* on) · Payments (receipts; needs *Payment history in the member app* on).
 
+## Progress and badges
+**Progress** (from Home > *Progress & badges*) is private to the member. They log weight and, if they
+know it, body fat, with a date and a note; the screen draws their weight over time and shows the change
+since they started (BMI appears as a number only, never labelled). Measurements a trainer or manager
+takes with them appear too and cannot be deleted by the member; the member can delete their own.
+
+**Badges** are worked out from data the app already holds, each time it is opened, so nothing is stored:
+visits (1, 10, 25, 50, 100, 250), weeks in a row with a visit (4, 12, 26), months as a member (3, 6, 12),
+tracking (first measurement, a month of measurements), and body changes. Weight badges follow the
+member's own goal: *lose fat* earns "down 2, 5, 10 kg", *build muscle* earns "up 2, 5 kg", other goals
+earn none. Body-fat badges (down 2, 5 points) appear once a body-fat reading exists. Badges not yet
+earned show how far off they are.
+
+## Ratings (per-gym feature)
+Off by default. A platform admin switches **Ratings of the gym and its trainers** on for a gym in its
+feature list. Then, on **My gym**:
+- A member rates the **gym** (1 to 5 stars, optional comment) after their first visit.
+- A member rates a **trainer** who is assigned to them or has trained them.
+- One rating per target; rating again replaces it, and it can be withdrawn.
+- Members see the gym's **average only once 5 members have rated**, so a score never exposes one
+  person. A trainer's score is **never shown to members**.
+- Owners and branch managers see all scores and comments on **Ratings** in the menu. Comments are
+  **anonymous**: the member's identity is stored only to stop double votes and is never returned.
+- Trainers do not see ratings. Nothing here is shown to other members, and there is no feed yet.
+
 ## Installing
 - **Android / Chrome:** open the address, then menu → *Install app* (or the install banner).
 - **iPhone / Safari:** *Share* → *Add to Home Screen*.
