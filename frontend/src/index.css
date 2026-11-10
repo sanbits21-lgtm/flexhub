@@ -48,6 +48,21 @@
   .receipt-print-area * {
     visibility: visible;
   }
+  /* The receipt lives inside a modal whose panel scrolls and clips (max-height, overflow) and is
+     positioned. Printed as-is, only the part that fits the panel's visible area came out, so the
+     invoice, date and member rows were missing. Every ancestor of the receipt is therefore
+     unclipped and un-positioned for print, which lets the receipt sit at the top of the page. */
+  *:has(.receipt-print-area) {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
   /* Paper is white whatever the app theme: a dark-mode receipt would print as a black slab. */
   .receipt-print-area {
     position: absolute;
