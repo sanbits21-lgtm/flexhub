@@ -96,6 +96,9 @@ export default function ProfileScreen() {
     if (!perm.granted) { say('Permission needed', 'Allow photo access in Settings to choose a profile picture.'); return; }
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
     if (picked.canceled || !picked.assets[0]) return;
+    // The server refuses anything under 200 px on the shorter side; say so before sending.
+    const { width, height } = picked.assets[0];
+    if (Math.min(width, height) < 200) { say('Picture too small', `That picture is ${width}x${height}. Use one at least 200x200 pixels.`); return; }
     setPhotoBusy(true);
     try {
       // Shrink on the phone: the server accepts 1 MB at most, and a 512 px square is plenty for an avatar.
