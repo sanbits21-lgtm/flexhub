@@ -36,6 +36,9 @@ export function AuthProvider({ children }) {
     return res.data.user;
   };
 
+  // After something about yourself changes (your picture), without signing in again.
+  const updateUser = (patch) => setUser((u) => (u ? { ...u, ...patch } : u));
+
   const logout = () => {
     authAPI.logout().catch(() => {}); // ends this login on the server and clears the cookie
     setToken(null);
@@ -46,7 +49,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, features, subscription, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, features, subscription, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

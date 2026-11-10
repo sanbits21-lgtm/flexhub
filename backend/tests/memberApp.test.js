@@ -5,8 +5,8 @@ const Member = require('../models/Member');
 // The rule-based generator must be what runs here: no key, no network, no cost.
 delete process.env.ANTHROPIC_API_KEY;
 
-// 1x1 transparent PNG.
-const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+// A real 256x256 PNG (the server refuses pictures under 200 pixels).
+const PNG = require('./photoFixtures').b64(require('./photoFixtures').png(256, 256));
 
 let t; let other; let me; let meToken; let peer; let peerToken;
 
@@ -117,6 +117,13 @@ describe('photo', () => {
     const text = Buffer.from('<script>alert(1)</script>').toString('base64');
     const res = await request(app).put('/api/member-app/me/photo').set(auth(meToken)).send({ image: `data:image/png;base64,${text}` });
     expect(res.status).toBe(400);
+  });
+
+  it('rejects a photo smaller than 200x200 pixels', async () => {
+    const tiny = require('./photoFixtures').b64(require('./photoFixtures').png(100, 100));
+    const res = await request(app).put('/api/member-app/me/photo').set(auth(meToken)).send({ image: tiny });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/too small/);
   });
 
   it('rejects a photo over 1 MB', async () => {

@@ -76,6 +76,7 @@ exports.login = async (req, res) => {
       role: user.role,
       tenantId: user.tenantId,
       branchId: user.branchId,
+      hasPhoto: !!user.photoUrl,
     },
     features: await featuresForUser(user),
     brand: await brandForUser(user),
@@ -84,7 +85,8 @@ exports.login = async (req, res) => {
 };
 
 exports.getMe = async (req, res) => {
-  res.json({ user: req.user, features: await featuresForUser(req.user), brand: await brandForUser(req.user), subscription: await subscriptionForUser(req.user) });
+  const { photoUrl, ...user } = req.user.toObject();
+  res.json({ user: { ...user, hasPhoto: !!photoUrl }, features: await featuresForUser(req.user), brand: await brandForUser(req.user), subscription: await subscriptionForUser(req.user) });
 };
 
 exports.changePassword = async (req, res) => {

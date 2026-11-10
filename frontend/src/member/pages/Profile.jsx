@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import Avatar from '../Avatar';
 import { Btn, Card, Choice, ErrorText, Field, LoadState, Loading, Muted, Screen } from '../ui';
 import { inputDate } from '../format';
+import { squareJpegBase64 } from '../../utils/photo';
 
 const GOALS = [{ value: 'lose_fat', label: 'Lose fat' }, { value: 'build_muscle', label: 'Build muscle' }, { value: 'stay_fit', label: 'Stay fit' }, { value: 'improve_endurance', label: 'Endurance' }];
 const LEVELS = [{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }];
@@ -33,24 +34,6 @@ const ageOf = (dob) => {
   const years = Math.floor((Date.now() - d.getTime()) / (365.25 * 86400000));
   return years > 0 && years < 110 ? years : null;
 };
-
-// The server accepts 1 MB at most, and a 512 px square is plenty for an avatar: centre-crop and
-// shrink on the phone before sending.
-const squareJpegBase64 = (file, size = 512) => new Promise((resolve, reject) => {
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => {
-    const side = Math.min(img.width, img.height);
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
-    URL.revokeObjectURL(url);
-    resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
-  };
-  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
-  img.src = url;
-});
 
 export default function Profile() {
   const { signOut, updateName } = useMemberAuth();

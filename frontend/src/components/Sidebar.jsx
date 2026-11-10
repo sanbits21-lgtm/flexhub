@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import InstallButton from './InstallButton';
 import BrandMark from './BrandMark';
+import StaffAvatar from './StaffAvatar';
+import ProfilePhotoModal from './ProfilePhotoModal';
 import { useBrand } from '../context/BrandContext';
 import { useFeature } from '../hooks/useFeature';
 
@@ -47,6 +50,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, logout } = useAuth();
   const { brand } = useBrand();
   const canBrand = useFeature('features:branding');
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const canHavePhoto = ['tenant-admin', 'branch-manager', 'trainer'].includes(user?.role);
   const links = (NAV_BY_ROLE[user?.role] || []).filter((l) => l.to !== '/branding' || canBrand);
 
   return (
@@ -82,7 +87,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           ))}
         </nav>
         <div className="p-4 pb-safe border-t border-gray-700 text-sm">
-          <div className="mb-2 text-gray-400">{user?.name} ({user?.role})</div>
+          {canHavePhoto ? (
+            <button type="button" onClick={() => setPhotoOpen(true)} title="Change your profile photo" className="mb-2 flex w-full items-center gap-2 text-left text-gray-400 hover:text-gray-100">
+              <StaffAvatar userId={user?._id} hasPhoto={user?.hasPhoto} name={user?.name} size={32} />
+              <span className="min-w-0 truncate">{user?.name} ({user?.role})</span>
+            </button>
+          ) : (
+            <div className="mb-2 text-gray-400">{user?.name} ({user?.role})</div>
+          )}
           <div className="flex items-center justify-between gap-2">
             <button onClick={logout} className="text-red-400 hover:text-red-300">
               Log out
@@ -91,6 +103,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           </div>
         </div>
       </aside>
+      {canHavePhoto && <ProfilePhotoModal open={photoOpen} onClose={() => setPhotoOpen(false)} />}
     </>
   );
 }

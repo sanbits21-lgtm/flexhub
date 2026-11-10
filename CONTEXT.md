@@ -164,7 +164,7 @@ The Member is deliberately the lowest-privilege actor — **never** trainer/bran
 **Can see/do (target state):**
 - View own profile — ✅ built (`GET /api/members/me`)
 - Update own profile — name, and *optional* health/body fields: weight, height, age, any known health issue/condition — ❌ not built (no self-service update endpoint exists at all yet; today only staff can edit a member's record)
-- Update own profile photo, with an enforced size limit (exact limit TBD when built) — ❌ not built (no photo/file upload exists anywhere in the app yet — needs a storage decision: object storage like S3/Cloudinary vs. local disk vs. base64-in-Mongo; base64 is the wrong call at any real scale)
+- Update own profile photo — ✅ built (`utils/photos.js`: JPEG/PNG/WebP, 200x200 px minimum, 1 MB maximum, stored on the uploads disk). Trainers, branch managers and gym owners set their own from the sidebar (`/api/profile/photo`); members from their Profile screen
 - View the equipment list for their own branch (read-only) — ❌ not built (`/api/equipment` currently blocks the member actor type entirely)
 - View the trainers list for their own branch (read-only) — ❌ not built (`/api/staff` currently blocks the member actor type entirely)
 - Basic workout suggestions, AI-generated "for now" — ❌ not built (no workout data model, no AI integration exists anywhere in the app; "for now" implies this is a placeholder-quality v1, not a full program-builder)

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', default: null },
   managedTenantIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tenant' }],
   specialization: { type: String, trim: true },
+  // File name of the profile picture (see utils/photos.js). Never sent to clients: they get hasPhoto.
+  photoUrl: { type: String },
   salary: { type: Number, default: null },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },

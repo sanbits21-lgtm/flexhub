@@ -59,7 +59,7 @@ app.use(cors({
 // member import (hundreds of rows) and a profile photo (base64, up to 1 MB) need more.
 const bigBody = express.json({ limit: '5mb' });
 const smallBody = express.json({ limit: '100kb' });
-app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo)/.test(req.path) ? bigBody : smallBody)(req, res, next));
+app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo|profile\/photo)/.test(req.path) ? bigBody : smallBody)(req, res, next));
 
 // Which gym is this address? (iron.example.com). Before static files so a renamed gym's old
 // address can redirect to the new one.
@@ -138,6 +138,7 @@ app.use('/api/class-types', classTypeRoutes);
 app.use('/api/class-sessions', classSessionRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/member-app', memberAppRoutes);
+app.use('/api/profile', require('./routes/profilePhoto'));
 app.use('/api/pt-sessions', ptSessionRoutes);
 
 // Single-service deployment: serve the built frontend from this same process when

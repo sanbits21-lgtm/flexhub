@@ -101,6 +101,13 @@ export const branchesAPI = {
   createManager: (id, data) => api.post(`/branches/${id}/managers`, data),
 };
 
+// Your own profile picture (tenant-admin, branch-manager, trainer).
+export const profileAPI = {
+  uploadPhoto: (image) => api.put('/profile/photo', { image }),
+  removePhoto: () => api.delete('/profile/photo'),
+  photo: (userId, v = 0) => api.get(`/profile/photo/${userId}`, { params: { v }, responseType: 'blob' }),
+};
+
 export const staffAPI = {
   list: (params) => api.get('/staff', { params }),
   createTrainer: (data) => api.post('/staff', data),

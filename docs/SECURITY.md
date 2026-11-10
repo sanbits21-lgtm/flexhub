@@ -104,7 +104,7 @@ into a page, the browser would not run it.
 - **Tenant isolation:** every query is scoped to the caller's gym and branch, writes overwrite any
   client-supplied ids, and creating a member, payment or session checks that the branch, plan and
   trainer belong to the same gym.
-- **Photos:** only JPEG, PNG and WebP (checked by file signature), at most 1 MB, random file names,
+- **Photos:** only JPEG, PNG and WebP (checked by file signature), at least 200x200 pixels (read from the file's own header; a file whose size cannot be read is refused) and at most 1 MB, for members and for staff (`/api/profile/photo`), random file names,
   served only through the API to people allowed to see them.
 - **CSV safety:** exported failed-row files neutralise cells beginning with `=`, `+`, `-` or `@`.
 - **Email links** are built from `PUBLIC_URL`, never from a request's `Host` header. The server

@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const { z } = require('zod');
 const Member = require('../models/Member');
@@ -14,6 +12,7 @@ const Booking = require('../models/Booking');
 const { withDerivedStatus } = require('../utils/membershipStatus');
 const { generatePlan, buildProfile } = require('../utils/planGenerator');
 const { logAudit } = require('../utils/audit');
+const { checkPhoto, storePhoto, removePhotoFile, sendPhoto } = require('../utils/photos');
 const jwt = require('jsonwebtoken');
 const MemberPayment = require('../models/MemberPayment');
 
@@ -100,38 +99,18 @@ exports.updateProfile = async (req, res) => {
 
 // ---------- photo ----------
 
-const MAX_PHOTO_BYTES = 1024 * 1024;
-const uploadDir = () => path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '../uploads'), 'member-photos');
-
-// Decides the type from the bytes, never from the client-claimed mime type or filename:
-// the file is stored and served back, so it must really be an image.
-const sniffImage = (buf) => {
-  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { ext: 'jpg', mime: 'image/jpeg' };
-  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { ext: 'png', mime: 'image/png' };
-  if (buf.length > 12 && buf.subarray(0, 4).toString() === 'RIFF' && buf.subarray(8, 12).toString() === 'WEBP') return { ext: 'webp', mime: 'image/webp' };
-  return null;
-};
+const FOLDER = 'member-photos';
 
 exports.uploadPhoto = async (req, res) => {
-  const raw = typeof req.body?.image === 'string' ? req.body.image.replace(/^data:[^;]+;base64,/, '') : '';
-  if (!raw || !/^[A-Za-z0-9+/=\s]+$/.test(raw)) return res.status(400).json({ message: 'Send the photo as base64 in "image".' });
-  const buf = Buffer.from(raw, 'base64');
-  if (buf.length > MAX_PHOTO_BYTES) return res.status(413).json({ message: 'Photo is too large. Maximum is 1 MB.' });
-  const type = sniffImage(buf);
-  if (!type) return res.status(400).json({ message: 'Photo must be a JPEG, PNG or WebP image.' });
-
-  const dir = uploadDir();
-  await fs.promises.mkdir(dir, { recursive: true });
-  // Random name so a file can't be guessed from the member id, and a new upload never
-  // serves a stale cached copy under the old name.
-  const file = `${req.member._id}-${crypto.randomBytes(8).toString('hex')}.${type.ext}`;
-  await fs.promises.writeFile(path.join(dir, file), buf);
+  const checked = checkPhoto(req.body && req.body.image);
+  if (checked.message) return res.status(checked.status).json({ message: checked.message });
+  const file = await storePhoto(FOLDER, req.member._id, checked.buf, checked.type);
 
   const member = await Member.findById(req.member._id);
   const previous = member.photoUrl;
   member.photoUrl = file;
   await member.save();
-  if (previous && previous !== file) fs.promises.unlink(path.join(dir, path.basename(previous))).catch(() => {});
+  if (previous && previous !== file) await removePhotoFile(FOLDER, previous);
   logAudit(req, 'MEMBER_SELF_UPDATE_PHOTO', { type: 'Member', id: member._id });
   res.json({ hasPhoto: true });
 };
@@ -148,12 +127,7 @@ exports.getPhoto = async (req, res) => {
     && String(member.tenantId) !== String(req.user.tenantId)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const full = path.join(uploadDir(), path.basename(member.photoUrl));
-  const type = sniffImage(await fs.promises.readFile(full).catch(() => Buffer.alloc(0)));
-  if (!type) return res.status(404).json({ message: 'No photo' });
-  res.setHeader('Content-Type', type.mime);
-  res.setHeader('Cache-Control', 'private, max-age=300');
-  fs.createReadStream(full).pipe(res);
+  return sendPhoto(res, FOLDER, member.photoUrl);
 };
 
 // ---------- read-only branch views ----------
@@ -267,7 +241,7 @@ exports.deleteAccount = async (req, res) => {
     PtSession.updateMany({ memberId: member._id, status: 'scheduled', startAt: { $gte: now } }, { $set: { status: 'cancelled' } }),
     Booking.updateMany({ memberId: member._id, status: { $in: ['booked', 'waitlisted'] } }, { $set: { status: 'cancelled' } }),
   ]);
-  if (photo) fs.promises.unlink(path.join(uploadDir(), path.basename(photo))).catch(() => {});
+  if (photo) removePhotoFile(FOLDER, photo);
   logAudit(req, 'MEMBER_DELETE_ACCOUNT', { type: 'Member', id: member._id });
   res.json({ message: 'Account deleted' });
 };
