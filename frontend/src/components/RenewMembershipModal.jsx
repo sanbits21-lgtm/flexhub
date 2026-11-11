@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { membersAPI, membershipPlansAPI, tenantSettingsAPI } from '../services/api';
 import Modal from './Modal';
 import PaymentReceipt from './PaymentReceipt';
-import { buildUpiLink } from '../utils/upi';
+import { accountForBranch, buildUpiLink } from '../utils/upi';
 import { useFeature } from '../hooks/useFeature';
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
@@ -19,6 +19,8 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
   const [form, setForm] = useState({ membershipPlanId: '', discountPercent: '', amount: '', paymentMethod: 'cash' });
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  // The branch the member belongs to may have its own UPI account.
+  const upi = accountForBranch(upiSettings, member?.branchId);
 
   useEffect(() => {
     if (!open) return;
@@ -157,10 +159,10 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
                     <input
                       type="radio" name="renewMethod"
                       checked={form.paymentMethod === 'upi'}
-                      disabled={!upiSettings.upiId || !canUseUpi}
+                      disabled={!upi.upiId || !canUseUpi}
                       onChange={() => setForm({ ...form, paymentMethod: 'upi' })}
                     />
-                    UPI {!canUseUpi ? '(not available on your plan)' : !upiSettings.upiId && '(configure in Payment Settings first)'}
+                    UPI {!canUseUpi ? '(not available on your plan)' : !upi.upiId && '(configure in Payment Settings first)'}
                   </label>
                 </div>
               </div>
@@ -192,7 +194,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
           <div className="bg-white p-3 rounded border dark:border-gray-600">
             <QRCodeSVG
               value={buildUpiLink({
-                upiId: upiSettings.upiId,
+                upiId: upi.upiId,
                 payeeName: upiSettings.name,
                 amount: finalAmount,
                 note: `${member.name} - ${selectedPlan?.name || 'Renewal'}`,
@@ -200,9 +202,9 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
               size={180}
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{upiSettings.upiId}</span></p>
-          {upiSettings.upiPaymentLink && (
-            <a href={upiSettings.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{upi.upiId}</span></p>
+          {upi.upiPaymentLink && (
+            <a href={upi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               Or open payment link
             </a>
           )}

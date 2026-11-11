@@ -53,7 +53,7 @@ export default function Renew() {
             <Field label="Amount to collect (Rs)" value={amountText ?? String(computed)} onChangeText={(v) => setAmountText(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" hint={plan ? `List price ${rupees(plan.price)}` : undefined} />
           </Card>
           {plan ? (
-            <PaymentCollector simple allowLater={false} amount={amount} note={`${title} ${plan.name}`} ctaLabel={title}
+            <PaymentCollector simple allowLater={false} amount={amount} note={`${title} ${plan.name}`} branchId={member.branchId} ctaLabel={title}
               onRecord={async (method) => {
                 const res = await api.post<{ member: MemberRow; payment: { invoiceNumber: string; status: string } }>(`/members/${member._id}/renew`, { membershipPlanId: plan._id, amount, method });
                 setReceipt({ title: `${title} done`, amount, status: res.payment.status, memberName: member.name, invoice: res.payment.invoiceNumber, method, planName: plan.name, validUntil: res.member.membershipEnd });

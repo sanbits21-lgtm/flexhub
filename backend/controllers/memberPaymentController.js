@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { accountFor } = require('../utils/paymentAccounts');
 const Member = require('../models/Member');
 const MemberPayment = require('../models/MemberPayment');
 const { logAudit } = require('../utils/audit');
@@ -101,6 +102,7 @@ exports.create = async (req, res) => {
 
   const paidStatus = status || 'paid';
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+  const upiId = method === 'upi' ? (await accountFor(req.scope.tenantId, member.branchId)).upiId || undefined : undefined;
 
   const payment = await MemberPayment.create({
     tenantId: req.scope.tenantId,
@@ -111,6 +113,7 @@ exports.create = async (req, res) => {
     method,
     status: paidStatus,
     gatewayRef,
+    upiId,
     invoiceNumber,
     paidAt: paidStatus === 'paid' ? new Date() : undefined,
   });

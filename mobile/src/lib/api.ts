@@ -229,7 +229,14 @@ export type ReportSummary = {
 };
 
 export type TrainerReportRow = { _id: string; name: string; email: string; branchName?: string; specialization?: string; assignedMemberCount: number; collections: number; salary: number | null };
-export type TenantSettings = { name: string; upiId?: string; upiPaymentLink?: string };
+// `upiId` / `upiPaymentLink` are the gym's default account; `branchAccounts` holds only the branches (that the caller
+// can see) which collect into an account of their own. See backend/utils/paymentAccounts.js.
+export type TenantSettings = { name: string; upiId?: string; upiPaymentLink?: string; branchAccounts?: Record<string, { upiId: string; upiPaymentLink?: string }> };
+export type PaymentAccounts = {
+  gymName: string;
+  default: { upiId: string; upiPaymentLink: string };
+  branches: { _id: string; name: string; upiId: string; upiPaymentLink: string; usesDefault: boolean }[];
+};
 
 // ---------- progress and ratings (mirror backend/controllers/memberProgressController.js, ratingController.js) ----------
 

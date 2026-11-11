@@ -105,6 +105,7 @@ exports.getMe = async (req, res) => {
 };
 
 const Tenant = require('../models/Tenant');
+const { accountFor } = require('../utils/paymentAccounts');
 const { memberRoom } = require('../utils/subscription');
 const { revokeActor } = require('../utils/sessions');
 
@@ -219,7 +220,7 @@ exports.bulkCreate = async (req, res) => {
   const branch = await Branch.findOne({ _id: branchId, tenantId: req.body.tenantId });
   if (!branch) return res.status(400).json({ message: 'Branch not found for this tenant' });
 
-  const plans = await MembershipPlan.find({ tenantId: req.body.tenantId }).select('durationUnit price');
+  const plans = await MembershipPlan.find({ tenantId: req.body.tenantId }).select('durationUnit price branchId');
   const planById = new Map(plans.map((p) => [p._id.toString(), p]));
   const fieldDefs = await memberFieldDefs(req.body.tenantId);
   // Opt-in so older clients keep their behaviour: skip a row whose phone already belongs to a
@@ -251,6 +252,8 @@ exports.bulkCreate = async (req, res) => {
       if (row.membershipPlanId) {
         plan = planById.get(String(row.membershipPlanId));
         if (!plan) throw new Error('Membership plan not found for this tenant');
+        // A plan set up for one branch is only for that branch (tenant-wide plans have no branch).
+        if (plan.branchId && String(plan.branchId) !== String(branchId)) throw new Error('This plan belongs to a different branch');
         membershipPlanId = plan._id;
         end = addPlanDuration(start, plan.durationUnit);
       }
@@ -437,6 +440,7 @@ exports.renew = async (req, res) => {
     membershipPlanId: plan._id,
     amount: amount != null ? amount : plan.price,
     method,
+    upiId: method === 'upi' ? (await accountFor(member.tenantId, member.branchId)).upiId || undefined : undefined,
     status: 'paid',
     invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
     paidAt: now,

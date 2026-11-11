@@ -10,7 +10,7 @@ import BulkUploadMembersModal from '../../components/BulkUploadMembersModal';
 import PaymentReceipt from '../../components/PaymentReceipt';
 import RenewMembershipModal from '../../components/RenewMembershipModal';
 import MemberPlansModal from '../../components/MemberPlansModal';
-import { buildUpiLink } from '../../utils/upi';
+import { accountForBranch, buildUpiLink } from '../../utils/upi';
 import { addPlanMonths } from '../../utils/planDuration';
 import CustomFieldInputs from '../../components/CustomFieldInputs';
 import { formatFieldValue, payloadFromForm, toInputValue } from '../../utils/memberFields';
@@ -105,6 +105,9 @@ export default function Members() {
   const [editForm, setEditForm] = useState(emptyEditForm);
 
   const selectedPlan = plans.find((p) => p._id === form.membershipPlanId);
+  // The UPI account follows the branch the member joins: the owner may give each branch its own.
+  const formUpi = accountForBranch(upiSettings, isTenantAdmin ? form.branchId : user.branchId);
+  const stepUpi = accountForBranch(upiSettings, createdMember?.branchId);
   const computedEndDate = useMemo(() => {
     if (!selectedPlan || !form.membershipStart) return '';
     return addPlanMonths(form.membershipStart, selectedPlan.durationUnit);
@@ -681,10 +684,10 @@ export default function Members() {
                     type="radio"
                     name="paymentMethod"
                     checked={form.paymentMethod === 'upi'}
-                    disabled={!upiSettings.upiId || !canUseUpi}
+                    disabled={!formUpi.upiId || !canUseUpi}
                     onChange={() => setForm({ ...form, paymentMethod: 'upi' })}
                   />
-                  UPI {!canUseUpi ? '(not available on your plan)' : !upiSettings.upiId && '(configure in Payment Settings first)'}
+                  UPI {!canUseUpi ? '(not available on your plan)' : !formUpi.upiId && '(configure in Payment Settings first)'}
                 </label>
               </div>
             </div>
@@ -706,7 +709,7 @@ export default function Members() {
             <div className="bg-white p-3 rounded border dark:border-gray-600">
               <QRCodeSVG
                 value={buildUpiLink({
-                  upiId: upiSettings.upiId,
+                  upiId: stepUpi.upiId,
                   payeeName: upiSettings.name,
                   amount: finalAmount,
                   note: `${createdMember.name} - ${selectedPlan?.name || 'Membership'}`,
@@ -714,9 +717,9 @@ export default function Members() {
                 size={180}
               />
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{upiSettings.upiId}</span></p>
-            {upiSettings.upiPaymentLink && (
-              <a href={upiSettings.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{stepUpi.upiId}</span></p>
+            {stepUpi.upiPaymentLink && (
+              <a href={stepUpi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                 Or open payment link
               </a>
             )}

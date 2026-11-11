@@ -5,14 +5,20 @@ import { membersAPI, membershipPlansAPI, tenantSettingsAPI } from '../services/a
 import { FIELD_TYPE_LABEL } from '../utils/memberFields';
 import {
   BUILTIN_FIELDS, REQUIRED_FIELDS, MAX_ROWS, autoMapTargets, buildRow, customKeyOf, customTarget, downloadSampleSheet,
-  guessDuration, repeatedInFile, sampleValues, showCell, suggestType, toPayload, unmatchedPlans,
+  guessDuration, repeatedInFile, sampleValues, showCell, suggestType, toPayload,
 } from '../utils/bulkImport';
+import {
+  NO_PLAN, defaultPlanMap, listFilePlans, paymentSummary, plansForBranch, suggestPlan, undecidedPlans,
+} from '../utils/planMapping';
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
 const primaryBtn = 'bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
 const ghostBtn = 'border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100';
 const DURATIONS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['half_yearly', 'Half-yearly'], ['yearly', 'Yearly']];
 const NEW_FIELD = '__new__';
+const NEW_PLAN = '__newplan__';
+const DURATION_LABEL = Object.fromEntries(DURATIONS);
+const rupees = (n) => `\u20B9${Number(n).toLocaleString('en-IN')}`;
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
 // A cell starting with = + - @ (or a tab/CR) would run as a formula when the file is opened in
@@ -39,8 +45,8 @@ export default function BulkUploadMembersModal({
   const [targets, setTargets] = useState([]); // one per file column: '' | builtin key | 'cf:<key>'
   const [fieldDraft, setFieldDraft] = useState(null); // { col, label, type, busy, error }
   const [planDrafts, setPlanDrafts] = useState({}); // lower-cased plan name -> { durationUnit, price, busy, error }
+  const [planChoices, setPlanChoices] = useState({}); // lower-cased file plan name -> plan id, NO_PLAN, or NEW_PLAN (creating one)
   const [batchPlanId, setBatchPlanId] = useState('');
-  const [importWithoutPlan, setImportWithoutPlan] = useState(false);
   const [existing, setExisting] = useState({ rows: new Map(), failed: false }); // row index -> name of the member who has that phone
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -50,7 +56,7 @@ export default function BulkUploadMembersModal({
 
   const reset = () => {
     setStep('upload'); setFileName(''); setHeaders([]); setRawRows([]); setTargets([]); setFieldDraft(null);
-    setPlanDrafts({}); setBatchPlanId(''); setImportWithoutPlan(false); setExisting({ rows: new Map(), failed: false });
+    setPlanDrafts({}); setPlanChoices({}); setBatchPlanId(''); setExisting({ rows: new Map(), failed: false });
     setSkipDuplicates(true); setResult(null); setParseError(''); setImportError('');
   };
   const handleClose = () => { reset(); setBranchId(fixedBranchId || ''); onClose(); };
@@ -77,13 +83,24 @@ export default function BulkUploadMembersModal({
     }
   };
 
+  // Plans this branch may enrol into, and what the file's plan names are mapped to. An exact name match is
+  // decided already; every other name waits for a choice (see utils/planMapping.js for why nothing is guessed).
+  const branchPlans = useMemo(() => plansForBranch(plans, branchId), [plans, branchId]);
+  const planCol = targets.indexOf('membershipPlanName');
+  const filePlans = useMemo(() => listFilePlans(rawRows, planCol), [rawRows, planCol]);
+  const planMap = useMemo(() => {
+    const decided = { ...defaultPlanMap(filePlans, branchPlans) };
+    Object.entries(planChoices).forEach(([key, v]) => { if (v && v !== NEW_PLAN) decided[key] = v; });
+    return decided;
+  }, [filePlans, branchPlans, planChoices]);
+  const undecided = useMemo(() => undecidedPlans(filePlans, planMap), [filePlans, planMap]);
+
   const rows = useMemo(
-    () => rawRows.map((r) => buildRow(r, targets, { plans, batchPlanId, fields: memberFields })),
-    [rawRows, targets, plans, batchPlanId, memberFields],
+    () => rawRows.map((r) => buildRow(r, targets, { plans: branchPlans, batchPlanId, fields: memberFields, planMap })),
+    [rawRows, targets, branchPlans, batchPlanId, memberFields, planMap],
   );
   const missingRequired = REQUIRED_FIELDS.filter((f) => !targets.includes(f.key));
   const phoneMapped = targets.includes('phone');
-  const unmatched = useMemo(() => (targets.includes('membershipPlanName') ? unmatchedPlans(rows, plans) : []), [rows, plans, targets]);
   const repeats = useMemo(() => repeatedInFile(rows), [rows]);
   const incomplete = useMemo(() => rows.reduce((n, r) => n + (!r.name || !r.phone ? 1 : 0), 0), [rows]);
 
@@ -146,15 +163,20 @@ export default function BulkUploadMembersModal({
     try {
       const { data } = await membershipPlansAPI.create({ name, durationUnit: d.durationUnit, price: Number(d.price) });
       onPlanCreated(data);
+      setPlanChoices((prev) => ({ ...prev, [name.toLowerCase().trim().replace(/\s+/g, ' ')]: data._id }));
     } catch (err) {
       setDraft(name, { busy: false, error: errorMessage(err) });
     }
   };
 
   const tooMany = rows.length > MAX_ROWS;
-  const planBlocked = unmatched.length > 0 && !batchPlanId && !importWithoutPlan;
+  const planBlocked = undecided.length > 0 || filePlans.some((fp) => planChoices[fp.key] === NEW_PLAN && !planMap[fp.key]);
   const skipped = skipDuplicates ? duplicateRows.size : 0;
   const willImport = Math.max(0, rows.length - skipped - incomplete);
+  const payments = useMemo(
+    () => paymentSummary(rows, branchPlans, (r, i) => r.name && r.phone && !(skipDuplicates && duplicateRows.has(i))),
+    [rows, branchPlans, skipDuplicates, duplicateRows],
+  );
   const canImport = !submitting && missingRequired.length === 0 && !tooMany && !planBlocked && !fieldDraft && willImport > 0;
 
   const handleImport = async () => {
@@ -295,61 +317,93 @@ export default function BulkUploadMembersModal({
             )}
           </section>
 
-          {/* Plans named in the file */}
-          {targets.includes('membershipPlanName') && (
+          {/* Plans named in the file: each is matched to one of the gym's plans */}
+          {planCol !== -1 && (
             <section aria-label="Plans">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">2. Plans</h3>
-              {unmatched.length === 0 ? (
-                <p className="text-xs text-green-700 dark:text-green-400">Every plan in your file matches one of your plans.</p>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">2. Match your plans</h3>
+              {filePlans.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">The plan column is empty. Pick a plan below for everyone, or import without plans.</p>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    These plans are in your file but not in your gym.{canCreate ? ' Create them here, with a length and price.' : ' Ask the gym owner to create them, or import those members without a plan.'}
+                <>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    These are the plan names in your file. Pick which of your plans each one is. Names that already match a plan are filled in; change them if they are wrong.
                   </p>
                   <ul className="space-y-2">
-                    {unmatched.map((u) => {
-                      const d = draftFor(u.name);
+                    {filePlans.map((fp) => {
+                      const chosen = planChoices[fp.key];
+                      const creating = chosen === NEW_PLAN;
+                      const value = creating ? NEW_PLAN : planMap[fp.key] || '';
+                      const auto = !planChoices[fp.key] && !!planMap[fp.key];
+                      const suggestion = !value ? suggestPlan(fp.name, branchPlans) : null;
+                      const d = draftFor(fp.name);
                       return (
-                        <li key={u.name} className="rounded border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
-                          <div className="text-sm text-gray-900 dark:text-gray-100"><span className="font-medium">{u.name}</span> <span className="text-xs text-gray-500 dark:text-gray-400">· {u.count} member{u.count === 1 ? '' : 's'}</span></div>
-                          {canCreate && (
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <select aria-label={`Length of ${u.name}`} value={d.durationUnit} onChange={(e) => setDraft(u.name, { durationUnit: e.target.value })} className={inputClass}>
-                                {DURATIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                              </select>
-                              <input aria-label={`Price of ${u.name}`} type="number" min="0" placeholder="Price ₹" value={d.price} onChange={(e) => setDraft(u.name, { price: e.target.value })} className={`${inputClass} w-28`} />
-                              <button type="button" onClick={() => createPlan(u.name)} disabled={d.busy} className={`${primaryBtn} text-sm py-1`}>{d.busy ? 'Creating...' : 'Create plan'}</button>
+                        <li key={fp.key} className={`rounded border p-3 space-y-2 ${value && !creating ? 'border-gray-200 dark:border-gray-700' : 'border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/20'}`}>
+                          <div className="grid grid-cols-1 sm:grid-cols-[1fr_16rem] gap-2 sm:items-center">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{fp.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {fp.count} member{fp.count === 1 ? '' : 's'}
+                                {auto && <span className="ml-2 text-green-700 dark:text-green-400">matched by name</span>}
+                              </div>
+                            </div>
+                            <select
+                              aria-label={`Which plan is ${fp.name}`}
+                              value={value}
+                              onChange={(e) => setPlanChoices((prev) => ({ ...prev, [fp.key]: e.target.value }))}
+                              className={`${inputClass} w-full`}
+                            >
+                              <option value="" disabled>Choose a plan…</option>
+                              {branchPlans.map((p) => <option key={p._id} value={p._id}>{p.name} · {DURATION_LABEL[p.durationUnit] || p.durationUnit} · {rupees(p.price)}</option>)}
+                              <option value={NO_PLAN}>Import without a plan</option>
+                              {canCreate && <option value={NEW_PLAN}>+ Create a new plan…</option>}
+                            </select>
+                          </div>
+                          {suggestion && (
+                            <p className="text-xs text-gray-600 dark:text-gray-300">
+                              Looks like <span className="font-medium">{suggestion.name}</span>?{' '}
+                              <button type="button" onClick={() => setPlanChoices((prev) => ({ ...prev, [fp.key]: suggestion._id }))} className="text-blue-600 dark:text-blue-400 hover:underline">Use it</button>
+                            </p>
+                          )}
+                          {value === NO_PLAN && <p className="text-xs text-gray-500 dark:text-gray-400">These members are imported with no plan and no payment.</p>}
+                          {!canCreate && !value && <p className="text-xs text-gray-400 dark:text-gray-500">Not in the list? Ask the gym owner to create the plan, or import these members without one.</p>}
+                          {creating && (
+                            <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 space-y-2">
+                              <div className="text-xs font-medium text-gray-700 dark:text-gray-200">New plan named “{fp.name}”</div>
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <select aria-label={`Length of ${fp.name}`} value={d.durationUnit} onChange={(e) => setDraft(fp.name, { durationUnit: e.target.value })} className={inputClass}>
+                                  {DURATIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                                </select>
+                                <input aria-label={`Price of ${fp.name}`} type="number" min="0" placeholder="Price ₹" value={d.price} onChange={(e) => setDraft(fp.name, { price: e.target.value })} className={`${inputClass} w-28`} />
+                                <button type="button" onClick={() => createPlan(fp.name)} disabled={d.busy} className={`${primaryBtn} text-sm py-1`}>{d.busy ? 'Creating...' : 'Create plan'}</button>
+                                <button type="button" onClick={() => setPlanChoices((prev) => { const next = { ...prev }; delete next[fp.key]; return next; })} className={`${ghostBtn} text-sm py-1`}>Cancel</button>
+                              </div>
+                              {d.error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{d.error}</p>}
                             </div>
                           )}
-                          {d.error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{d.error}</p>}
                         </li>
                       );
                     })}
                   </ul>
-                </div>
+                </>
               )}
               <div className="mt-3">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Plan for rows with no plan of their own (optional)</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Plan for rows with no plan in the file (optional)</label>
                 <select value={batchPlanId} onChange={(e) => setBatchPlanId(e.target.value)} className={`${inputClass} w-full sm:w-1/2`}>
                   <option value="">— None —</option>
-                  {plans.map((p) => <option key={p._id} value={p._id}>{p.name} (₹{p.price})</option>)}
+                  {branchPlans.map((p) => <option key={p._id} value={p._id}>{p.name} ({rupees(p.price)})</option>)}
                 </select>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Every member who ends up with a plan gets a cash payment recorded at the plan's price, the same as adding a member one at a time.
-                </p>
               </div>
-              {unmatched.length > 0 && !batchPlanId && (
-                <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200 mt-2">
-                  <input type="checkbox" checked={importWithoutPlan} onChange={(e) => setImportWithoutPlan(e.target.checked)} className="mt-1" />
-                  Import the {unmatched.reduce((n, u) => n + u.count, 0)} row(s) with these plans without any plan (no payment recorded)
-                </label>
-              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {payments.count > 0
+                  ? <>This import records <span className="font-medium">{payments.count}</span> cash payment{payments.count === 1 ? '' : 's'} totalling <span className="font-medium">{rupees(payments.total)}</span>, one for each member who gets a plan, at the plan's price. Check the plans above are right before importing.</>
+                  : 'No member gets a plan, so no payments are recorded.'}
+              </p>
             </section>
           )}
 
           {/* Checks before anything is written */}
           <section aria-label="Checks">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">{targets.includes('membershipPlanName') ? '3' : '2'}. Check</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">{planCol !== -1 ? '3' : '2'}. Check</h3>
             <ul className="text-xs space-y-1">
               {incomplete > 0 && <li className="text-amber-700 dark:text-amber-400">{incomplete} row(s) are missing a name or phone and will be skipped.</li>}
               {duplicateRows.size > 0 && (
@@ -410,7 +464,7 @@ export default function BulkUploadMembersModal({
               {submitting ? 'Importing...' : `Import ${willImport} Member${willImport === 1 ? '' : 's'}`}
             </button>
             <button type="button" onClick={reset} className={ghostBtn}>Back</button>
-            {planBlocked && <span className="text-xs text-amber-700 dark:text-amber-400">Create the plans above, or tick the box to import without them.</span>}
+            {planBlocked && <span className="text-xs text-amber-700 dark:text-amber-400">Choose a plan for every name above ({undecided.length} left), or pick “Import without a plan”.</span>}
             {fieldDraft && <span className="text-xs text-amber-700 dark:text-amber-400">Finish or cancel the new field first.</span>}
           </div>
         </div>

@@ -1,5 +1,9 @@
 import * as XLSX from 'xlsx';
 import { cellToFieldValue, dateOnly, detectType } from './memberFields';
+import { findPlan, guessDuration, resolvePlan } from './planMapping';
+
+// Matching a file's plan names to the gym's plans lives in planMapping.js (pure, tested).
+export { findPlan, guessDuration };
 
 // The built-in member fields a file column can map to. Order matters for auto-matching: the more
 // specific "emergency ..." fields come before the generic Name/Phone so a header like
@@ -61,17 +65,11 @@ export const normalizeDate = (value) => {
   return Number.isNaN(d.getTime()) ? undefined : dateOnly(d);
 };
 
-/** Case-insensitive plan lookup by name. */
-export const findPlan = (plans, name) => {
-  const n = norm(name);
-  return n ? plans.find((p) => norm(p.name) === n) || null : null;
-};
-
 /**
  * One file row as the API wants it. `planName` stays alongside so the screen can tell which rows
  * name a plan that does not exist; `toPayload` strips it before sending.
  */
-export const buildRow = (rawRow, targets, { plans, batchPlanId, fields }) => {
+export const buildRow = (rawRow, targets, { plans, batchPlanId, fields, planMap }) => {
   const cell = {};
   const custom = {};
   targets.forEach((target, i) => {
@@ -87,7 +85,8 @@ export const buildRow = (rawRow, targets, { plans, batchPlanId, fields }) => {
   });
   const text = (v) => (isBlank(v) ? undefined : String(v).trim());
   const planName = text(cell.membershipPlanName);
-  const plan = findPlan(plans, planName) || (batchPlanId ? plans.find((p) => p._id === batchPlanId) : null);
+  // The plan the importer chose for this name (or an exact name match). A row with no plan in the file takes the batch plan.
+  const plan = resolvePlan({ planName, planMap, plans, batchPlanId });
   const emergencyName = text(cell.emergencyContactName);
   const emergencyPhone = text(cell.emergencyContactPhone);
   return {
@@ -106,17 +105,6 @@ export const buildRow = (rawRow, targets, { plans, batchPlanId, fields }) => {
 
 export const toPayload = ({ planName, ...row }) => row;
 
-/** Plan names the file uses that match no plan, with how many rows use each. */
-export const unmatchedPlans = (rows, plans) => {
-  const seen = new Map();
-  rows.forEach((r) => {
-    if (!r.planName || findPlan(plans, r.planName)) return;
-    const k = norm(r.planName);
-    seen.set(k, { name: r.planName, count: (seen.get(k)?.count || 0) + 1 });
-  });
-  return [...seen.values()];
-};
-
 /** Digits only, last 10 when longer: "+91 98765 43210" and "9876543210" are one number. */
 export const phoneKey = (phone) => {
   const digits = String(phone ?? '').replace(/\D/g, '');
@@ -134,15 +122,6 @@ export const repeatedInFile = (rows) => {
     else first.set(k, i);
   });
   return repeats;
-};
-
-/** A guess at a new plan's length from what the file calls it. */
-export const guessDuration = (name) => {
-  const n = norm(name);
-  if (/year|annual|12\s*m/.test(n)) return n.includes('half') ? 'half_yearly' : 'yearly';
-  if (/half|6\s*m|six/.test(n)) return 'half_yearly';
-  if (/quarter|3\s*m|three/.test(n)) return 'quarterly';
-  return 'monthly';
 };
 
 /** How a spreadsheet cell reads on screen. */

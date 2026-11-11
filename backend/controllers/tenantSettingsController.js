@@ -1,4 +1,5 @@
 const Tenant = require('../models/Tenant');
+const Branch = require('../models/Branch');
 const { logAudit } = require('../utils/audit');
 const { gymMemberAppUrl } = require('../utils/links');
 const { resolveFeatures } = require('../utils/features');
@@ -11,7 +12,42 @@ const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoU
 exports.getMine = async (req, res) => {
   const tenant = await Tenant.findById(req.scope.tenantId).select('name upiId upiPaymentLink');
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
-  res.json(tenant);
+  // `upiId` / `upiPaymentLink` stay the gym's default account. A branch that banks separately appears
+  // in `branchAccounts` (only branches the caller can see: a branch manager gets their own, if any).
+  const branches = await Branch.find({ tenantId: req.scope.tenantId, ...(req.scope.branchId ? { _id: req.scope.branchId } : {}) }).select('upiId upiPaymentLink').lean();
+  const branchAccounts = {};
+  branches.forEach((b) => { if (b.upiId) branchAccounts[String(b._id)] = { upiId: b.upiId, upiPaymentLink: b.upiPaymentLink || '' }; });
+  res.json({ ...tenant.toObject(), branchAccounts });
+};
+
+// Owner only: the gym's default account and every branch's own, for the Payment Settings page.
+exports.getPaymentAccounts = async (req, res) => {
+  const [tenant, branches] = await Promise.all([
+    Tenant.findById(req.scope.tenantId).select('name upiId upiPaymentLink').lean(),
+    Branch.find({ tenantId: req.scope.tenantId, isActive: true }).select('name upiId upiPaymentLink').sort({ name: 1 }).lean(),
+  ]);
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  res.json({
+    gymName: tenant.name,
+    default: { upiId: tenant.upiId || '', upiPaymentLink: tenant.upiPaymentLink || '' },
+    branches: branches.map((b) => ({ _id: b._id, name: b.name, upiId: b.upiId || '', upiPaymentLink: b.upiPaymentLink || '', usesDefault: !b.upiId })),
+  });
+};
+
+// Owner only. Blank both fields to put the branch back on the gym's default account.
+exports.updateBranchAccount = async (req, res) => {
+  const upiId = req.body.upiId || '';
+  const upiPaymentLink = req.body.upiPaymentLink || '';
+  // A link without an ID would not be this branch's account: it would borrow the gym's.
+  if (upiPaymentLink && !upiId) return res.status(400).json({ message: 'Add the branch\'s UPI ID as well as the link, or clear the link.' });
+  const branch = await Branch.findOneAndUpdate(
+    { _id: req.params.branchId, tenantId: req.scope.tenantId },
+    { upiId, upiPaymentLink },
+    { new: true },
+  ).select('name upiId upiPaymentLink');
+  if (!branch) return res.status(404).json({ message: 'Branch not found' });
+  logAudit(req, 'UPDATE_BRANCH_PAYMENT_SETTINGS', { type: 'Branch', id: branch._id });
+  res.json({ _id: branch._id, name: branch.name, upiId: branch.upiId || '', upiPaymentLink: branch.upiPaymentLink || '', usesDefault: !branch.upiId });
 };
 
 // The address a member opens to use the member app, for the QR code at the front desk or on the

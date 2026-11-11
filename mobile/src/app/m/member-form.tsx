@@ -94,7 +94,7 @@ export default function MemberForm() {
         {receipt ? <Receipt r={receipt} onDone={() => router.back()} /> : (
           <>
             <Banner tone="success">{created.member.name} is enrolled on {created.planName}. Now take the first payment.</Banner>
-            <PaymentCollector simple amount={created.amount} note={created.planName} ctaLabel="Collect"
+            <PaymentCollector simple amount={created.amount} note={created.planName} branchId={created.member.branchId} ctaLabel="Collect"
               onRecord={async (method, status) => {
                 const p = await api.post<PaymentRow>('/payments', { memberId: created.member._id, membershipPlanId: plan?._id, amount: created.amount, method, status });
                 setReceipt({ title: status === 'paid' ? 'Welcome aboard' : 'Saved as pending', amount: created.amount, status: p.status, memberName: created.member.name, invoice: p.invoiceNumber, method, planName: created.planName, validUntil: created.member.membershipEnd });

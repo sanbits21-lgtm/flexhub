@@ -38,7 +38,7 @@ export default function PaymentNew() {
             <Field label="Amount (Rs)" value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0" />
           </Card>
           {memberId && value > 0 ? (
-            <PaymentCollector amount={value} note={plan?.name} ctaLabel="Record"
+            <PaymentCollector amount={value} note={plan?.name} branchId={member?.branchId} ctaLabel="Record"
               onRecord={async (method, status) => {
                 const p = await api.post<PaymentRow>('/payments', { memberId, membershipPlanId: planId || undefined, amount: value, method, status });
                 setReceipt({ title: status === 'paid' ? 'Payment recorded' : 'Saved as pending', amount: value, status: p.status, memberName: member?.name ?? 'Member', invoice: p.invoiceNumber, method, planName: plan?.name });

@@ -253,7 +253,7 @@ and runs every 6 hours from `server.js`. Details for operators: `docs/PLATFORM_A
 | `/api/membership-plans` | tenant-admin (CUD), branch-manager (read) | tenant-wide catalog |
 | `/api/attendance` | branch-manager/trainer/tenant-admin + member (own), via `allowActors` | `POST /check-in` (member self via QR or staff manual), `POST /check-out` |
 | `/api/dashboard` | all staff (payload varies by role), member | `GET /summary` branches on role; `GET /platform` (super/platform only) |
-| `/api/tenant-settings` | tenant-admin (read/write), branch-manager (read) | tenant's own UPI collection details (`upiId`, `upiPaymentLink`) — no payment gateway |
+| `/api/tenant-settings` | tenant-admin (read/write), branch-manager (read) | tenant's own UPI collection details (`upiId`, `upiPaymentLink`) — no payment gateway; `GET /payment-accounts` and `PUT /branches/:branchId/payment` (owner only) manage a branch's own UPI account |
 | `/api/tenants/:id/features` | super-admin, platform-admin | Workspace — get/update per-tenant feature flags (see below) |
 
 Routes under `/api/public`, the `/login`, `/refresh` and `/logout` endpoints, and `/api/csp-report` are public. Everything else goes through `protect → scopeContext`; write routes add `enforceWriteScope` + `requireRole(...)`. Also mounted: `/api/member-app` (the member's own screens: profile, photo, plans, sessions, pass, payments), `/api/class-types`, `/api/class-sessions`, `/api/bookings`, `/api/pt-sessions`, `/api/payments`, `/api/reports`, `/api/audit-logs`.
@@ -274,6 +274,15 @@ Each tenant sets its own UPI ID (and optional fallback payment link) on the
 favor of this simpler model after discussing multi-tenant settlement tradeoffs (a shared
 gateway account would collect every tenant's money into one bank account). Each tenant's
 money goes straight to their own UPI handle.
+
+**A branch may have its own UPI account.** On the same page the owner can give any branch its own
+UPI ID (and link); a branch without one collects into the gym's default. `utils/paymentAccounts.js`
+resolves it: a branch with its own ID uses its own link too, never the gym's (the link points at the
+gym's account, so mixing them would send a branch's money to the wrong place); a link with no ID is
+refused. `GET /api/tenant-settings` returns the gym default plus `branchAccounts` for the branches the
+caller can see, and the add-member, renewal and mobile collection screens pick the account for the
+member's branch. When a UPI payment is recorded the server stamps `MemberPayment.upiId` with the
+account it was meant for, so a later change to an account does not rewrite history.
 
 In the Add Member flow (`frontend/src/pages/branch/Members.jsx`), once a membership plan
 is selected staff pick a payment method:
@@ -300,12 +309,17 @@ for any past payment, and supports refunds. A refund clears `paidAt` as well as 
 ### Bulk member upload — plan + payment
 
 `frontend/src/components/BulkUploadMembersModal.jsx` → `POST /api/members/bulk`
-(`memberController.bulkCreate`). Plan resolution per row, in order: (1) the row's own
-Plan column, matched by name case-insensitively against the tenant's plans; (2) if
-blank or no match, the **"Plan for this batch"** selector on the mapping screen — the
-fallback for the common case of an entire sheet being one plan, and it also quietly
-fixes what used to be a silent failure mode (a typo'd plan name importing the member
-with no plan and no warning).
+(`memberController.bulkCreate`). **Plans are mapped, not guessed.** After the columns are matched,
+the screen lists every distinct plan name in the file (case and spacing ignored, with how many members
+use it) and the importer picks, for each, one of the gym's plans, "Import without a plan", or (owner
+only) creates a new plan. A name that exactly equals a plan is filled in already and can be changed. A
+name that matches nothing is never guessed: it blocks the import until decided, because a plan means a
+payment recorded at its price. A suggestion ("Looks like Quarterly?") is offered when exactly one plan
+is a clear candidate, and applied only on a click. Only plans usable at the chosen branch are offered
+(gym-wide, or that branch's own), and the server refuses a row whose plan belongs to another branch. A
+row whose plan cell is blank takes the optional **"Plan for rows with no plan in the file"**. The screen
+shows how many cash payments, and how much in total, the import will record. The logic is in
+`frontend/src/utils/planMapping.js` (pure, tested with `npm test` in `frontend/`).
 
 Whichever way a row ends up with a plan, `bulkCreate` now also records a `MemberPayment`
 for it — `method: 'cash'`, `status: 'paid'`, `amount` = the plan's list price, same as

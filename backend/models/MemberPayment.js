@@ -10,6 +10,9 @@ const memberPaymentSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
   method: { type: String, enum: ['cash', 'card', 'upi', 'netbanking', 'other'], default: 'cash' },
   gatewayRef: { type: String },
+  // For UPI payments: the account the money was meant to land in, stamped by the server at the time
+  // (a branch's own account, or the gym's default). Accounts change later; this does not.
+  upiId: { type: String },
   invoiceNumber: { type: String, required: true, unique: true },
   paidAt: { type: Date },
 }, { timestamps: true });
