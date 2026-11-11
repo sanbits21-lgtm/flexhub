@@ -28,6 +28,7 @@ export default function More() {
         {can('features:qrCheckIn') && <Row icon="qr-code" title="Scan member pass" subtitle="QR check-in at the front desk" onPress={go('/m/scan')} />}
         {can('pages:attendance') && <Row icon="finger-print" title="Attendance" subtitle="Check members in and out" onPress={go('/m/attendance')} />}
         <Row icon="people-circle" title="Trainers" subtitle="Add, edit and reset passwords" onPress={go('/m/trainers')} />
+        {can('features:ratings') && <Row icon="star" title="Ratings" subtitle="What members think of the gym and trainers" onPress={go('/m/ratings')} />}
         {can('pages:equipment') && <Row icon="barbell" title="Equipment" subtitle="Inventory and maintenance" onPress={go('/m/equipment')} />}
         {can('pages:classes') && <Row icon="albums" title="Class types" subtitle="Yoga, Zumba and other group classes" onPress={go('/m/class-types')} />}
         <Row icon="pricetags" title="Membership plans" subtitle={admin ? 'Prices and durations' : 'What members can buy'} onPress={go('/m/plans')} last />

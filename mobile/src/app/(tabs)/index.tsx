@@ -80,7 +80,8 @@ function MemberHome() {
         {can('features:qrCheckIn') && <Row icon="qr-code" tone="accent" title="My pass" subtitle="Show this at the front desk" onPress={() => router.push('/pass')} />}
         <Row icon="barbell" title="Today's workout" subtitle="See or make a workout plan" onPress={() => router.push('/workout')} />
         <Row icon="nutrition" title="Meal plan" subtitle="Calories and meals for your goal" onPress={() => router.push('/diet')} />
-        <Row icon="fitness" title="Trainers & equipment" subtitle="What your gym offers" onPress={() => router.push('/gym')} last={!can('features:memberPayments')} />
+        <Row icon="stats-chart" title="Progress & badges" subtitle="Your weight, streaks and milestones" onPress={() => router.push('/progress')} />
+        <Row icon="fitness" title="Trainers & equipment" subtitle={can('features:ratings') ? 'What your gym offers, and rate it' : 'What your gym offers'} onPress={() => router.push('/gym')} last={!can('features:memberPayments')} />
         {can('features:memberPayments') && <Row icon="receipt" title="Payment history" subtitle="Your receipts" onPress={() => router.push('/receipts')} last />}
       </Card>
 

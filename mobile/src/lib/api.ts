@@ -230,3 +230,33 @@ export type ReportSummary = {
 
 export type TrainerReportRow = { _id: string; name: string; email: string; branchName?: string; specialization?: string; assignedMemberCount: number; collections: number; salary: number | null };
 export type TenantSettings = { name: string; upiId?: string; upiPaymentLink?: string };
+
+// ---------- progress and ratings (mirror backend/controllers/memberProgressController.js, ratingController.js) ----------
+
+export type ProgressEntry = { _id: string; date: string; weightKg?: number | null; heightCm?: number | null; bodyFatPct?: number | null; notes: string; source: 'member' | 'staff' };
+export type Achievement = { key: string; group: string; title: string; text: string; earned: boolean; earnedAt: string | null; progress: { value: number; target: number } };
+export type ProgressData = {
+  goal: string | null;
+  metrics: ProgressEntry[];
+  summary: {
+    startWeightKg: number | null; latestWeightKg: number | null; changeKg: number | null;
+    startBodyFatPct: number | null; latestBodyFatPct: number | null; changeBodyFatPct: number | null;
+    heightCm: number | null; bmi: number | null; entries: number;
+  };
+  stats: { totalVisits: number; visitsThisMonth: number; bestStreakWeeks: number; currentStreakWeeks: number };
+  achievements: Achievement[];
+};
+
+export type MyRating = { stars: number; comment: string; updatedAt: string };
+export type RatingsOverview = {
+  minPublic: number;
+  gym: { mine: MyRating | null; canRate: boolean; average: number | null; count: number | null };
+  trainers: { _id: string; name: string; specialization: string; canRate: boolean; mine: MyRating | null }[];
+};
+
+export type RatingRow = { count: number; average: number | null; distribution: number[]; recent: { stars: number; comment: string; at: string }[] };
+export type StaffRatings = {
+  minPublic: number;
+  gym: (RatingRow & { branchId: string; branchName: string })[];
+  trainers: (RatingRow & { trainerId: string; name: string; specialization: string; branchId: string; branchName: string })[];
+};

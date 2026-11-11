@@ -1,18 +1,23 @@
 import { Card, EmptyState, ErrorText, Initials, Loading, Muted, Pill, Row, Screen, Section } from '../../components/ui';
-import { api, type Equipment, type Trainer } from '../../lib/api';
+import { RatingsSection } from '../../components/RatingsSection';
+import { api, type Equipment, type RatingsOverview, type Trainer } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { cap } from '../../lib/format';
 import { useLoad } from '../../lib/hooks';
 import { Text, View } from 'react-native';
 import { colors } from '../../lib/theme';
 
 export default function Gym() {
+  const { can } = useAuth();
+  const ratingsOn = can('features:ratings');
   const { data, loading, error, reload } = useLoad(async () => {
     // A gym can switch the equipment list off; that must not blank the trainers list.
     const [equipment, trainers] = await Promise.all([
       api.get<Equipment[]>('/member-app/equipment').catch(() => null),
       api.get<{ trainers: Trainer[]; assignedTrainerId: string | null }>('/member-app/trainers'),
     ]);
-    return { equipment, ...trainers };
+    const ratings = ratingsOn ? await api.get<RatingsOverview>('/member-app/ratings').catch(() => null) : null;
+    return { equipment, ratings, ...trainers };
   });
 
   if (loading) return <Loading />;
@@ -36,6 +41,8 @@ export default function Gym() {
           </View>
         )) : <EmptyState icon="people-outline" title="No trainers listed yet" />}
       </Card>
+
+      {ratingsOn ? <RatingsSection data={data?.ratings ?? null} reload={() => { void reload(); }} /> : null}
 
       <Section title="Equipment" />
       {data?.equipment === null && <Card><Muted>Your gym has not turned on the equipment list.</Muted></Card>}

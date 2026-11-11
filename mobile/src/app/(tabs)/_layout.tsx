@@ -47,6 +47,7 @@ export default function TabsLayout() {
           cannot be navigated to at all, so these would bounce straight back to Home. */}
       <Tabs.Screen name="pass" options={{ title: 'My pass', tabBarButton: () => null }} />
       <Tabs.Screen name="receipts" options={{ title: 'Payments', tabBarButton: () => null }} />
+      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarButton: () => null }} />
 
       {/* trainer */}
       <Tabs.Screen name="clients" options={{ title: 'Members', tabBarIcon: icon('people'), ...show(trainer) }} />

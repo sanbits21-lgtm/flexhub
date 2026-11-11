@@ -52,6 +52,9 @@ feature list. Then, on **My gym**:
   **anonymous**: the member's identity is stored only to stop double votes and is never returned.
 - Trainers do not see ratings. Nothing here is shown to other members, and there is no feed yet.
 
+The native (Expo) app has the same screens: **Progress & badges** on Home, the rating cards on **My gym**,
+and, for owners and branch managers, **Ratings** under *More* (shown only when the feature is on).
+
 ## Installing
 - **Android / Chrome:** open the address, then menu → *Install app* (or the install banner).
 - **iPhone / Safari:** *Share* → *Add to Home Screen*.
