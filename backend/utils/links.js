@@ -19,4 +19,4 @@ const gymLoginUrl = (tenant, req) => gymUrl(tenant, req, '/login');
 /** The member app: what the front-desk QR code opens on a member's phone. */
 const gymMemberAppUrl = (tenant, req) => gymUrl(tenant, req, '/member');
 
-module.exports = { publicOrigin, gymLoginUrl, gymMemberAppUrl };
+module.exports = { publicOrigin, gymUrl, gymLoginUrl, gymMemberAppUrl };

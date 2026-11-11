@@ -143,10 +143,35 @@ into a page, the browser would not run it.
 - Everyone: changing `JWT_SECRET` ends every **access token** immediately, but refresh tokens
   live in the database, so also empty the `sessions` collection. Everyone then signs in again.
 
+## Forgot password
+
+Staff, owners and platform admins use **Forgot your password?** on the login page; members use the same link on the
+member sign-in page. The flow is built so that it cannot be used to attack an account or to learn who has one:
+
+- Asking for a link always gets the same answer, whether or not the address has an account. Only a real, active account
+  with an email address is emailed (and an owner who has not confirmed their address gets the confirmation link
+  instead, not this).
+- The link carries a random 256-bit token. Only its hash is stored, it works **once**, and it lasts **one hour**. Asking
+  again replaces it, so an older link stops working.
+- An account is emailed at most once a minute, and each network address can ask 10 times an hour.
+- A member whose email is shared with others (a family) gets one link per member, each naming its member ID.
+- Using the link applies the same password rules as everywhere else, then ends **every login** of that person
+  (access tokens issued earlier stop working and every refresh token is deleted), lifts any sign-in lock, writes an audit
+  entry, and emails them that the password changed. It does not sign anyone in.
+- The reset page removes the token from the address bar as soon as it loads, and the site sends
+  `Referrer-Policy: no-referrer`.
+
+## Terms of Service
+
+New gyms tick **I agree to the Terms of Service and the Privacy Policy** to register; the server refuses a registration
+without it (`TERMS_REQUIRED=off` disables the rule) and stores the version they agreed to and when. The text is in
+`backend/public/terms.html`. It is a **starting point written from how the product works, not legal advice**: have a
+lawyer review it, then update `TERMS_VERSION` and `TERMS_UPDATED` in `backend/utils/terms.js` whenever it changes.
+
 ## What is not covered (known gaps)
 
-- **No "forgot password" for staff or members.** A manager re-issues a member's app login; a
-  platform admin or owner creates a new staff password.
+- **"Forgot password" works by email only.** A member with no email address on file cannot use it: a manager
+  re-issues their app login at the front desk. There is no SMS or WhatsApp code.
 - **No two-factor authentication.**
 - **No list of signed-in devices** (only "sign out of all devices" for members).
 - **The mobile app** typechecks and its token logic is tested on the server, but it has not been

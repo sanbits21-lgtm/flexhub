@@ -67,7 +67,8 @@ export default function MemberLogin() {
           <ErrorText>{error}</ErrorText>
           <Btn type="submit" busy={busy} className="w-full">Sign in</Btn>
         </div>
-        <Muted>No login yet, or forgot your password? Ask the front desk at your gym.</Muted>
+        <p className="text-sm"><Link to="/member/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline">Forgot your password?</Link></p>
+        <Muted>No login yet, or no email on file? Ask the front desk at your gym.</Muted>
         <p className="text-sm text-gray-500 dark:text-gray-400">Gym staff? <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in here</Link></p>
       </form>
     </div>

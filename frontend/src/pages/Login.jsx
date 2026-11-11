@@ -65,6 +65,7 @@ export default function Login() {
         <button type="submit" className="w-full bg-gray-900 text-white rounded-xl py-2.5 hover:bg-gray-800 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
           Log in
         </button>
+        <p className="text-sm text-center"><Link to="/forgot-password" className="underline text-gray-600 dark:text-gray-300">Forgot your password?</Link></p>
         <p className="text-sm text-center text-gray-600 dark:text-gray-300">
           Gym member? <Link to="/member/login" className="font-semibold underline dark:text-accent">Open the member app</Link>
         </p>

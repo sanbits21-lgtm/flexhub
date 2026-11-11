@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { MemberAuthProvider } from './MemberAuth';
 import Shell from './Shell';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Sessions from './pages/Sessions';
 import Plans from './pages/Plans';
@@ -35,6 +37,8 @@ export default function MemberApp() {
     <MemberAuthProvider>
       <Routes>
         <Route path="login" element={<Login />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
         <Route element={<Shell />}>
           <Route index element={<Home />} />
           <Route path="sessions" element={<Sessions />} />

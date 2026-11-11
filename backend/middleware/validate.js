@@ -68,6 +68,12 @@ const withPasswordPolicy = (schema, pick, path) => schema.superRefine((value, ct
 });
 
 const schemas = {
+  forgotPassword: z.object({ email: z.string().trim().email('must be a valid email').max(120) }).strict(),
+  forgotMemberPassword: z.object({ identifier: z.string().trim().min(1, 'is required').max(120) }).strict(),
+  resetPassword: z.object({
+    token: z.string().regex(/^[0-9a-f]{64}$/, 'is not valid'),
+    password: z.string().min(8, 'must be at least 8 characters').max(72, 'must be 72 characters or fewer'),
+  }).strict(),
   verifyEmail: z.object({ token: z.string().regex(/^[0-9a-f]{64}$/, 'is not valid') }).strict(),
   resendVerification: z.object({ email: z.string().trim().email('must be a valid email').max(120) }).strict(),
   signup: withPasswordPolicy(z.object({
@@ -79,6 +85,7 @@ const schemas = {
     slug: z.string().trim().max(40).optional(),
     packageId: objectId.optional(),
     website: z.string().optional(),
+    acceptTerms: z.boolean().optional(),
   }).strict(), (v) => v, ['password']),
 
   // Platform staff editing a gym. Every field optional; anything given must be sane (a negative

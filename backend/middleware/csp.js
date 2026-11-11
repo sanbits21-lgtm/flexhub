@@ -67,7 +67,7 @@ const mode = () => {
 const csp = () => {
   if (mode() === 'off') return (req, res, next) => next();
   const frontendDist = path.join(__dirname, '../../frontend/dist');
-  const directives = buildDirectives([path.join(frontendDist, 'index.html'), path.join(__dirname, '../public/privacy.html')]);
+  const directives = buildDirectives([path.join(frontendDist, 'index.html'), path.join(__dirname, '../public/privacy.html'), path.join(__dirname, '../public/terms.html')]);
   return helmet.contentSecurityPolicy({ useDefaults: false, directives, reportOnly: mode() === 'report-only' });
 };
 

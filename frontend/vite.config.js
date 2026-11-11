@@ -34,7 +34,7 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // Without this, an offline navigation to an API path would be answered with the
         // SPA shell instead of failing — and /health would stop being a real health check.
-        navigateFallbackDenylist: [/^\/api/, /^\/health/, /^\/privacy/],
+        navigateFallbackDenylist: [/^\/api/, /^\/health/, /^\/readyz/, /^\/privacy/, /^\/terms/],
         // Deliberately NO runtimeCaching for /api. Responses are authenticated and
         // tenant-scoped; serving one gym a cached response — or showing stale membership
         // and payment figures — is worse than an honest network error.
@@ -51,6 +51,10 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:5000',
+      // Served by the backend, not the SPA: the public policy pages and the readiness check.
+      '/privacy': 'http://localhost:5000',
+      '/terms': 'http://localhost:5000',
+      '/readyz': 'http://localhost:5000',
     },
   },
 });

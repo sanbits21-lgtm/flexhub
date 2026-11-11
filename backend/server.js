@@ -26,6 +26,34 @@ if (process.env.NODE_ENV === 'production' && !/^https?:\/\/[^\s/]+/i.test(proces
   process.exit(1);
 }
 
+// A request that fails is reported from the error handler in app.js. These two catch what never reaches it:
+// a promise nobody handled, and a crash. A crash is reported (best effort, a few seconds) and the process
+// then exits, so the host restarts it with a clean state instead of limping on.
+process.on('unhandledRejection', (reason) => {
+  console.error('unhandled rejection:', reason);
+  require('./utils/alerts').notifyError(reason instanceof Error ? reason : new Error(String(reason)), 'unhandled rejection');
+});
+process.on('uncaughtException', (err) => {
+  console.error('uncaught exception:', err);
+  Promise.race([require('./utils/alerts').notifyError(err, 'uncaught exception'), new Promise((r) => setTimeout(r, 4000))]).finally(() => process.exit(1));
+});
+
+// Local development should not run against the live database: a test gym, a deleted record or a bad
+// migration would be real. Say so loudly (production hosts are exempt).
+const { isRemoteMongoUri } = require('./utils/devGuard');
+if (process.env.NODE_ENV !== 'production' && isRemoteMongoUri(process.env.MONGODB_URI)) {
+  console.warn('');
+  console.warn('!!  This is NOT a production server, but MONGODB_URI points at a remote database.');
+  console.warn('!!  If that is the database your live site uses, everything you do here changes real data.');
+  console.warn('!!  Use a separate development database, for example a local MongoDB (docker compose up mongo) with');
+  console.warn('!!  MONGODB_URI=mongodb://localhost:27017/flexhub . See docs/OPERATIONS.md. REQUIRE_LOCAL_DB=on makes this an error.');
+  console.warn('');
+  if (String(process.env.REQUIRE_LOCAL_DB || '').toLowerCase() === 'on') {
+    console.error('REQUIRE_LOCAL_DB=on: refusing to start against a remote database.');
+    process.exit(1);
+  }
+}
+
 connectDB().then(() => require('./utils/migrations').run()).then(() => require('./utils/bootstrapAdmin').bootstrapSuperAdmin()).then(() => {
   const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   require('./utils/expiryNotices').startExpiryScheduler();

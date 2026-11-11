@@ -69,6 +69,8 @@ export const authAPI = {
   verifyEmail: (token) => api.post('/public/verify-email', { token }),
   resendVerification: (email) => api.post('/public/resend-verification', { email }),
   me: () => api.get('/auth/me'),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
 };
 
 export const platformAdminsAPI = {

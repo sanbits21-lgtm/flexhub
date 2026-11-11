@@ -41,6 +41,12 @@ const memberSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   // See User.passwordResetAt: set only by a staff-forced reset, revokes earlier sessions.
   passwordResetAt: { type: Date },
+  // "Forgot password" by email (controllers/passwordResetController.js). Only the hash of the emailed
+  // token is kept; it works once and expires. passwordResetAt (above) is a different thing: it records
+  // that a password WAS reset, which ends earlier sessions.
+  passwordResetTokenHash: { type: String },
+  passwordResetTokenExpires: { type: Date },
+  passwordResetRequestedAt: { type: Date },
 }, { timestamps: true });
 
 memberSchema.index({ tenantId: 1, branchId: 1 });

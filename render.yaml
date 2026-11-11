@@ -50,6 +50,12 @@ services:
       - key: SUPER_ADMIN_PASSWORD
         sync: false
       # Shown on the public /privacy page (required by the app stores)
+      # Who is emailed when the server fails. Empty = the super-admins. See docs/OPERATIONS.md.
+      - key: ALERT_EMAIL
+        sync: false
+      # Named in the Terms of Service page (/terms). Have the text reviewed by a lawyer first.
+      - key: TERMS_OPERATOR_NAME
+        sync: false
       - key: PRIVACY_OPERATOR_NAME
         sync: false
       - key: PRIVACY_CONTACT_EMAIL

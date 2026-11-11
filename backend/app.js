@@ -102,6 +102,16 @@ if (process.env.NODE_ENV !== 'test' || process.env.FORCE_RATE_LIMIT === 'on') {
     windowMs: 60 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
     message: { message: 'Too many attempts. Please try again later.' },
   }));
+  // Asking for a reset email costs us an email and someone an inbox; using a link is a guess at a
+  // 256-bit token, so it is limited only to keep the noise down.
+  app.use(['/api/auth/forgot-password', '/api/member-auth/forgot-password'], rateLimit({
+    windowMs: 60 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
+    message: { message: 'Too many reset requests from this network. Please try again later.' },
+  }));
+  app.use(['/api/auth/reset-password', '/api/member-auth/reset-password'], rateLimit({
+    windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
+    message: { message: 'Too many attempts. Please try again shortly.' },
+  }));
   app.use('/api/auth/login', loginLimiter);
   app.use('/api/member-auth/login', loginLimiter);
   // Renewing a session is cheap and frequent (every few minutes while the app is open), so the
@@ -115,7 +125,19 @@ if (process.env.NODE_ENV !== 'test' || process.env.FORCE_RATE_LIMIT === 'on') {
 app.use('/api/public', require('./routes/public'));
 app.post('/api/csp-report', csp.reportBody, csp.report);
 
+// /health answers while the process is up (the host's health check; cheap and always fast).
+// /readyz also asks the database, so an uptime monitor pointed at it notices a lost connection.
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+app.get('/readyz', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) throw new Error('not connected');
+    await Promise.race([mongoose.connection.db.admin().ping(), new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))]);
+    res.json({ status: 'ok', database: 'ok', uptime: process.uptime() });
+  } catch {
+    res.status(503).json({ status: 'unavailable', database: 'down' });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/member-auth', memberAuthRoutes);
@@ -161,6 +183,21 @@ app.get('/privacy', (req, res, next) => {
   });
 });
 
+// The Terms of Service a gym agrees to when it registers. Same idea: public, named from the environment.
+// The text is a starting point that a lawyer should review (see the comment at the top of terms.html).
+app.get('/terms', (req, res, next) => {
+  require('fs').readFile(path.join(__dirname, 'public/terms.html'), 'utf8', (err, html) => {
+    if (err) return next(err);
+    const email = process.env.PRIVACY_CONTACT_EMAIL;
+    const contact = email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : 'the address you registered through';
+    res.type('html').send(html
+      .replace(/{{OPERATOR}}/g, escapeHtml(process.env.TERMS_OPERATOR_NAME || 'FlexHub'))
+      .replace(/{{LAW}}/g, escapeHtml(process.env.TERMS_GOVERNING_LAW || 'India'))
+      .replace(/{{CONTACT}}/g, contact)
+      .replace(/{{UPDATED}}/g, require('./utils/terms').TERMS_UPDATED));
+  });
+});
+
 // The member app is installable on its own, apart from the staff website, so it has its own
 // manifest: scoped to /member, named after the gym whose address this is (iron.example.com) and
 // tinted with its colour. On the main address it is simply "FlexHub Member".
@@ -195,7 +232,7 @@ app.use(express.static(frontendDist, {
     if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
   },
 }));
-app.get(/^(?!\/api|\/health|\/privacy).*/, (req, res, next) => {
+app.get(/^(?!\/api|\/health|\/readyz|\/privacy|\/terms).*/, (req, res, next) => {
   res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
     if (err) next(); // dist doesn't exist (e.g. local dev) — fall through to 404
   });
@@ -213,6 +250,8 @@ app.use((err, req, res, next) => {
   else if (err.code === 11000) { status = 409; message = 'That record already exists.'; }
   if (status >= 500) {
     if (process.env.NODE_ENV !== 'test') console.error(err);
+    // Tell the operators (once per distinct error, see utils/alerts.js). Only the route and the error, never the request's contents.
+    require('./utils/alerts').notifyError(err, `${req.method} ${req.path}`);
     message = 'Something went wrong on our side. Please try again.';
   }
   res.status(status).json({ message });

@@ -86,7 +86,7 @@ Push notifications and the staff screens of the native app (those use the websit
 app remains available and uses the same accounts and data.
 
 ## Notes for the gym
-- Staff create the login; members cannot sign themselves up or reset a forgotten password.
+- Staff create the login; members cannot sign themselves up. A member who forgot their password uses **Forgot your password?** on the sign-in page (member code or email): if the gym has an email address for them, a single-use link (valid an hour) lets them choose a new one. A member with no email on file asks the front desk, who use *App login / reset*.
 - Deleting an account in the app erases the member's personal data; the gym keeps its payment and
   attendance records.
 - A gym that is **suspended** locks its members out. A gym whose **plan or trial has ended** does

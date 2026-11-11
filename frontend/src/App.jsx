@@ -11,6 +11,8 @@ import Signup from './pages/Signup';
 // The member app is its own section; staff never download it and members never need the staff pages.
 const MemberApp = lazy(() => import('./member/MemberApp'));
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import PlatformSettings from './pages/platform/PlatformSettings';
 import Packages from './pages/platform/Packages';
 
@@ -70,6 +72,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/packages" element={<RoleRoute allow={['super-admin', 'platform-admin']}><AppLayout><Packages /></AppLayout></RoleRoute>} />
           <Route path="/platform-settings" element={<RoleRoute allow={['super-admin']}><AppLayout><PlatformSettings /></AppLayout></RoleRoute>} />
 

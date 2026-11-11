@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
+// A random id for a member's QR secret: Node's own generator, so no extra dependency.
+const uuidv4 = () => crypto.randomUUID();
 const Member = require('../models/Member');
 const Branch = require('../models/Branch');
 const User = require('../models/User');

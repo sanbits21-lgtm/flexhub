@@ -9,7 +9,7 @@ const labelClass = 'block text-sm text-gray-600 dark:text-gray-300 mb-1';
 
 export default function Signup() {
   const [config, setConfig] = useState(null);
-  const [form, setForm] = useState({ gymName: '', ownerName: '', email: '', phone: '', password: '', website: '' });
+  const [form, setForm] = useState({ gymName: '', ownerName: '', email: '', phone: '', password: '', website: '', acceptTerms: false });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState(null);
@@ -119,6 +119,10 @@ export default function Signup() {
         <div><label htmlFor="s-phone" className={labelClass}>Phone</label><input id="s-phone" type="tel" required autoComplete="tel" value={form.phone} onChange={set('phone')} className={inputClass} /></div>
       </div>
       <div><label htmlFor="s-pw" className={labelClass}>Password <span className="text-gray-500">(8+ characters)</span></label><input id="s-pw" type="password" required minLength={8} maxLength={72} autoComplete="new-password" value={form.password} onChange={set('password')} className={inputClass} /></div>
+      <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
+        <input type="checkbox" required checked={form.acceptTerms} onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })} className="mt-1" />
+        <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="underline dark:text-accent">Terms of Service</a> and the <a href="/privacy" target="_blank" rel="noreferrer" className="underline dark:text-accent">Privacy Policy</a>.</span>
+      </label>
       {/* Honeypot: invisible to people, tempting to bots. */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px' }}>
         <label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={set('website')} /></label>

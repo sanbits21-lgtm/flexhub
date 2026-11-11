@@ -86,6 +86,21 @@ Details in [SECURITY.md](./SECURITY.md#sessions-access-and-refresh-tokens).
 | `CSP_MODE` | `enforce` | The browser content-security policy. `report-only` logs what it *would* block without blocking; `off` disables it. |
 | `EXPIRY_NOTICES` | `on` | `off` stops the plan-ending emails (the read-only lock after a plan ends still applies). |
 
+## Running it for real clients
+
+See [OPERATIONS.md](./OPERATIONS.md) for what to do with these.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `ALERT_EMAIL` | the super-admins | Who is emailed when the server fails (comma-separated). |
+| `ALERTS` | on in production, off elsewhere | `on` / `off` forces error emails either way. |
+| `REQUIRE_LOCAL_DB` | off | `on`: outside production, refuse to start against a hosted database. A warning is printed regardless. |
+| `TERMS_REQUIRED` | `on` | `off` stops requiring the Terms checkbox at sign-up. |
+| `TERMS_OPERATOR_NAME` | `FlexHub` | The company named in the Terms of Service page. |
+| `TERMS_GOVERNING_LAW` | `India` | The jurisdiction named in the Terms of Service page. |
+
+`/health` (process is up) and `/readyz` (process and database are up) are public, for hosts and uptime monitors.
+
 ## First platform owner
 
 | Setting | What it does |

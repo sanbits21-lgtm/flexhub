@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, ErrorText, Field, Muted } from '../components/ui';
+import { BASE_URL } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { colors, radius } from '../lib/theme';
+
+// Resetting a password happens on the website: an emailed link opens a web page, so the same flow serves the app and the browser.
+const openReset = (path: string) => { void Linking.openURL(`${BASE_URL}${path}`).catch(() => {}); };
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -48,8 +52,14 @@ export default function Login() {
           <Button title="Sign in" onPress={submit} busy={busy} />
         </View>
 
-        <View style={{ marginTop: 20 }}>
-          <Muted>No login yet? Ask the front desk at your gym to create one for you.</Muted>
+        <View style={{ marginTop: 20, gap: 10 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            <Muted>Forgot your password?</Muted>
+            <Pressable onPress={() => openReset('/member/forgot-password')} accessibilityRole="link" hitSlop={8}><Text style={{ color: colors.link, fontWeight: '700', fontSize: 13 }}>Member</Text></Pressable>
+            <Muted>or</Muted>
+            <Pressable onPress={() => openReset('/forgot-password')} accessibilityRole="link" hitSlop={8}><Text style={{ color: colors.link, fontWeight: '700', fontSize: 13 }}>Staff</Text></Pressable>
+          </View>
+          <Muted>No login yet, or no email on file? Ask the front desk at your gym.</Muted>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -7,6 +7,7 @@ Multi-tenant B2B gym management SaaS: a Node/Express/MongoDB backend, a React/Vi
 - **Gyms (tenants)** with branches, members, trainers, equipment, membership plans, attendance,
   payments (UPI, recorded by staff), renewals, reports, class and personal-training scheduling,
   bulk member upload with custom fields, per-gym branding and its own web address.
+  Running it for real clients: see [docs/OPERATIONS.md](docs/OPERATIONS.md) (backups, monitoring, launch checklist).
 - **Members** get a web/mobile app: membership status, schedule, workout and diet plans, entry QR
   pass, payments, profile. It works offline from saved copies.
 - **The platform** (super-admins and platform admins) onboards gyms: self-registration with email

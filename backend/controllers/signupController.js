@@ -9,6 +9,7 @@ const { getSettings } = require('../utils/platformSettings');
 const { templated, configured: mailConfigured } = require('../utils/mailer');
 const { publicOrigin } = require('../utils/links');
 const { activePackages } = require('./packageController');
+const { TERMS_VERSION, termsRequired } = require('../utils/terms');
 
 const VERIFY_HOURS = 24;
 const RESEND_GAP_MS = 60 * 1000;
@@ -84,8 +85,12 @@ exports.signup = async (req, res) => {
   if (!mailConfigured() && process.env.NODE_ENV === 'production') {
     return res.status(503).json({ message: 'Sign-up is temporarily unavailable.' });
   }
-  const { gymName, ownerName, email, phone, password, slug: requestedSlug, website, packageId } = req.body;
+  const { gymName, ownerName, email, phone, password, slug: requestedSlug, website, packageId, acceptTerms } = req.body;
   if (website) return res.status(400).json({ message: 'Could not create your account.' }); // honeypot
+  // Agreeing is part of registering. Checked on the input alone, so it says nothing about whether the email already has an account.
+  if (termsRequired() && acceptTerms !== true) {
+    return res.status(400).json({ message: 'Please accept the Terms of Service and the Privacy Policy to register.', code: 'TERMS_REQUIRED' });
+  }
 
   // Once any package is on offer, choosing one is part of registering; it must be one still offered.
   const offered = await activePackages();
@@ -125,6 +130,7 @@ exports.signup = async (req, res) => {
     created.push(await Branch.create({ tenantId: tenant._id, name: 'Main branch', phone }));
     const user = await User.create({
       name: ownerName, email: cleanEmail, phone, password, role: 'tenant-admin', tenantId: tenant._id,
+      termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION,
       emailVerified: false, emailVerifyHash: sha256(token), emailVerifyExpires: new Date(Date.now() + VERIFY_HOURS * 3600000), emailVerifySentAt: new Date(),
     });
     created.push(user);

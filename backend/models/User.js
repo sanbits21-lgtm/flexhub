@@ -30,8 +30,18 @@ const userSchema = new mongoose.Schema({
   emailVerifySentAt: { type: Date },
   // When we last told this address "you already have an account" (see signupController.noticeToExistingAccount).
   accountNoticeSentAt: { type: Date },
+  // The Terms of Service a self-registered owner agreed to, and when (see utils/terms.js).
+  termsAcceptedAt: { type: Date },
+  termsVersion: { type: String },
+  // "Forgot password" by email (controllers/passwordResetController.js). Only the hash of the emailed
+  // token is kept; it works once and expires. passwordResetAt (above) is a different thing: it records
+  // that a password WAS reset, which ends earlier sessions.
+  passwordResetTokenHash: { type: String },
+  passwordResetTokenExpires: { type: Date },
+  passwordResetRequestedAt: { type: Date },
 }, { timestamps: true });
 userSchema.index({ emailVerifyHash: 1 }, { sparse: true });
+userSchema.index({ passwordResetTokenHash: 1 }, { sparse: true });
 
 userSchema.index({ tenantId: 1, branchId: 1 });
 userSchema.index({ role: 1 });
