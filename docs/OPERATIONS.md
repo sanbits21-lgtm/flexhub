@@ -22,7 +22,7 @@ Tick each one. Nothing here is optional for a paying client.
 - [ ] **A test gym walked through by hand** on the live site: register, confirm, approve, add a member, take a UPI
       payment, renew, open the member app on a phone, reset a password from the "Forgot password" link.
 
-## Your domain (fitzyclub.com, registered at Hostinger)
+## Your domain (fitzyclub.in, registered at Hostinger)
 
 **Secure the registrar account** (whoever controls it controls the domain):
 - Two-factor sign-in on the Hostinger account, a strong unique password, and a secured email address you will keep for years.
@@ -32,11 +32,11 @@ Tick each one. Nothing here is optional for a paying client.
 
 **Connect it** (only when you are ready to switch the site over):
 1. In Hostinger's DNS editor delete the default parking `A` record and any `AAAA` record (Render uses IPv4 only).
-2. In Render > the service > Settings > Custom Domains add `fitzyclub.com` **and** `*.fitzyclub.com`, and create exactly the DNS records Render shows (root, wildcard `CNAME`, and the `_acme-challenge` verification record). The root domain must point at Render or the wildcard fails.
-3. Set `PUBLIC_URL=https://fitzyclub.com` and `BASE_DOMAIN=fitzyclub.com`, then redeploy. Each gym is then at `https://<gym>.fitzyclub.com`.
-4. Set `MAIL_FROM=FitzyClub <no-reply@fitzyclub.com>` once the domain is authenticated in Brevo.
+2. In Render > the service > Settings > Custom Domains add `fitzyclub.in` **and** `*.fitzyclub.in`, and create exactly the DNS records Render shows (root, wildcard `CNAME`, and the `_acme-challenge` verification record). The root domain must point at Render or the wildcard fails.
+3. Set `PUBLIC_URL=https://fitzyclub.in` and `BASE_DOMAIN=fitzyclub.in`, then redeploy. Each gym is then at `https://<gym>.fitzyclub.in`.
+4. Set `MAIL_FROM=FitzyClub <no-reply@fitzyclub.in>` once the domain is authenticated in Brevo.
 
-**Email from your domain:** in Brevo, Senders, Domains: add `fitzyclub.com`, publish the records Brevo shows (a Brevo verification record, DKIM, and DMARC), then press *Authenticate*. Keep exactly one DMARC record; start with a gentle policy and tighten it after a few weeks.
+**Email from your domain:** in Brevo, Senders, Domains: add `fitzyclub.in`, publish the records Brevo shows (a Brevo verification record, DKIM, and DMARC), then press *Authenticate*. Keep exactly one DMARC record; start with a gentle policy and tighten it after a few weeks.
 
 **Not yet:** CAA records (a wrong one blocks your HTTPS certificate) and moving DNS to Cloudflare (wildcard domains with Render need extra steps).
 
