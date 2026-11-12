@@ -57,7 +57,7 @@ export default function MemberLogin() {
         <div className="space-y-3">
           <BrandMark brand={brand} size={64} />
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{brand?.name || 'FlexHub'}</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{brand?.name || 'FitzyClub'}</h1>
             <p className="text-gray-500 dark:text-gray-400">{brand?.tagline || 'Your gym, in your pocket.'}</p>
           </div>
         </div>

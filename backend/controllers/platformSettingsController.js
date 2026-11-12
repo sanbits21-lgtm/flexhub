@@ -31,9 +31,9 @@ exports.sendTestEmail = async (req, res) => {
   if (!check.ok) return res.json({ ...check, to: req.user.email });
   const sent = await templated({
     to: req.user.email,
-    subject: 'FlexHub test email',
+    subject: 'FitzyClub test email',
     heading: 'Email is working',
-    body: 'This is a test message from your FlexHub platform settings. If you can read it, sign-up confirmations and approval emails will be delivered.',
+    body: 'This is a test message from your FitzyClub platform settings. If you can read it, sign-up confirmations and approval emails will be delivered.',
   });
   logAudit(req, 'SEND_TEST_EMAIL', { metadata: { ok: sent } });
   if (!sent) return res.json({ ok: false, to: req.user.email, ...(mailStatus().lastFailure || {}) });

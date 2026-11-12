@@ -3,6 +3,8 @@
 # dashboard on first deploy and are never stored in git. See docs/RENDER.md.
 services:
   - type: web
+    # The service keeps its original name on purpose: renaming it here would make Render create a SECOND
+    # service. The product is called FitzyClub; this is only the internal name (and the default *.onrender.com address).
     name: flexhub
     runtime: docker
     dockerfilePath: ./Dockerfile

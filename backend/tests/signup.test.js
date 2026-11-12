@@ -122,7 +122,7 @@ describe('registering a gym', () => {
     expect(again.status).toBe(201);
     expect(again.body.email).toBe(b.email);
     expect(mailsTo(b.email)).toHaveLength(1);
-    expect(mailsTo(b.email)[0].subject).toMatch(/already have a FlexHub account/i);
+    expect(mailsTo(b.email)[0].subject).toMatch(/already have a FitzyClub account/i);
     expect(mailsTo(b.email)[0].text).toMatch(/\/login/);
     await signup(body({ email: b.email }));
     expect(mailsTo(b.email)).toHaveLength(1); // not again within ten minutes

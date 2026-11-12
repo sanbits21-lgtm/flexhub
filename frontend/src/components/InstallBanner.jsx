@@ -34,7 +34,7 @@ export default function InstallBanner() {
     <div className="md:hidden mx-4 mt-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:border dark:border-gray-700 shadow-sm p-3 flex items-start gap-3">
       <img src="/icons/icon-192.png" alt="" className="w-10 h-10 rounded-lg shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Install FlexHub</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Install FitzyClub</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {isIos
             ? <>Tap <span className="font-medium">Share</span>, then <span className="font-medium">Add to Home Screen</span>.</>

@@ -1,4 +1,4 @@
-# Deploying FlexHub
+# Deploying FitzyClub
 
 ## What runs where
 | Piece | How it ships |
@@ -33,17 +33,17 @@
 - Behind a proxy the app trusts one hop (`trust proxy`), so rate limiting sees real client IPs.
 
 ## Mobile app (Android + iOS)
-Already in the repo: `mobile/eas.json`, store-ready `app.json` (named FlexHub, dark adaptive-icon
+Already in the repo: `mobile/eas.json`, store-ready `app.json` (named FitzyClub, dark adaptive-icon
 background, camera-only permissions, no microphone), in-app **Delete my account**, and a public
 privacy policy at `https://<your-domain>/privacy`.
 
 Set before you build:
 1. In `eas.json`, replace `https://REPLACE-WITH-YOUR-DOMAIN` (preview + production) with your API URL.
 2. In `.env` on the server: `PRIVACY_OPERATOR_NAME`, `PRIVACY_CONTACT_EMAIL` (shown on `/privacy`).
-3. `app.json`: change `com.flexhub.member` (iOS bundle id + Android package) to an id you own.
+3. `app.json`: change `com.fitzyclub.member` (iOS bundle id + Android package) to an id you own.
    **It cannot be changed after the first store upload.**
 4. Replace `mobile/assets/icon.png` (1024x1024), the three `android-icon-*.png` and
-   `splash-icon.png` with real FlexHub artwork (they are still the Expo template).
+   `splash-icon.png` with real FitzyClub artwork (they are still the Expo template).
 
 Then, from `mobile/`:
 ```

@@ -191,7 +191,7 @@ app.get('/terms', (req, res, next) => {
     const email = process.env.PRIVACY_CONTACT_EMAIL;
     const contact = email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : 'the address you registered through';
     res.type('html').send(html
-      .replace(/{{OPERATOR}}/g, escapeHtml(process.env.TERMS_OPERATOR_NAME || 'FlexHub'))
+      .replace(/{{OPERATOR}}/g, escapeHtml(process.env.TERMS_OPERATOR_NAME || 'FitzyClub'))
       .replace(/{{LAW}}/g, escapeHtml(process.env.TERMS_GOVERNING_LAW || 'India'))
       .replace(/{{CONTACT}}/g, contact)
       .replace(/{{UPDATED}}/g, require('./utils/terms').TERMS_UPDATED));
@@ -200,14 +200,14 @@ app.get('/terms', (req, res, next) => {
 
 // The member app is installable on its own, apart from the staff website, so it has its own
 // manifest: scoped to /member, named after the gym whose address this is (iron.example.com) and
-// tinted with its colour. On the main address it is simply "FlexHub Member".
+// tinted with its colour. On the main address it is simply "FitzyClub Member".
 app.get('/member.webmanifest', (req, res) => {
   const gym = req.hostTenant;
   const color = /^#[0-9A-Fa-f]{6}$/.test(gym?.brand?.color || '') ? gym.brand.color : '#0A0C10';
   res.type('application/manifest+json').set('Cache-Control', 'public, max-age=300').json({
     id: '/member',
-    name: gym ? `${gym.name} Member` : 'FlexHub Member',
-    short_name: (gym ? gym.name : 'FlexHub').slice(0, 12),
+    name: gym ? `${gym.name} Member` : 'FitzyClub Member',
+    short_name: (gym ? gym.name : 'FitzyClub').slice(0, 12),
     description: 'Your membership, workouts, diet plans and entry pass.',
     start_url: '/member',
     scope: '/member',

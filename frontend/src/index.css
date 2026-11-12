@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* FlexHub lime by default; BrandContext overrides these for a gym with its own colour. */
+  /* FitzyClub lime by default; BrandContext overrides these for a gym with its own colour. */
   :root { --accent: 200 248 58; --accent-2: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; --accent-angle: 135deg; }
   body { @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100; }
   .dark { color-scheme: dark; }

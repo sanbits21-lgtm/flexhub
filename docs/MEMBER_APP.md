@@ -1,6 +1,6 @@
 # Member web app (PWA)
 
-Members can use FlexHub from their phone's browser and install it to the home screen, instead
+Members can use FitzyClub from their phone's browser and install it to the home screen, instead
 of (or as well as) the native app. It is a section of the same website, so there is nothing
 extra to deploy.
 

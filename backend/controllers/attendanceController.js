@@ -91,14 +91,14 @@ exports.checkIn = async (req, res) => {
 // desk scans it. Scanning someone who is inside checks them out, so one gesture does both.
 exports.scan = async (req, res) => {
   const { token } = req.body || {};
-  if (typeof token !== 'string' || token.length > 1000) return res.status(400).json({ message: 'That is not a FlexHub pass.' });
+  if (typeof token !== 'string' || token.length > 1000) return res.status(400).json({ message: 'That is not a FitzyClub pass.' });
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
-    return res.status(400).json({ message: err.name === 'TokenExpiredError' ? 'This pass has expired. Ask the member to refresh it.' : 'That is not a valid FlexHub pass.' });
+    return res.status(400).json({ message: err.name === 'TokenExpiredError' ? 'This pass has expired. Ask the member to refresh it.' : 'That is not a valid FitzyClub pass.' });
   }
-  if (decoded.purpose !== 'checkin' || !decoded.sub) return res.status(400).json({ message: 'That is not a valid FlexHub pass.' });
+  if (decoded.purpose !== 'checkin' || !decoded.sub) return res.status(400).json({ message: 'That is not a valid FitzyClub pass.' });
 
   const filter = { _id: decoded.sub, tenantId: req.scope.tenantId };
   if (req.scope.branchId) filter.branchId = req.scope.branchId;

@@ -1,4 +1,4 @@
-# FlexHub — Project Context
+# FitzyClub — Project Context
 
 Multi-tenant B2B Gym Management SaaS. Each gym brand is a **Tenant** with N **Branches**. Full architecture rationale lives in the plan at `C:\Users\santh\.claude\plans\as-project-architect-i-prancy-deer.md`; this file documents the as-built state.
 

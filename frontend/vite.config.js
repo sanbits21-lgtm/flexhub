@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'favicon-32.png', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: 'FlexHub — Gym Management',
-        short_name: 'FlexHub',
+        name: 'FitzyClub — Gym Management',
+        short_name: 'FitzyClub',
         description: 'Manage members, attendance, payments and equipment across your gym branches.',
         start_url: '/',
         scope: '/',

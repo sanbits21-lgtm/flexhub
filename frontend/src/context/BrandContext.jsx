@@ -14,7 +14,7 @@ export function BrandProvider({ children }) {
   const setBrand = useCallback((b) => {
     setBrandState(b || null);
     applyAccent(b?.color, b?.color2, b?.gradientAngle);
-    document.title = b?.name || 'FlexHub';
+    document.title = b?.name || 'FitzyClub';
   }, []);
 
   useEffect(() => {

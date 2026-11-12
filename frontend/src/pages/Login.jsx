@@ -47,7 +47,7 @@ export default function Login() {
         <div className="flex items-center gap-3">
           <BrandMark brand={brand} size={44} />
           <div className="min-w-0">
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 truncate">{brand?.name || 'FlexHub'}</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 truncate">{brand?.name || 'FitzyClub'}</h1>
             {brand?.tagline && <p className="text-sm text-gray-600 dark:text-gray-300">{brand.tagline}</p>}
           </div>
         </div>

@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setFeatures(undefined);
     setSubscription(undefined);
-    if (!hostBrand) setBrand(null); // main address: back to the FlexHub look
+    if (!hostBrand) setBrand(null); // main address: back to the FitzyClub look
   };
 
   return (

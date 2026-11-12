@@ -38,7 +38,7 @@ delivered). In development the email is printed to the server log instead.
 | `BREVO_API_KEY` | **Brevo web API.** One key (starts with `xkeysib-`), created under *SMTP & API > API Keys* in Brevo. Sends over ordinary HTTPS (port 443), so no host blocks it. Wins over the SMTP settings if both are set. Needs `MAIL_FROM` to be a sender verified in Brevo. |
 | `SMTP_URL` | e.g. `smtps://user:password@smtp.example.com:465`. Or use the four below. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | The same thing spelled out (`SMTP_PORT` defaults to 587). |
-| `MAIL_FROM` | The sender, e.g. `FlexHub <no-reply@example.com>`. Most providers only accept an address or domain you have verified with them. |
+| `MAIL_FROM` | The sender, e.g. `FitzyClub <no-reply@example.com>`. Most providers only accept an address or domain you have verified with them. |
 | `MAIL_TIMEOUT_SECONDS` | How long to wait for the mail server before giving up (default `10`). A blocked port used to leave sign-up and the Email check waiting two minutes; now they fail in about this long. |
 
 **To check it:** sign in as the super-admin, open **Platform Settings > Email**. It shows the host and
@@ -96,7 +96,7 @@ See [OPERATIONS.md](./OPERATIONS.md) for what to do with these.
 | `ALERTS` | on in production, off elsewhere | `on` / `off` forces error emails either way. |
 | `REQUIRE_LOCAL_DB` | off | `on`: outside production, refuse to start against a hosted database. A warning is printed regardless. |
 | `TERMS_REQUIRED` | `on` | `off` stops requiring the Terms checkbox at sign-up. |
-| `TERMS_OPERATOR_NAME` | `FlexHub` | The company named in the Terms of Service page. |
+| `TERMS_OPERATOR_NAME` | `FitzyClub` | The company named in the Terms of Service page. |
 | `TERMS_GOVERNING_LAW` | `India` | The jurisdiction named in the Terms of Service page. |
 
 `/health` (process is up) and `/readyz` (process and database are up) are public, for hosts and uptime monitors.

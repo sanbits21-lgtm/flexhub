@@ -70,7 +70,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           md:static md:translate-x-0 md:w-56 md:min-h-screen`}
       >
         <div className="p-4 text-lg font-semibold border-b border-gray-700 flex items-center justify-between">
-          <span className="flex items-center gap-2 min-w-0"><BrandMark brand={brand} size={28} /><span className="truncate">{brand?.name || 'FlexHub'}</span></span>
+          <span className="flex items-center gap-2 min-w-0"><BrandMark brand={brand} size={28} /><span className="truncate">{brand?.name || 'FitzyClub'}</span></span>
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <button onClick={onClose} aria-label="Close menu" className="md:hidden text-gray-400 hover:text-gray-100">

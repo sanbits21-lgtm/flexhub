@@ -6,7 +6,7 @@ const { BadRequest } = require('./query');
 const RESERVED = new Set([
   'www', 'api', 'app', 'admin', 'administrator', 'root', 'mail', 'email', 'smtp', 'imap', 'ftp', 'ns1', 'ns2',
   'cdn', 'static', 'assets', 'dashboard', 'login', 'signin', 'signup', 'register', 'support', 'help', 'status',
-  'billing', 'payments', 'secure', 'account', 'accounts', 'flexhub', 'platform', 'staging', 'dev', 'test', 'demo',
+  'billing', 'payments', 'secure', 'account', 'accounts', 'flexhub', 'fitzyclub', 'fitzy', 'platform', 'staging', 'dev', 'test', 'demo',
   'health', 'privacy', 'terms', 'blog', 'docs',
 ]);
 

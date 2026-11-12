@@ -21,7 +21,7 @@ describe('member app manifest', () => {
     const res = await request(app).get('/member.webmanifest').set('Host', BASE);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/manifest\+json/);
-    expect(res.body).toMatchObject({ id: '/member', name: 'FlexHub Member', short_name: 'FlexHub', start_url: '/member', scope: '/member', display: 'standalone', theme_color: '#0A0C10' });
+    expect(res.body).toMatchObject({ id: '/member', name: 'FitzyClub Member', short_name: 'FitzyClub', start_url: '/member', scope: '/member', display: 'standalone', theme_color: '#0A0C10' });
     expect(res.body.icons.map((i) => i.sizes)).toEqual(['192x192', '512x512', '512x512']);
   });
 

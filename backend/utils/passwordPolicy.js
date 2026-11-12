@@ -15,7 +15,7 @@ user guest default test testing temp temporary demo sample master manager owner 
 iloveyou loveyou lovely sunshine princess dragon monkey shadow superman batman spiderman football baseball
 basketball cricket hockey soccer michael jennifer jessica ashley daniel hannah hunter buster tigger
 trustno1 whatever freedom starwars pokemon mustang ranger harley matrix computer internet google
-flexhub flex gym gymowner fitness workout bodybuilding muscle strong iron barbell dumbbell protein
+flexhub fitzyclub fitzy flex gym gymowner fitness workout bodybuilding muscle strong iron barbell dumbbell protein
 india bharat mumbai delhi bangalore bengaluru chennai hyderabad kolkata pune
 krishna ganesh shiva sai sairam om omnamah hanuman lakshmi durga rama radha
 111111 000000 121212 123123 123321 654321 666666 696969 7777777 888888 999999 112233

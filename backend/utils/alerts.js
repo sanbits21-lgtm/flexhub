@@ -52,7 +52,7 @@ const notifyError = async (err, where = 'server') => {
     if (!to.length) return false;
     const name = `${(err && err.name) || 'Error'}: ${String((err && err.message) || err).slice(0, 300)}`;
     const text = [
-      `Something failed on the FlexHub server.`,
+      `Something failed on the FitzyClub server.`,
       ``,
       `Where: ${where}`,
       `When:  ${new Date(now).toISOString()}`,
@@ -62,7 +62,7 @@ const notifyError = async (err, where = 'server') => {
       ``,
       `The same error will not be emailed again for 15 minutes. Check the server logs for more.`,
     ].join('\n');
-    await Promise.all(to.map((address) => mailer.sendMail({ to: address, subject: `FlexHub server error: ${name.slice(0, 80)}`, text, html: `<pre style="font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap">${text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</pre>` })));
+    await Promise.all(to.map((address) => mailer.sendMail({ to: address, subject: `FitzyClub server error: ${name.slice(0, 80)}`, text, html: `<pre style="font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap">${text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</pre>` })));
     return true;
   } catch (e) {
     console.error('could not send the error alert:', e.message);

@@ -36,7 +36,7 @@ export default function Clients() {
           <Button title="Schedule a session" kind="secondary" small icon="calendar" onPress={() => router.push({ pathname: '/schedule', params: { memberId: m._id } })} />
         </Card>
       ))}
-      <Muted>Workout and diet plans are written on the FlexHub website for now.</Muted>
+      <Muted>Workout and diet plans are written on the FitzyClub website for now.</Muted>
     </Screen>
   );
 }

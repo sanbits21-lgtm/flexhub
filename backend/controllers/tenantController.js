@@ -175,7 +175,7 @@ exports.approve = async (req, res) => {
     const what = days > 0 ? `Your ${days}-day free trial` : `Your ${pkg?.name || 'plan'} package`;
     templated({
       to: owner.email,
-      subject: `${tenant.name} is approved on FlexHub`,
+      subject: `${tenant.name} is approved on FitzyClub`,
       heading: 'You are in!',
       body: `${tenant.name} has been approved. ${what} starts now (${limit}). Sign in with the email and password you registered with.`,
       buttonText: 'Sign in',
@@ -239,7 +239,7 @@ exports.reject = async (req, res) => {
   if (owner) {
     templated({
       to: owner.email,
-      subject: `Your FlexHub registration for ${tenant.name}`,
+      subject: `Your FitzyClub registration for ${tenant.name}`,
       heading: 'We could not approve your registration',
       body: `${reason ? `Reason: ${reason}. ` : ''}If you think this is a mistake, please reply to this email or contact support.`,
     });

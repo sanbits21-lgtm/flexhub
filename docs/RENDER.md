@@ -80,7 +80,7 @@ The server reached for your mail provider and failed.
 2. In Brevo, open **Senders, Domains & Dedicated IPs > Senders** and add and confirm the address you
    will send from.
 3. In Render > **Environment**, set `BREVO_API_KEY` to the key and `MAIL_FROM` to
-   `FlexHub <that verified address>`. Delete `SMTP_URL`, `SMTP_HOST` and the other `SMTP_*` values if
+   `FitzyClub <that verified address>`. Delete `SMTP_URL`, `SMTP_HOST` and the other `SMTP_*` values if
    you added them earlier.
 4. Save, let it redeploy, then check **Platform Settings > Email**.
 

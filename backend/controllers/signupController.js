@@ -16,7 +16,7 @@ const RESEND_GAP_MS = 60 * 1000;
 const NOTICE_GAP_MS = 10 * 60 * 1000;
 
 // Registering answers the same whether or not the email already has an account. Saying "that email
-// is taken" would let anyone check who uses FlexHub; the address's owner hears about it by email.
+// is taken" would let anyone check who uses FitzyClub; the address's owner hears about it by email.
 const signupReply = (email) => ({ email, message: 'Check your email to confirm your address.' });
 
 const sha256 = (v) => crypto.createHash('sha256').update(v).digest('hex');
@@ -39,8 +39,8 @@ const suggestSlug = async (gymName) => {
 
 const sendVerification = (req, user, token, gymName) => templated({
   to: user.email,
-  subject: 'Confirm your email for FlexHub',
-  heading: `Welcome to FlexHub, ${user.name}`,
+  subject: 'Confirm your email for FitzyClub',
+  heading: `Welcome to FitzyClub, ${user.name}`,
   body: `Please confirm your email address to finish registering ${gymName}. The link works for ${VERIFY_HOURS} hours. After that, our team reviews new gyms and we will email you as soon as yours is approved.`,
   buttonText: 'Confirm my email',
   buttonUrl: `${publicOrigin(req)}/verify-email?token=${token}`,
@@ -196,9 +196,9 @@ const noticeToExistingAccount = async (req, user) => {
   await User.updateOne({ _id: user._id }, { accountNoticeSentAt: new Date() });
   return templated({
     to: user.email,
-    subject: 'You already have a FlexHub account',
+    subject: 'You already have a FitzyClub account',
     heading: 'You already have an account',
-    body: 'Someone, hopefully you, tried to register a new gym with this email address. Because it already has a FlexHub account, nothing was created. If it was you, just sign in. If it was not, you can ignore this email.',
+    body: 'Someone, hopefully you, tried to register a new gym with this email address. Because it already has a FitzyClub account, nothing was created. If it was you, just sign in. If it was not, you can ignore this email.',
     buttonText: 'Sign in',
     buttonUrl: `${publicOrigin(req)}/login`,
   });

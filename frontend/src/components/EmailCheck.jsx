@@ -47,7 +47,7 @@ export default function EmailCheck() {
       )}
       {status && status.configured && (
         <div className="space-y-2 text-sm text-gray-800 dark:text-gray-100">
-          <div>Sending {status.via === 'BREVO_API_KEY' ? <>through <strong>Brevo's web API</strong></> : <>through <strong>{status.host || 'unknown host'}</strong>{status.port ? `:${status.port}` : ''} ({status.via})</>} as <strong>{status.from || 'FlexHub <no-reply@localhost>'}</strong>.</div>
+          <div>Sending {status.via === 'BREVO_API_KEY' ? <>through <strong>Brevo's web API</strong></> : <>through <strong>{status.host || 'unknown host'}</strong>{status.port ? `:${status.port}` : ''} ({status.via})</>} as <strong>{status.from || 'FitzyClub <no-reply@localhost>'}</strong>.</div>
           {!status.from && <div className={bad}>MAIL_FROM is not set. Most providers refuse the default sender; set it to an address you have verified with them.</div>}
           {status.urlProblem && <div role="alert" className={bad}>{status.urlProblem}</div>}
           {status.keyProblem && <div role="alert" className={bad}>{status.keyProblem}</div>}

@@ -32,14 +32,14 @@ afterAll(async () => {
 describe('sending through the Brevo web API', () => {
   it('sends one request with the key, the sender, the recipient and both bodies', async () => {
     const fetchSpy = mockFetch(okResponse({ messageId: '<1@x>' }));
-    useEnv({ BREVO_API_KEY: '  xkeysib-abc123  ', MAIL_FROM: 'FlexHub <hello@example.com>' });
+    useEnv({ BREVO_API_KEY: '  xkeysib-abc123  ', MAIL_FROM: 'FitzyClub <hello@example.com>' });
     expect(await send()).toBe(true);
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe('https://api.brevo.com/v3/smtp/email');
     expect(init.method).toBe('POST');
     expect(init.headers['api-key']).toBe('xkeysib-abc123'); // surrounding spaces trimmed
     expect(JSON.parse(init.body)).toEqual({
-      sender: { name: 'FlexHub', email: 'hello@example.com' },
+      sender: { name: 'FitzyClub', email: 'hello@example.com' },
       to: [{ email: 'owner@example.com' }],
       subject: 'Hello',
       htmlContent: '<p>rich</p>',
@@ -117,7 +117,7 @@ describe('sending through the Brevo web API', () => {
 
 describe('through the app', () => {
   it('works end to end: the super-admin check, a test email, and a sign-up confirmation', async () => {
-    useEnv({ BREVO_API_KEY: 'xkeysib-abc', MAIL_FROM: 'FlexHub <hello@example.com>' });
+    useEnv({ BREVO_API_KEY: 'xkeysib-abc', MAIL_FROM: 'FitzyClub <hello@example.com>' });
     const fetchSpy = mockFetch(okResponse());
     const status = await request(app).get('/api/platform-settings/email-status').set(auth(sa.token));
     expect(status.body).toMatchObject({ configured: true, via: 'BREVO_API_KEY', check: { ok: true } });

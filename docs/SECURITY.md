@@ -1,6 +1,6 @@
 # Security
 
-What protects FlexHub, how each protection behaves, which setting controls it, and what is still
+What protects FitzyClub, how each protection behaves, which setting controls it, and what is still
 open. Settings are listed in [CONFIGURATION.md](./CONFIGURATION.md).
 
 Children's and members' personal data (names, phones, photos, health notes, payments) is in here,

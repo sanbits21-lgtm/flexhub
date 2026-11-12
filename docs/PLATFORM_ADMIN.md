@@ -1,6 +1,6 @@
 # Platform guide: packages, approvals, plans and renewals
 
-For the people who run FlexHub itself (super-admins and platform admins), not for gym owners.
+For the people who run FitzyClub itself (super-admins and platform admins), not for gym owners.
 
 ## Who can do what
 

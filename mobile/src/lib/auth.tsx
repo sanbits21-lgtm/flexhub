@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw staffErr;
         }
         if (!STAFF_ROLES.includes(s.user.role as Role)) {
-          throw new ApiError('This account is for the FlexHub website. The app is for members, trainers and gym managers.', 403);
+          throw new ApiError('This account is for the FitzyClub website. The app is for members, trainers and gym managers.', 403);
         }
         result = { token: s.token, refreshToken: s.refreshToken, role: s.user.role as Role, name: s.user.name, features: s.features };
       }

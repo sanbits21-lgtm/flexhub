@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Where the FlexHub API lives. Set EXPO_PUBLIC_API_URL for a real device or a deployed
+// Where the FitzyClub API lives. Set EXPO_PUBLIC_API_URL for a real device or a deployed
 // server. Otherwise: the Android emulator reaches the host machine at 10.0.2.2, a phone
 // running Expo Go is pointed at the dev machine's LAN address (taken from the Metro host),
 // and the iOS simulator / web use localhost.

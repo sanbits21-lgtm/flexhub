@@ -1,4 +1,4 @@
-# FlexHub
+# FitzyClub
 
 Multi-tenant B2B gym management SaaS: a Node/Express/MongoDB backend, a React/Vite staff website
 (also installable as an app), an installable **member web app** at `/member`, and an Expo mobile app.

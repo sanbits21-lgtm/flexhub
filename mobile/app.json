@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "FlexHub",
-    "slug": "flexhub-member",
-    "scheme": "flexhub",
+    "name": "FitzyClub",
+    "slug": "fitzyclub-member",
+    "scheme": "fitzyclub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.flexhub.member",
+      "bundleIdentifier": "com.fitzyclub.member",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.flexhub.member",
+      "package": "com.fitzyclub.member",
       "adaptiveIcon": {
         "backgroundColor": "#0A0C10",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -43,7 +43,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "FlexHub uses your photos only to set your profile picture."
+          "photosPermission": "FitzyClub uses your photos only to set your profile picture."
         }
       ],
       "expo-font",
@@ -51,7 +51,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FlexHub uses the camera to scan members' passes at the front desk.",
+          "cameraPermission": "FitzyClub uses the camera to scan members' passes at the front desk.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

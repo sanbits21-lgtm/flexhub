@@ -78,7 +78,7 @@ const runExpiryNotices = async (now = new Date()) => {
     const msg = messageFor(tenant, stage, daysLeft);
     const link = loginLink(tenant);
     const to = await ownerEmails(tenant);
-    await Promise.all(to.map((email) => templated({ to: email, ...msg, ...(link ? { buttonText: 'Open FlexHub', buttonUrl: link } : {}) })));
+    await Promise.all(to.map((email) => templated({ to: email, ...msg, ...(link ? { buttonText: 'Open FitzyClub', buttonUrl: link } : {}) })));
     notified.push({ tenantId: String(tenant._id), name: tenant.name, plan: tenant.packageName || tenant.billingPlan, end, stage });
   }
 

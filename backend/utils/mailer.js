@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 // Outgoing email over SMTP (any provider: SES, Mailgun, Gmail app password, Brevo...).
 //   SMTP_URL=smtps://user:pass@smtp.example.com   or   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_SECURE
-//   MAIL_FROM="FlexHub <no-reply@yourdomain.com>"
+//   MAIL_FROM="FitzyClub <no-reply@yourdomain.com>"
 // With nothing configured the message is printed to the server log instead (so development
 // works without a mail account) and, under test, kept in `outbox` for assertions.
 const outbox = [];
@@ -80,7 +80,7 @@ const describeMailError = (err) => {
 // ---- Brevo web API ----------------------------------------------------------------------------
 const BREVO_API = 'https://api.brevo.com/v3';
 
-/** "FlexHub <hi@example.com>" -> { name: 'FlexHub', email: 'hi@example.com' }; a bare address works too. */
+/** "FitzyClub <hi@example.com>" -> { name: 'FitzyClub', email: 'hi@example.com' }; a bare address works too. */
 const parseFrom = (from) => {
   const m = String(from || '').match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
   return m ? { ...(m[1].trim() ? { name: m[1].trim() } : {}), email: m[2].trim() } : { email: String(from || '').trim() };
@@ -123,7 +123,7 @@ const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', 
 
 /** Sends one message. Never throws: a failed email must not undo the action that triggered it. Returns true if handed off. */
 const sendMail = async ({ to, subject, text, html }) => {
-  const from = process.env.MAIL_FROM || 'FlexHub <no-reply@localhost>';
+  const from = process.env.MAIL_FROM || 'FitzyClub <no-reply@localhost>';
   if (!configured()) {
     if (process.env.NODE_ENV === 'test') outbox.push({ to, subject, text, html });
     else console.log(`[mail not configured] To: ${to}\nSubject: ${subject}\n${text}\n`);

@@ -17,7 +17,7 @@ describe('what counts as too easy to guess', () => {
   });
 
   it('refuses the passwords everyone tries first, even dressed up with digits and symbols', () => {
-    for (const bad of ['password', 'Password123!', 'passw0rd', 'Welcome2024!', 'qwerty123', 'iloveyou1', 'Admin@123', 'Flexhub#1', 'letmein!!', 'changeme99']) {
+    for (const bad of ['password', 'Password123!', 'passw0rd', 'Welcome2024!', 'qwerty123', 'iloveyou1', 'Admin@123', 'Flexhub#1', 'Fitzyclub#1', 'FitzyClub2026!', 'letmein!!', 'changeme99']) {
       expect([bad, checkPassword(bad, who)]).toEqual([bad, expect.stringMatching(/too common/)]);
     }
   });

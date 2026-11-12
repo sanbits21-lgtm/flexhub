@@ -48,9 +48,9 @@ describe('what the server says it is set up to send with', () => {
   });
 
   it('reads host, port and security from SMTP_URL and never exposes the password', () => {
-    useEnv({ SMTP_URL: 'smtps://apikey:s3cretPassw0rd@smtp.example.com:465', MAIL_FROM: 'FlexHub <hi@example.com>' });
+    useEnv({ SMTP_URL: 'smtps://apikey:s3cretPassw0rd@smtp.example.com:465', MAIL_FROM: 'FitzyClub <hi@example.com>' });
     const status = mailer.mailStatus();
-    expect(status).toMatchObject({ configured: true, via: 'SMTP_URL', host: 'smtp.example.com', port: 465, secure: true, from: 'FlexHub <hi@example.com>' });
+    expect(status).toMatchObject({ configured: true, via: 'SMTP_URL', host: 'smtp.example.com', port: 465, secure: true, from: 'FitzyClub <hi@example.com>' });
     expect(JSON.stringify(status)).not.toMatch(/s3cretPassw0rd|apikey/);
   });
 
@@ -112,12 +112,12 @@ describe('the super-admin email check', () => {
   it('sends a real test message to the super-admin when the server works', async () => {
     const sendMail = jest.fn().mockResolvedValue({});
     jest.spyOn(nodemailer, 'createTransport').mockReturnValue({ verify: jest.fn().mockResolvedValue(true), sendMail });
-    useEnv({ SMTP_HOST: 'smtp.example.com', MAIL_FROM: 'FlexHub <hi@example.com>' });
+    useEnv({ SMTP_HOST: 'smtp.example.com', MAIL_FROM: 'FitzyClub <hi@example.com>' });
     const status = await request(app).get('/api/platform-settings/email-status').set(auth(sa.token));
     expect(status.body.check).toEqual({ ok: true });
     const test = await request(app).post('/api/platform-settings/test-email').set(auth(sa.token));
     expect(test.body).toEqual({ ok: true, to: sa.user.email });
-    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ to: sa.user.email, subject: 'FlexHub test email' }));
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ to: sa.user.email, subject: 'FitzyClub test email' }));
   });
 });
 

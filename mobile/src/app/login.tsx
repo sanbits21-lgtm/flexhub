@@ -40,7 +40,7 @@ export default function Login() {
             style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
             <Ionicons name="barbell" size={34} color={colors.gradInk} />
           </LinearGradient>
-          <Text style={{ color: colors.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1.5 }}>FlexHub</Text>
+          <Text style={{ color: colors.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1.5 }}>FitzyClub</Text>
           <Text style={{ color: colors.muted, fontSize: 16, marginTop: 4 }}>Train smarter. Run your gym better.</Text>
         </View>
 

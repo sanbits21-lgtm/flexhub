@@ -203,6 +203,7 @@ describe('members', () => {
     const access = await request(app).post(`/api/members/${me._id}/app-access`).set(auth(m1.managerToken));
     const session = await request(app).post('/api/member-auth/login').send({ identifier: me.memberCode, password: access.body.password });
     expect(session.status).toBe(200);
+    await sleep(1100); // a token minted in the same second as the reset survives by design, so let a second pass
     await getToken(me);
     await askMember(me.memberCode);
     const token = tokenFrom((await waitForMail('reset.member@example.com', RESET))[0]);

@@ -1,4 +1,4 @@
-# Running FlexHub for real clients
+# Running FitzyClub for real clients
 
 The checklist and the runbook for the things that are not code: where data lives, how it is backed up, how you hear
 about problems, and what to do when something goes wrong. Work through **Before the first client** once, then use the
@@ -21,6 +21,26 @@ Tick each one. Nothing here is optional for a paying client.
 - [ ] **Atlas network access** limited to the host, not `0.0.0.0/0`, and the database password rotated.
 - [ ] **A test gym walked through by hand** on the live site: register, confirm, approve, add a member, take a UPI
       payment, renew, open the member app on a phone, reset a password from the "Forgot password" link.
+
+## Your domain (fitzyclub.com, registered at Hostinger)
+
+**Secure the registrar account** (whoever controls it controls the domain):
+- Two-factor sign-in on the Hostinger account, a strong unique password, and a secured email address you will keep for years.
+- Confirm the registrant-email verification within about two weeks of buying (otherwise the domain can be suspended).
+- Domain / transfer lock **on**, WHOIS privacy **on**, auto-renew **on** with a valid payment method (consider registering for 2 to 3 years).
+- Only act on renewal or transfer emails from inside Hostinger; fake ones are a common scam.
+
+**Connect it** (only when you are ready to switch the site over):
+1. In Hostinger's DNS editor delete the default parking `A` record and any `AAAA` record (Render uses IPv4 only).
+2. In Render > the service > Settings > Custom Domains add `fitzyclub.com` **and** `*.fitzyclub.com`, and create exactly the DNS records Render shows (root, wildcard `CNAME`, and the `_acme-challenge` verification record). The root domain must point at Render or the wildcard fails.
+3. Set `PUBLIC_URL=https://fitzyclub.com` and `BASE_DOMAIN=fitzyclub.com`, then redeploy. Each gym is then at `https://<gym>.fitzyclub.com`.
+4. Set `MAIL_FROM=FitzyClub <no-reply@fitzyclub.com>` once the domain is authenticated in Brevo.
+
+**Email from your domain:** in Brevo, Senders, Domains: add `fitzyclub.com`, publish the records Brevo shows (a Brevo verification record, DKIM, and DMARC), then press *Authenticate*. Keep exactly one DMARC record; start with a gentle policy and tighten it after a few weeks.
+
+**Not yet:** CAA records (a wrong one blocks your HTTPS certificate) and moving DNS to Cloudflare (wildcard domains with Render need extra steps).
+
+The Render service keeps its original name (`flexhub` in `render.yaml`) on purpose: renaming it would create a second service. Customers never see it once the custom domain is connected.
 
 ## Environments
 
