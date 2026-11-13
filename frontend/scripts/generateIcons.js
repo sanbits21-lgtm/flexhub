@@ -1,7 +1,7 @@
 // One-off generator for the website icon set: favicon, PWA icons and the Apple touch icon.
 // Run with `npm run icons`; the output is committed so the normal build stays image-free.
-// The drawing is the same F-with-a-dumbbell-crossbar as the mobile app
-// (mobile/scripts/generate-icons.mjs) — keep the two in step.
+// The drawing is the FitzyClub runner mark, the same as the mobile app
+// (mobile/scripts/generate-icons.mjs) and the Logo component: keep the three in step.
 import sharp from 'sharp';
 import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -12,28 +12,25 @@ const pub = join(here, '../public');
 const iconsDir = join(pub, 'icons');
 mkdirSync(iconsDir, { recursive: true });
 
-const BG = '#0A0C10';
-const LIME = '#C8F83A';
-const GREEN = '#37D67A';
+const BG = '#0B0E13';
+const LIME = '#D9FF4A';
+const GREEN = '#3FDB80';
 
-// Drawn on a 1024 canvas. The F is a stem and top arm; the middle arm is a dumbbell whose
-// plates run through the stem and out past it on both sides.
-const mark = (fill, outline) => `
-  <g fill="${fill}">
-    <rect x="330" y="248" width="116" height="528" rx="30"/>
-    <rect x="330" y="248" width="372" height="112" rx="30"/>
+// The FitzyClub mark: a runner leaping out of a sweep, with a spark. Drawn on a 120 box (the same drawing as
+// frontend/src/components/Logo.jsx), centred on the 1024 canvas and scaled by `scale` (1 = a 600 px mark).
+const mark = (paint) => `
+  <path d="M70 9 C 34 10 8 38 10 70 C 12 96 38 112 72 104 C 90 100 102 92 108 84 C 92 94 70 98 50 90 C 28 80 22 56 34 36 C 44 22 56 14 70 9 Z" fill="${paint}"/>
+  <g fill="none" stroke="${paint}" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M74 42 C 70 52 66 60 60 70" stroke-width="9"/>
+    <path d="M73 44 C 80 40 88 36 96 28" stroke-width="7"/>
+    <path d="M71 48 C 64 50 58 52 52 58" stroke-width="7"/>
+    <path d="M60 70 C 68 74 76 78 80 86 C 82 92 80 98 78 102" stroke-width="8"/>
+    <path d="M60 70 C 52 74 46 80 40 86" stroke-width="8"/>
   </g>
-  <g fill="${fill}"${outline ? ` stroke="${outline}" stroke-width="12" paint-order="stroke"` : ''}>
-    <rect x="270" y="476" width="400" height="72" rx="20"/>
-    <rect x="222" y="418" width="46" height="188" rx="16"/>
-    <rect x="276" y="446" width="36" height="132" rx="13"/>
-    <rect x="670" y="418" width="46" height="188" rx="16"/>
-    <rect x="628" y="446" width="36" height="132" rx="13"/>
-  </g>`;
+  <circle cx="82" cy="27" r="9" fill="${paint}"/>
+  <circle cx="101" cy="17" r="4.5" fill="${paint}"/>`;
 
-// Bounding box of the drawing is 222..716 by 248..776; centre it, then scale about the middle.
-const centred = (inner, scale = 1) =>
-  `<g transform="translate(512 512) scale(${scale}) translate(${-(222 + 716) / 2} ${-(248 + 776) / 2})">${inner}</g>`;
+const centred = (inner, scale = 1) => `<g transform="translate(512 512) scale(${5 * scale}) translate(-58.5 -60.5)">${inner}</g>`;
 
 const gradient = `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${LIME}"/><stop offset="1" stop-color="${GREEN}"/></linearGradient></defs>`;
 const svg = (body, { bg, radius = 0 } = {}) =>
@@ -48,12 +45,12 @@ const png = (source, size, file, opaque = false) => {
 };
 
 // Browser tabs and PWA "any" icons: rounded tile, mark large enough to read at 16px.
-const tile = svg(centred(mark('url(#g)', BG), 1.2), { bg: BG, radius: 224 });
+const tile = svg(centred(mark('url(#g)'), 1.2), { bg: BG, radius: 224 });
 // Maskable: the launcher crops to its own shape, so a full-bleed square with the mark
 // inside the central 60% safe zone.
-const maskable = svg(centred(mark('url(#g)', BG), 0.9), { bg: BG });
+const maskable = svg(centred(mark('url(#g)'), 0.9), { bg: BG });
 // Apple draws its own rounded corners and rejects transparency: full-bleed and opaque.
-const apple = svg(centred(mark('url(#g)', BG), 1.2), { bg: BG });
+const apple = svg(centred(mark('url(#g)'), 1.2), { bg: BG });
 
 writeFileSync(join(iconsDir, 'icon.svg'), tile);
 writeFileSync(join(pub, 'favicon.svg'), tile);

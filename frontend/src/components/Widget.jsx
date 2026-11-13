@@ -12,13 +12,13 @@ export const TileContext = createContext(null);
 // scrolls, so a long list never pushes the page taller. Below lg the page stacks and
 // scrolls normally, so each tile gets a fixed height instead (a table with 20 rows would
 // otherwise swallow the phone screen).
-export default function Widget({ title, action = null, className = '', bodyClassName = '', children }) {
+export default function Widget({ title, icon: Icon = null, action = null, className = '', bodyClassName = '', children }) {
   const [slot, setSlot] = useState(null);
   const tile = useContext(TileContext);
   return (
-    <section className={`bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-2xl shadow flex flex-col min-h-0 h-72 lg:h-auto lg:flex-1 ${className}`}>
-      <header className="flex items-center justify-between gap-2 px-4 pt-3 pb-2 shrink-0">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{title}</h3>
+    <section className={`group flex h-80 min-h-0 flex-col rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80 ${className}`}>
+      <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-2 pt-4">
+        <h3 className="flex min-w-0 items-center gap-2 truncate text-base font-semibold text-gray-900 dark:text-gray-100">{Icon && <Icon className="h-5 w-5 shrink-0 text-green-700 dark:text-accent" aria-hidden="true" />}<span className="truncate">{title}</span></h3>
         <div className="flex items-center gap-2">
           {action}
           <div ref={setSlot} />
@@ -28,7 +28,7 @@ export default function Widget({ title, action = null, className = '', bodyClass
               onClick={tile.remove}
               aria-label={`Remove ${typeof title === 'string' ? title : 'widget'} from the dashboard`}
               title="Remove from dashboard (add it back from Widgets)"
-              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="text-gray-400 opacity-0 transition hover:text-gray-700 focus:opacity-100 group-hover:opacity-100 dark:hover:text-gray-200 [@media(hover:none)]:opacity-60"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -40,7 +40,7 @@ export default function Widget({ title, action = null, className = '', bodyClass
               title="Drag to move"
               onMouseDown={tile.arm}
               onMouseUp={tile.disarm}
-              className="hidden lg:block cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="hidden cursor-grab text-gray-400 opacity-0 transition hover:text-gray-700 focus:opacity-100 group-hover:opacity-100 active:cursor-grabbing dark:hover:text-gray-200 lg:block"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <circle cx="7" cy="5" r="1.5" /><circle cx="13" cy="5" r="1.5" />

@@ -64,17 +64,20 @@ export default function Members() {
   const canShowPersonalDetails = useFeature('fields:memberPersonalDetails');
   const [searchParams] = useSearchParams();
   const urlBranchId = searchParams.get('branchId');
+  const urlSearch = (searchParams.get('search') || '').slice(0, 60);
+  const urlStatus = ['active', 'expired', 'frozen', 'cancelled'].includes(searchParams.get('status')) ? searchParams.get('status') : '';
+  const urlExpiring = ['7', '15', '30', '60'].includes(searchParams.get('expiring')) ? searchParams.get('expiring') : '';
   const [members, setMembers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [plans, setPlans] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [branchFilter, setBranchFilter] = useState(urlBranchId || '');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(urlStatus);
   const [planFilter, setPlanFilter] = useState('');
-  const [expiringFilter, setExpiringFilter] = useState('');
+  const [expiringFilter, setExpiringFilter] = useState(urlExpiring);
   const [showInactive, setShowInactive] = useState(false);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [search, setSearch] = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
   const [showFilters, setShowFilters] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [total, setTotal] = useState(null);
@@ -82,7 +85,7 @@ export default function Members() {
   const menuRef = useRef(null);
   const loadedRef = useRef(0); // how many rows the list currently holds, so a refresh keeps them
   const requestRef = useRef(0); // only the newest response may update the list
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(searchParams.get('add') === '1');
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [form, setForm] = useState(getEmptyForm);
   // Add Member modal steps: 'form' -> (UPI only) 'upi' QR/confirm -> 'receipt'.
@@ -124,6 +127,10 @@ export default function Members() {
   const finalAmount = Number(form.amount) || 0;
 
   useEffect(() => { if (urlBranchId) setBranchFilter(urlBranchId); }, [urlBranchId]);
+  // A link or the top bar's search can send you here already filtered; follow it when it changes while you are on the page.
+  useEffect(() => {
+    setSearch(urlSearch); setDebouncedSearch(urlSearch); setStatusFilter(urlStatus); setExpiringFilter(urlExpiring);
+  }, [urlSearch, urlStatus, urlExpiring]);
 
   // Warn (never block) when the phone typed into the add form already belongs to a member.
   useEffect(() => {

@@ -3,6 +3,7 @@ import Widget, { TileContext } from '../../components/Widget';
 import DataTable from '../../components/DataTable';
 import RenewMembershipModal from '../../components/RenewMembershipModal';
 import WidgetLibrary from '../../components/WidgetLibrary';
+import DashboardHero from '../../components/DashboardHero';
 
 const DAY = 24 * 60 * 60 * 1000;
 const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / DAY);
@@ -97,7 +98,7 @@ function TileCell({ span, over, onRemove, onDragStart, onDragOver, onDrop, onDra
       onDragEnd={() => { setArmed(false); onDragEnd(); }}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      className={`min-h-0 flex flex-col ${span} ${over ? 'ring-2 ring-blue-400 rounded-lg' : ''}`}
+      className={`flex min-h-0 flex-col ${span} ${over ? 'rounded-3xl ring-2 ring-accent' : ''}`}
     >
       <TileContext.Provider value={ctx}>{children}</TileContext.Provider>
     </div>
@@ -136,7 +137,7 @@ function KpiCell({ title, onRemove, children }) {
 // Tiles and key numbers can also be removed. They wait in the Widgets library (a slide-in
 // panel) until added back, and the choice is remembered per dashboard on this device.
 // `tiles` is [{ id, title, span, node }] and `kpis` is [{ id, title, node }].
-export function DashboardFrame({ title, actions = null, kpis = [], rows = 2, layoutId, tiles }) {
+export function DashboardFrame({ title, actions = null, kpis = [], layoutId, tiles, cta = null }) {
   const defaults = tiles.map((t) => t.id);
   const [order, setOrder] = useState(() => readOrder(layoutId, defaults));
   const [hidden, setHidden] = useState(() => readHidden(layoutId));
@@ -187,15 +188,12 @@ export function DashboardFrame({ title, actions = null, kpis = [], rows = 2, lay
   const anyTileHidden = hiddenTiles.length > 0;
   const visibleIds = current.filter((id) => !hidden.includes(id));
   const packed = anyTileHidden ? packRows(visibleIds.map((id) => byId[id])) : null;
-  const rowCount = anyTileHidden ? Math.max(1, packed.length) : rows;
-  const gridRows = anyTileHidden
-    ? 'lg:[grid-template-rows:repeat(var(--rows),minmax(0,1fr))]'
-    : rows === 1 ? 'lg:grid-rows-[minmax(0,1fr)]' : 'lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]';
 
   return (
-    <div className="p-4 flex flex-col gap-4 lg:h-screen lg:overflow-hidden">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
+    <div className="flex flex-col gap-5 p-4 md:p-6">
+      <DashboardHero cta={cta} />
+      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
         <div className="flex items-center gap-3">
           {actions}
           {(!isDefaultOrder || removed.length > 0) && (
@@ -213,7 +211,7 @@ export function DashboardFrame({ title, actions = null, kpis = [], rows = 2, lay
         </div>
       </div>
       {visibleKpis.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-3 shrink-0">
+        <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {visibleKpis.map((k) => <KpiCell key={k.id} title={k.title} onRemove={() => hide(kpiKey(k))}>{k.node}</KpiCell>)}
         </div>
       )}
@@ -223,7 +221,7 @@ export function DashboardFrame({ title, actions = null, kpis = [], rows = 2, lay
           <button type="button" onClick={() => setLibraryOpen(true)} className="border rounded-xl px-3 py-1.5 text-sm dark:border-gray-700 dark:text-gray-100">Open Widgets</button>
         </div>
       ) : (
-        <div style={{ '--rows': rowCount }} className={`grid grid-cols-1 lg:grid-cols-12 gap-4 lg:flex-1 lg:min-h-0 ${gridRows}`}>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {anyTileHidden
             ? packed.flat().map((cell) => (
               <TileCell key={cell.id} span={COL_SPAN[cell.cols]} {...dragProps(cell.id)}>{byId[cell.id].node}</TileCell>

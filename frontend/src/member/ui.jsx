@@ -29,7 +29,7 @@ export function Screen({ title, subtitle, right = null, children }) {
 }
 
 export function Card({ children, className = '', ...rest }) {
-  return <div className={`bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-2xl shadow-sm p-4 ${className}`} {...rest}>{children}</div>;
+  return <div className={`bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-white/5 rounded-3xl shadow-sm p-4 ${className}`} {...rest}>{children}</div>;
 }
 
 export const Section = ({ title }) => <h2 className="pt-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{title}</h2>;
@@ -61,9 +61,9 @@ export function LoadState({ error, stale, onRetry }) {
 
 export function Btn({ kind = 'primary', busy = false, small = false, className = '', children, ...rest }) {
   const kinds = {
-    primary: 'bg-gray-900 text-white dark:bg-accent dark:text-accent-ink dark:font-semibold',
+    primary: 'bg-accent text-accent-ink font-bold',
     secondary: 'border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100',
-    ghost: 'text-blue-600 dark:text-blue-400',
+    ghost: 'text-green-700 dark:text-accent',
     danger: 'border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400',
   };
   return (

@@ -1,80 +1,68 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, Gift, LogIn, Mail, Lock, Users } from 'lucide-react';
 import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from '../components/ThemeToggle';
-import BrandMark from '../components/BrandMark';
 import { useBrand } from '../context/BrandContext';
+import AuthShell, { AuthButton, AuthField, RuleText, authLink } from '../components/auth/AuthShell';
 
 export default function Login() {
   const { login } = useAuth();
-  const { brand, unknownGym } = useBrand();
+  const { unknownGym } = useBrand();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const [trial, setTrial] = useState(null); // set when this address accepts new gyms
   useEffect(() => { authAPI.signupConfig().then((r) => { if (r.data.enabled) setTrial(r.data); }).catch(() => {}); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
       await login(email, password);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setBusy(false);
     }
   };
 
   if (unknownGym) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-sm text-center space-y-2">
+      <AuthShell>
+        <div className="space-y-2 text-center">
           <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">We couldn't find this gym</h1>
           <p className="text-sm text-gray-600 dark:text-gray-300">Check the address you were given, or ask your gym for the right link.</p>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle className="hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" />
-      </div>
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-sm space-y-4">
-        <div className="flex items-center gap-3">
-          <BrandMark brand={brand} size={44} />
-          <div className="min-w-0">
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 truncate">{brand?.name || 'FitzyClub'}</h1>
-            {brand?.tagline && <p className="text-sm text-gray-600 dark:text-gray-300">{brand.tagline}</p>}
-          </div>
-        </div>
-        {error && <div className="text-sm text-red-600 dark:text-red-400">{error}</div>}
-        <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-            className="w-full border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Password</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-            className="w-full border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" />
-        </div>
-        <button type="submit" className="w-full bg-gray-900 text-white rounded-xl py-2.5 hover:bg-gray-800 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
-          Log in
-        </button>
-        <p className="text-sm text-center"><Link to="/forgot-password" className="underline text-gray-600 dark:text-gray-300">Forgot your password?</Link></p>
-        <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-          Gym member? <Link to="/member/login" className="font-semibold underline dark:text-accent">Open the member app</Link>
-        </p>
-        {trial && (
-          <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-            New gym? <Link to="/signup" className="font-semibold underline dark:text-accent">Start your {trial.trialDays}-day free trial</Link>
+    <AuthShell>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && <div role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>}
+        <AuthField id="login-email" label="Email" icon={Mail} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" placeholder="you@example.com" />
+        <AuthField id="login-password" label="Password" icon={Lock} password value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Your password" />
+        <AuthButton type="submit" icon={LogIn} disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</AuthButton>
+        <RuleText><Link to="/forgot-password" className={authLink}>Forgot your password?</Link></RuleText>
+        <div className="space-y-3 text-center text-sm text-gray-600 dark:text-gray-300">
+          <p className="flex items-center justify-center gap-2">
+            <Users className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            Gym member? <Link to="/member/login" className={`${authLink} inline-flex items-center`}>Open the member app <ChevronRight className="h-4 w-4" /></Link>
           </p>
-        )}
+          {trial && (
+            <p className="flex items-center justify-center gap-2">
+              <Gift className="h-4 w-4 text-gray-400" aria-hidden="true" />
+              New gym? <Link to="/signup" className={`${authLink} inline-flex items-center`}>Start your {trial.trialDays}-day free trial <ChevronRight className="h-4 w-4" /></Link>
+            </p>
+          )}
+        </div>
       </form>
-    </div>
+    </AuthShell>
   );
 }

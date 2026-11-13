@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
-import ThemeToggle from '../components/ThemeToggle';
+import AuthShell from '../components/auth/AuthShell';
 import { limitsLabel, priceLabel, trialLabel } from '../utils/packages';
 
-const inputClass = 'w-full border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100';
+const inputClass = 'w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40 dark:border-gray-600/70 dark:bg-gray-900/60 dark:text-gray-100';
 const labelClass = 'block text-sm text-gray-600 dark:text-gray-300 mb-1';
 
 export default function Signup() {
@@ -44,12 +44,7 @@ export default function Signup() {
     }
   };
 
-  const shell = (children) => (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 relative p-4">
-      <div className="absolute top-4 right-4"><ThemeToggle className="hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" /></div>
-      {children}
-    </div>
-  );
+  const shell = (children, wide = false) => <AuthShell wide={wide}>{children}</AuthShell>;
 
   const resend = async () => {
     setResent(false);
@@ -59,7 +54,7 @@ export default function Signup() {
 
   if (sentTo) {
     return shell(
-      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-md space-y-4">
+      <div className="space-y-4">
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Check your email</h1>
         <p className="text-gray-700 dark:text-gray-200">We sent an email to <strong>{sentTo}</strong>. Open it to confirm your address. (If that address already has an account, the email says so and links to the sign-in page.)</p>
         <p className="text-sm text-gray-600 dark:text-gray-300">After that, our team reviews every new gym. We'll email you as soon as yours is approved, and {chosen ? (chosen.trialDays > 0 ? `your ${chosen.trialDays}-day free trial` : `your ${chosen.name} package`) : `your ${config?.trialDays}-day free trial`} starts then, not before.</p>
@@ -73,7 +68,7 @@ export default function Signup() {
   if (!config) return shell(<div className="text-gray-500 dark:text-gray-400">Loading...</div>);
   if (!config.enabled) {
     return shell(
-      <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full max-w-sm space-y-3 text-center">
+      <div className="space-y-3 text-center">
         <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">Sign-up isn't available here</h1>
         <Link to="/login" className="underline text-gray-700 dark:text-accent">Back to log in</Link>
       </div>,
@@ -81,7 +76,7 @@ export default function Signup() {
   }
 
   return shell(
-    <form onSubmit={submit} className={`bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-8 rounded-2xl shadow w-full space-y-4 ${packages.length ? 'max-w-3xl' : 'max-w-md'}`}>
+    <form onSubmit={submit} className="space-y-4">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{packages.length ? 'Register your gym' : 'Start your free trial'}</h1>
         {packages.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{config.trialDays} days free, up to {config.maxMembers} members. No card needed. </p>}
@@ -127,8 +122,9 @@ export default function Signup() {
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px' }}>
         <label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={set('website')} /></label>
       </div>
-      <button type="submit" disabled={busy} className="w-full bg-gray-900 text-white rounded-xl py-2.5 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">{busy ? 'Registering...' : chosen ? `Register with ${chosen.name}` : 'Register my gym'}</button>
+      <button type="submit" disabled={busy} className="w-full rounded-2xl bg-accent py-3.5 text-lg font-bold text-accent-ink shadow-[0_0_32px_-8px_rgb(var(--accent)/0.7)] hover:brightness-110 disabled:opacity-50">{busy ? 'Registering...' : chosen ? `Register with ${chosen.name}` : 'Register my gym'}</button>
       <p className="text-sm text-center text-gray-600 dark:text-gray-300">Already registered? <Link to="/login" className="font-semibold underline dark:text-accent">Log in</Link></p>
     </form>,
+    packages.length > 0,
   );
 }

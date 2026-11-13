@@ -5,7 +5,7 @@ const date = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', 
 const tone = (level) => ({
   red: 'bg-red-900/40 text-red-200 border-b border-red-800',
   amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300 border-b border-amber-500/30',
-  info: 'bg-accent/15 text-gray-800 dark:text-gray-100 border-b border-accent/30',
+  info: 'bg-accent/10 text-gray-800 dark:text-gray-200 border-b border-accent/20',
 }[level]);
 
 /** Tells a gym owner where they stand on the free trial or the paid plan. Nothing when there is nothing to say. */
@@ -38,5 +38,5 @@ export default function TrialBanner() {
   } else {
     return null;
   }
-  return <div role="status" className={`px-4 py-2 text-sm font-medium ${tone(level)}`}>{message}</div>;
+  return <div role="status" className={`px-4 py-2 text-sm font-medium md:px-6 ${tone(level)}`}>{message}</div>;
 }
