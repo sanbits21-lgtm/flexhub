@@ -16,4 +16,7 @@ const membershipPlanSchema = new mongoose.Schema({
 membershipPlanSchema.index({ tenantId: 1, isActive: 1 });
 membershipPlanSchema.index({ tenantId: 1, branchId: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+membershipPlanSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch' });
+
 module.exports = mongoose.model('MembershipPlan', membershipPlanSchema);

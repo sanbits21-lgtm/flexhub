@@ -16,4 +16,7 @@ const equipmentSchema = new mongoose.Schema({
 equipmentSchema.index({ tenantId: 1, branchId: 1 });
 equipmentSchema.index({ nextServiceDue: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+equipmentSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch' });
+
 module.exports = mongoose.model('Equipment', equipmentSchema);

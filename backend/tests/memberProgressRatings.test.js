@@ -127,7 +127,10 @@ describe('ratings', () => {
   it('hide the gym average from members until five have rated', async () => {
     expect((await request(app).get('/api/member-app/ratings').set(auth(meToken))).body.gym).toMatchObject({ average: null, count: null });
     const extra = Array.from({ length: 4 }, () => ({ tenantId: t.tenant._id, branchId: t.branch._id, memberId: new mongoose.Types.ObjectId(), targetType: 'gym', trainerId: null, stars: 5 }));
-    await Rating.insertMany(extra);
+    // Raw insert on purpose: these stand in for four other members' ratings, and are not real members, which the
+    // gym-isolation guard on the model (utils/tenantRefs.js) would otherwise refuse.
+    const stamp = new Date();
+    await Rating.collection.insertMany(extra.map((r) => ({ ...r, comment: '', createdAt: stamp, updatedAt: stamp })));
     const gym = (await request(app).get('/api/member-app/ratings').set(auth(meToken))).body.gym;
     expect(gym.count).toBe(5);
     expect(gym.average).toBe(4.6); // (3 + 4*5) / 5

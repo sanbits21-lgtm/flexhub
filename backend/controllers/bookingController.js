@@ -4,6 +4,7 @@ const ClassType = require('../models/ClassType');
 const Member = require('../models/Member');
 const { logAudit } = require('../utils/audit');
 const { isBookable } = require('../utils/classSessionStatus');
+const q = require('../utils/query');
 
 // Booking has no trainerId field (unlike ClassSession) — a trainer's scope.trainerId
 // virtual key needs the same two-step translation attendanceController.buildFilter
@@ -21,8 +22,16 @@ const buildFilter = async (req) => {
 
 exports.list = async (req, res) => {
   const filter = await buildFilter(req);
-  const { classSessionId, memberId, status } = req.query;
-  if (classSessionId) filter.classSessionId = classSessionId;
+  const classSessionId = q.oid(req.query.classSessionId, 'classSessionId');
+  const memberId = q.oid(req.query.memberId, 'memberId');
+  const status = q.oneOf(req.query.status, ['booked', 'waitlisted', 'cancelled', 'attended', 'no-show'], 'status');
+  if (classSessionId) {
+    // A trainer is restricted to their own sessions (see buildFilter). Narrow within that, never replace it:
+    // replacing it let a trainer list another trainer's bookings by naming the session.
+    filter.classSessionId = filter.classSessionId
+      ? { $in: filter.classSessionId.$in.filter((id) => String(id) === classSessionId) }
+      : classSessionId;
+  }
   if (memberId) filter.memberId = memberId;
   if (status) filter.status = status;
   const bookings = await Booking.find(filter).sort({ bookedAt: -1 }).populate('memberId', 'name memberCode');

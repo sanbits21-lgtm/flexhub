@@ -143,6 +143,38 @@ into a page, the browser would not run it.
 - Everyone: changing `JWT_SECRET` ends every **access token** immediately, but refresh tokens
   live in the database, so also empty the `sessions` collection. Everyone then signs in again.
 
+## Gym isolation (one gym can never see or change another's data)
+
+This is enforced on the server, never in the browser. A gym's pages hide what you may not use, but the server
+refuses it regardless of what the page does. Four layers, each of which would catch a mistake in the others:
+
+1. **Who you are.** Every route except the public ones (sign-up, sign-in, password reset, the policy pages and the
+   health checks) refuses a request with no valid login. The tests read the route list from the running app, so a
+   route added without a login check fails the test suite.
+2. **Your gym, on every query.** The login decides your gym, branch and role (`scopeContext`), never anything in the
+   request. Every read and write filters by it; a `tenantId` or `branchId` smuggled into a body or query string is
+   overwritten or ignored (`enforceWriteScope`). A branch manager is held to their branch and a trainer to their
+   assigned members, inside the gym.
+3. **Ids named in a request are checked.** A plan, trainer, branch, member or class id in a request body must belong to
+   the caller's own gym (and branch where that matters) before it is used. This is the layer that slips: an id that is
+   saved without being checked is later shown back, and shows another gym's data.
+4. **The data layer refuses cross-gym references.** `backend/utils/tenantRefs.js` is attached to every model that
+   points at another record (payments, classes, bookings, sessions, attendance, members, ratings, staff). A record
+   cannot be saved while anything it references belongs to a different gym, however a controller was written. It covers
+   saves; updates that bypass documents are covered by layers 2 and 3 and by the test below.
+
+**The test** (`backend/tests/isolation.test.js`) builds two complete gyms and, as gym A's owner, branch manager, trainer
+and member, sends several hundred hostile requests at every route with gym B's ids in the path, the body and the query
+string. It then checks from the database that nothing of B's appeared in any response, nothing of B's changed, and
+nothing in A now points at B. It also checks the lines inside one gym, sends requests that mix A's records with one of
+B's (a payment on another gym's plan, a class with another gym's trainer, and so on), and tries the data-layer guard
+directly. It takes about two minutes.
+
+**Known and accepted:** a staff email address is unique across all gyms (it is the login), so creating a staff member
+with an address used at another gym is refused with a generic "already exists". That reveals only that the address
+exists somewhere. Platform admins (your own staff) see across gyms by design, and their access is limited to the gyms
+assigned to them.
+
 ## Forgot password
 
 Staff, owners and platform admins use **Forgot your password?** on the login page; members use the same link on the

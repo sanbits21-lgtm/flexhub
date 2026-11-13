@@ -150,6 +150,7 @@ exports.create = async (req, res) => {
   if (membershipPlanId) {
     const plan = await MembershipPlan.findOne({ _id: membershipPlanId, tenantId: req.body.tenantId });
     if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
+    if (plan.branchId && String(plan.branchId) !== String(req.body.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
     end = addPlanDuration(start, plan.durationUnit);
   }
 
@@ -378,12 +379,13 @@ exports.update = async (req, res) => {
   // duration, exactly like create and renew do. Accepting it raw let a caller set an
   // expiry inconsistent with the plan they're paying for.
   if (membershipPlanId || membershipStart) {
-    const existing = await Member.findOne(filter).select('membershipPlanId membershipStart');
+    const existing = await Member.findOne(filter).select('membershipPlanId membershipStart branchId');
     if (!existing) return res.status(404).json({ message: 'Member not found' });
     const planId = membershipPlanId || existing.membershipPlanId;
     if (planId) {
       const plan = await MembershipPlan.findOne({ _id: planId, tenantId: req.scope.tenantId });
       if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
+      if (plan.branchId && String(plan.branchId) !== String(existing.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
       const start = membershipStart ? new Date(membershipStart) : (existing.membershipStart || new Date());
       update.membershipEnd = addPlanDuration(start, plan.durationUnit);
     }
@@ -414,6 +416,7 @@ exports.renew = async (req, res) => {
   if (!planId) return res.status(400).json({ message: 'A membership plan is required to renew' });
   const plan = await MembershipPlan.findOne({ _id: planId, tenantId: member.tenantId });
   if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
+  if (plan.branchId && String(plan.branchId) !== String(member.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
 
   // Renewing early onto the SAME plan extends from the existing expiry so unused days
   // aren't burned. Switching to a DIFFERENT plan is treated as a correction/change, not

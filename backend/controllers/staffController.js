@@ -5,6 +5,7 @@ const MemberPayment = require('../models/MemberPayment');
 const Branch = require('../models/Branch');
 const { logAudit } = require('../utils/audit');
 const { sendList } = require('../utils/paginate');
+const q = require('../utils/query');
 const { generateTempPassword } = require('../utils/tempPassword');
 
 // Lists staff within the caller's scope (tenant-admin sees managers+trainers across the
@@ -12,8 +13,8 @@ const { generateTempPassword } = require('../utils/tempPassword');
 exports.list = async (req, res) => {
   const filter = { ...req.scope };
   delete filter.trainerId;
-  if (req.query.role) filter.role = req.query.role;
-  else filter.role = { $in: ['branch-manager', 'trainer'] };
+  const role = q.oneOf(req.query.role, ['branch-manager', 'trainer'], 'role');
+  filter.role = role || { $in: ['branch-manager', 'trainer'] };
 
   await sendList(res, req, User, filter, { select: '-password' });
 };

@@ -25,4 +25,7 @@ ptSessionSchema.index({ tenantId: 1, branchId: 1, startAt: 1 });
 ptSessionSchema.index({ trainerId: 1, startAt: 1, endAt: 1 });
 ptSessionSchema.index({ memberId: 1, startAt: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+ptSessionSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', trainerId: 'User', memberId: 'Member' });
+
 module.exports = mongoose.model('PtSession', ptSessionSchema);

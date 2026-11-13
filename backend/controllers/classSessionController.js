@@ -2,6 +2,8 @@ const ClassSession = require('../models/ClassSession');
 const ClassType = require('../models/ClassType');
 const Booking = require('../models/Booking');
 const Branch = require('../models/Branch');
+const User = require('../models/User');
+const q = require('../utils/query');
 const { logAudit } = require('../utils/audit');
 const { withDerivedSessionStatus, sessionStatusFilter } = require('../utils/classSessionStatus');
 
@@ -27,6 +29,11 @@ const toLocalDateStr = (d) => {
   return `${y}-${m}-${day}`;
 };
 
+// trainerId comes from the request body. It is shown back on the class (the trainer's name is populated), so it
+// must be one of this gym's active trainers, at the class's own branch.
+const findTrainer = (tenantId, branchId, trainerId) => User.findOne({ _id: trainerId, tenantId, branchId, role: 'trainer', isActive: true }).select('_id');
+const TRAINER_NOT_FOUND = { message: 'Trainer not found in this branch' };
+
 const findTrainerConflict = (tenantId, trainerId, startAt, endAt, excludeId) => {
   const filter = {
     tenantId, trainerId, status: 'scheduled',
@@ -38,7 +45,11 @@ const findTrainerConflict = (tenantId, trainerId, startAt, endAt, excludeId) => 
 
 exports.list = async (req, res) => {
   const filter = scopedFilter(req);
-  const { from, to, trainerId, classTypeId, status } = req.query;
+  const trainerId = q.oid(req.query.trainerId, 'trainerId');
+  const classTypeId = q.oid(req.query.classTypeId, 'classTypeId');
+  const from = q.date(req.query.from, 'from');
+  const to = q.date(req.query.to, 'to');
+  const status = q.str(req.query.status, 'status', 30);
   // Only applied when the caller's own scope doesn't already carry one (i.e. not a
   // trainer, whose scope.trainerId already restricts them to their own sessions) —
   // lets tenant-admin/branch-manager filter down to one trainer's schedule.
@@ -46,8 +57,8 @@ exports.list = async (req, res) => {
   if (classTypeId) filter.classTypeId = classTypeId;
   if (from || to) {
     filter.startAt = {};
-    if (from) filter.startAt.$gte = new Date(from);
-    if (to) filter.startAt.$lte = new Date(to);
+    if (from) filter.startAt.$gte = from;
+    if (to) filter.startAt.$lte = to;
   }
   if (status) Object.assign(filter, sessionStatusFilter(status));
 
@@ -105,6 +116,7 @@ exports.create = async (req, res) => {
   // enforceWriteScope only stamps tenantId/branchId, never trainerId, so this override
   // is one explicit line here rather than an extension of that shared middleware.
   const finalTrainerId = req.actorType === 'user' && req.user.role === 'trainer' ? req.user._id : (trainerId || null);
+  if (finalTrainerId && !(await findTrainer(req.body.tenantId, req.body.branchId, finalTrainerId))) return res.status(400).json(TRAINER_NOT_FOUND);
 
   if (finalTrainerId) {
     const conflict = await findTrainerConflict(req.body.tenantId, finalTrainerId, startAtDate, endAtDate);
@@ -136,6 +148,8 @@ exports.batchCreate = async (req, res) => {
   if (!classType) return res.status(400).json({ message: 'Class type not found for this tenant' });
 
   const finalTrainerId = req.actorType === 'user' && req.user.role === 'trainer' ? req.user._id : (trainerId || null);
+  // Checked before the loop: a bad trainer must refuse the whole batch, not fail halfway through it.
+  if (finalTrainerId && !(await findTrainer(req.body.tenantId, req.body.branchId, finalTrainerId))) return res.status(400).json(TRAINER_NOT_FOUND);
   const duration = durationMinutes || classType.durationMinutes;
 
   const start = new Date(startDate);
@@ -185,6 +199,7 @@ exports.update = async (req, res) => {
   if (newEndAt <= newStartAt) return res.status(400).json({ message: 'endAt must be after startAt' });
 
   const newTrainerId = trainerId !== undefined ? (trainerId || null) : existing.trainerId;
+  if (trainerId && !(await findTrainer(existing.tenantId, existing.branchId, trainerId))) return res.status(400).json(TRAINER_NOT_FOUND);
   const willBeScheduled = (status || existing.status) === 'scheduled';
   const relevantFieldsChanged = String(newTrainerId) !== String(existing.trainerId)
     || newStartAt.getTime() !== existing.startAt.getTime()

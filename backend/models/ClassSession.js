@@ -26,4 +26,7 @@ classSessionSchema.index({ tenantId: 1, branchId: 1, startAt: 1 });
 classSessionSchema.index({ trainerId: 1, startAt: 1, endAt: 1 });
 classSessionSchema.index({ classTypeId: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+classSessionSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', classTypeId: 'ClassType', trainerId: 'User' });
+
 module.exports = mongoose.model('ClassSession', classSessionSchema);

@@ -20,4 +20,7 @@ const memberPaymentSchema = new mongoose.Schema({
 memberPaymentSchema.index({ tenantId: 1, branchId: 1, status: 1 });
 memberPaymentSchema.index({ memberId: 1, createdAt: -1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+memberPaymentSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', memberId: 'Member', membershipPlanId: 'MembershipPlan' });
+
 module.exports = mongoose.model('MemberPayment', memberPaymentSchema);

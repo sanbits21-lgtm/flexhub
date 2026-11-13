@@ -15,4 +15,7 @@ const classTypeSchema = new mongoose.Schema({
 classTypeSchema.index({ tenantId: 1, isActive: 1 });
 classTypeSchema.index({ tenantId: 1, branchId: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+classTypeSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch' });
+
 module.exports = mongoose.model('ClassType', classTypeSchema);

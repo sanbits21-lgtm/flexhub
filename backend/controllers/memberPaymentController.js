@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { accountFor } = require('../utils/paymentAccounts');
 const Member = require('../models/Member');
+const MembershipPlan = require('../models/MembershipPlan');
 const MemberPayment = require('../models/MemberPayment');
 const { logAudit } = require('../utils/audit');
 const q = require('../utils/query');
@@ -99,6 +100,17 @@ exports.create = async (req, res) => {
   const member = await Member.findOne(memberFilter);
   if (!member) return res.status(404).json({ message: 'Member not found' });
   if (!member.isActive) return res.status(400).json({ message: 'This member is deactivated. Reactivate them before recording a payment.' });
+
+  // The plan comes from the request body, and it is shown back on the payment (its name is populated), so it
+  // must be one of THIS gym's, usable at the member's branch. Without this check a payment could point at
+  // another gym's plan and read its name.
+  if (membershipPlanId) {
+    const plan = await MembershipPlan.findOne({ _id: membershipPlanId, tenantId: req.scope.tenantId }).select('branchId');
+    if (!plan) return res.status(400).json({ message: 'Membership plan not found for this gym' });
+    if (plan.branchId && String(plan.branchId) !== String(member.branchId)) {
+      return res.status(400).json({ message: 'This plan belongs to a different branch' });
+    }
+  }
 
   const paidStatus = status || 'paid';
   const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;

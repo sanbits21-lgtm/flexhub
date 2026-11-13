@@ -56,5 +56,8 @@ userSchema.methods.matchPassword = function (entered) {
   return bcrypt.compare(entered, this.password);
 };
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+userSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch' });
+
 module.exports = mongoose.model('User', userSchema);
 module.exports.ROLES = ROLES;

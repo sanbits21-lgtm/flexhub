@@ -13,4 +13,7 @@ const attendanceSchema = new mongoose.Schema({
 attendanceSchema.index({ tenantId: 1, branchId: 1, checkInAt: -1 });
 attendanceSchema.index({ memberId: 1, checkInAt: -1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+attendanceSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', memberId: 'Member' });
+
 module.exports = mongoose.model('Attendance', attendanceSchema);

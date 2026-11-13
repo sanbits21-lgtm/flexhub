@@ -17,4 +17,7 @@ const ratingSchema = new mongoose.Schema({
 ratingSchema.index({ memberId: 1, targetType: 1, trainerId: 1 }, { unique: true });
 ratingSchema.index({ tenantId: 1, branchId: 1, targetType: 1 });
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+ratingSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', memberId: 'Member', trainerId: 'User' });
+
 module.exports = mongoose.model('Rating', ratingSchema);

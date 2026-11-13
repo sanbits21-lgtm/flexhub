@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, requireActor } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 const { login, getMe, changePassword } = require('../controllers/authController');
 const { refreshHandler, logoutHandler, logoutAllHandler } = require('../utils/sessions');
@@ -14,7 +14,7 @@ router.post('/reset-password', validate(schemas.resetPassword), resetStaff);
 router.post('/refresh', refreshHandler('user'));
 router.post('/logout', logoutHandler('user'));
 router.post('/logout-all', protect, logoutAllHandler('user'));
-router.get('/me', protect, getMe);
-router.post('/change-password', protect, changePassword);
+router.get('/me', protect, requireActor('user'), getMe);
+router.post('/change-password', protect, requireActor('user'), changePassword);
 
 module.exports = router;

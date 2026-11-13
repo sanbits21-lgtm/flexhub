@@ -124,9 +124,15 @@ exports.getPhoto = async (req, res) => {
 
   if (req.actorType === 'member') {
     if (String(member._id) !== String(req.member._id)) return res.status(403).json({ message: 'Forbidden' });
-  } else if (!['super-admin', 'platform-admin'].includes(req.user.role)
-    && String(member.tenantId) !== String(req.user.tenantId)) {
-    return res.status(403).json({ message: 'Forbidden' });
+  } else if (!['super-admin', 'platform-admin'].includes(req.user.role)) {
+    // Same reach as the Members list: this gym; a branch manager or trainer only their own branch; a trainer
+    // only the members assigned to them.
+    const staff = req.user;
+    const full = await Member.findById(member._id).select('branchId assignedTrainerId').lean();
+    const sameGym = String(member.tenantId) === String(staff.tenantId);
+    const sameBranch = staff.role === 'tenant-admin' || String(full.branchId) === String(staff.branchId);
+    const assigned = staff.role !== 'trainer' || String(full.assignedTrainerId) === String(staff._id);
+    if (!sameGym || !sameBranch || !assigned) return res.status(403).json({ message: 'Forbidden' });
   }
   return sendPhoto(res, FOLDER, member.photoUrl);
 };

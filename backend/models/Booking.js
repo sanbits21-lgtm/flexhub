@@ -26,4 +26,7 @@ bookingSchema.index(
   { unique: true, partialFilterExpression: { status: { $ne: 'cancelled' } } }
 );
 
+// Gym isolation: this record may only point at records of its own gym (see utils/tenantRefs.js).
+bookingSchema.plugin(require('../utils/tenantRefs'), { branchId: 'Branch', classSessionId: 'ClassSession', memberId: 'Member' });
+
 module.exports = mongoose.model('Booking', bookingSchema);

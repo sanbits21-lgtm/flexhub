@@ -146,4 +146,8 @@ const enforceWriteScope = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireRole, allowActors, scopeContext, enforceWriteScope };
+// A route written for staff (or for members) says so. Without this, a member's token on a staff route (or the reverse)
+// reached code that assumed the other kind of person and crashed instead of being refused.
+const requireActor = (type) => (req, res, next) => (req.actorType === type ? next() : res.status(403).json({ message: 'Forbidden' }));
+
+module.exports = { protect, requireRole, requireActor, allowActors, scopeContext, enforceWriteScope };

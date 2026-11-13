@@ -4,6 +4,7 @@ const ClassSession = require('../models/ClassSession');
 const Member = require('../models/Member');
 const User = require('../models/User');
 const { logAudit } = require('../utils/audit');
+const q = require('../utils/query');
 
 const MAX_MINUTES = 4 * 60;
 
@@ -69,14 +70,18 @@ const populate = (q) => q.populate('memberId', 'name memberCode phone').populate
 
 exports.list = async (req, res) => {
   const filter = scoped(req);
-  const { from, to, status, memberId, trainerId } = req.query;
+  const trainerId = q.oid(req.query.trainerId, 'trainerId');
+  const memberId = q.oid(req.query.memberId, 'memberId');
+  const status = q.oneOf(req.query.status, ['scheduled', 'completed', 'no-show', 'cancelled'], 'status');
+  const from = q.date(req.query.from, 'from');
+  const to = q.date(req.query.to, 'to');
   if (!filter.trainerId && trainerId) filter.trainerId = trainerId;
   if (memberId) filter.memberId = memberId;
   if (status) filter.status = status;
   if (from || to) {
     filter.startAt = {};
-    if (from) filter.startAt.$gte = new Date(from);
-    if (to) filter.startAt.$lte = new Date(to);
+    if (from) filter.startAt.$gte = from;
+    if (to) filter.startAt.$lte = to;
   }
   res.json(await populate(PtSession.find(filter).sort({ startAt: 1 }).limit(300)));
 };
