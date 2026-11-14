@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import Logo from '../Logo';
-import BrandMark from '../BrandMark';
+import BrandLogo from '../BrandLogo';
 import ThemeToggle from '../ThemeToggle';
 import { useBrand } from '../../context/BrandContext';
 
@@ -34,20 +33,8 @@ export default function AuthShell({ children, wide = false }) {
       <div className="relative flex min-h-screen items-center justify-center p-4 py-10">
         <div className={`w-full ${wide ? 'max-w-2xl' : 'max-w-[28rem]'} rounded-3xl border border-gray-200 bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-gray-800/70 sm:p-8`}>
           <header className="mb-6 border-b border-gray-200 pb-5 dark:border-white/10">
-            {brand?.logoUrl ? (
-              <div className="flex items-center gap-3">
-                <BrandMark brand={brand} size={56} />
-                <div className="min-w-0">
-                  <h1 className="truncate text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{brand.name}</h1>
-                  {brand.tagline && <p className="truncate text-sm text-gray-500 dark:text-gray-300">{brand.tagline}</p>}
-                </div>
-              </div>
-            ) : (
-              <>
-                <Logo size={60} tagline />
-                {brand && <p className="mt-3 truncate text-sm text-gray-500 dark:text-gray-300">Sign in to <span className="font-semibold text-gray-800 dark:text-gray-100">{brand.name}</span></p>}
-              </>
-            )}
+            <BrandLogo size={brand?.customBrand ? 56 : 60} tagline />
+            {brand && !brand.customBrand && <p className="mt-3 truncate text-sm text-gray-500 dark:text-gray-300">Sign in to <span className="font-semibold text-gray-800 dark:text-gray-100">{brand.name}</span></p>}
           </header>
           {children}
         </div>

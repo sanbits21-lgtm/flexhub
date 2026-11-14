@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { tenantSettingsAPI } from '../../services/api';
 import { useBrand } from '../../context/BrandContext';
-import BrandMark from '../../components/BrandMark';
+import BrandLogo from '../../components/BrandLogo';
+import { logoPngBase64 } from '../../utils/photo';
 import { accentGradientCss, inkFor, DEFAULT_ACCENT } from '../../utils/brand';
 
 const inputClass = 'border rounded-xl px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 w-full';
@@ -16,13 +17,14 @@ const DIRECTIONS = [
 export default function Branding() {
   const { setBrand } = useBrand();
   const [info, setInfo] = useState(null);
-  const [form, setForm] = useState({ color: '', color2: '', gradientAngle: 135, logoUrl: '', tagline: '', slug: '' });
+  const [form, setForm] = useState({ color: '', color2: '', gradientAngle: 135, logoUrl: '', displayName: '', tagline: '', slug: '' });
+  const [logoBusy, setLogoBusy] = useState(false);
   const [message, setMessage] = useState(null); // { ok, text }
   const [busy, setBusy] = useState(false);
 
   const load = (data) => {
     setInfo(data);
-    setForm({ color: data.brand.color, color2: data.brand.color2 || '', gradientAngle: data.brand.gradientAngle || 135, logoUrl: data.brand.logoUrl, tagline: data.brand.tagline, slug: data.slug });
+    setForm({ color: data.brand.color, color2: data.brand.color2 || '', gradientAngle: data.brand.gradientAngle || 135, logoUrl: data.brand.logoUrl, displayName: data.brand.displayName || '', tagline: data.brand.tagline, slug: data.slug });
   };
   useEffect(() => { tenantSettingsAPI.getBranding().then((r) => load(r.data)); }, []);
 
@@ -31,11 +33,11 @@ export default function Branding() {
     setBusy(true);
     setMessage(null);
     try {
-      const payload = { color: form.color, color2: form.color2, gradientAngle: form.gradientAngle, logoUrl: form.logoUrl, tagline: form.tagline };
+      const payload = { color: form.color, color2: form.color2, gradientAngle: form.gradientAngle, logoUrl: form.logoUrl, displayName: form.displayName, tagline: form.tagline };
       if (info.canChangeAddress && form.slug !== info.slug) payload.slug = form.slug;
       const { data } = await tenantSettingsAPI.updateBranding(payload);
       load(data);
-      setBrand({ name: data.name, slug: data.slug, ...data.brand });
+      setBrand(data.public);
       const moved = payload.slug ? ` Your new address is ${data.slug}.${data.baseDomain || ''}. The old one keeps working for ${data.redirectDays} days.` : '';
       setMessage({ ok: true, text: `Saved.${moved}` });
     } catch (err) {
@@ -45,17 +47,71 @@ export default function Branding() {
     }
   };
 
+  const chooseLogo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLogoBusy(true);
+    setMessage(null);
+    try {
+      const { data } = await tenantSettingsAPI.uploadLogo(await logoPngBase64(file));
+      load(data);
+      setBrand(data.public);
+      setMessage({ ok: true, text: 'Logo updated.' });
+    } catch (err) {
+      setMessage({ ok: false, text: err.response?.data?.message || err.message || 'Could not upload the logo.' });
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+  const removeLogo = async () => {
+    setLogoBusy(true);
+    setMessage(null);
+    try {
+      const { data } = await tenantSettingsAPI.removeLogo();
+      load(data);
+      setBrand(data.public);
+      setMessage({ ok: true, text: 'Logo removed.' });
+    } catch (err) {
+      setMessage({ ok: false, text: err.response?.data?.message || 'Could not remove the logo.' });
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+
   if (!info) return <div className="p-6 text-gray-500 dark:text-gray-400">Loading...</div>;
-  const preview = { name: info.name, ...form };
+  const uploaded = info.brand.hasLogoFile;
+  // What the menu and login page will show if saved now: the uploaded logo (as served) wins over a pasted link.
+  const logoShown = uploaded ? info.public.logoUrl : form.logoUrl;
+  const previewBrand = { name: form.displayName.trim() || info.name, tagline: form.tagline, logoUrl: logoShown, customBrand: !!(form.displayName.trim() || logoShown) };
   const previewFill = accentGradientCss(form.color || DEFAULT_ACCENT, form.color2, form.gradientAngle);
   const origin = info.baseDomain ? `https://${form.slug || 'your-gym'}.${info.baseDomain}` : null;
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Branding &amp; Address</h1>
-      <p className="text-sm text-gray-600 dark:text-gray-300">Make the website your own: your logo, colour and tagline appear on your login page and in the menu.</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300">Make the website your own: your name, logo, colour and tagline appear on your login page and in the menu. Leave them empty to keep the FitzyClub look.</p>
 
       <form onSubmit={save} className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 p-4 rounded-2xl shadow space-y-4">
+        <div className="rounded-xl bg-gray-900 p-4" aria-label="Preview of your menu and login header">
+          <BrandLogo brand={previewBrand} size={44} tagline onDark />
+        </div>
+        <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{previewBrand.customBrand ? 'This is how your menu and login page will look.' : 'You have not set your own name or logo, so the FitzyClub logo is shown.'}</p>
+        <div>
+          <label htmlFor="b-name" className={labelClass}>Name shown <span className="text-gray-500">(max 40, leave empty to use "{info.name}")</span></label>
+          <input id="b-name" maxLength={40} placeholder={info.name} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} className={inputClass} />
+        </div>
+        <div>
+          <span className={labelClass}>Logo</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className={`cursor-pointer rounded-xl border px-4 py-2 text-sm font-semibold dark:border-gray-600 dark:text-gray-100 ${logoBusy ? 'opacity-50' : ''}`}>
+              {logoBusy ? 'Working...' : uploaded ? 'Replace logo' : 'Upload logo'}
+              <input type="file" accept="image/png,image/jpeg,image/webp" disabled={logoBusy} onChange={chooseLogo} className="sr-only" />
+            </label>
+            {uploaded && <button type="button" onClick={removeLogo} disabled={logoBusy} className="text-sm text-gray-600 dark:text-gray-300 underline">Remove logo</button>}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPEG or WebP, at least 64 x 64 pixels. A transparent PNG looks best on the dark menu. Uploading saves straight away.</p>
+        </div>
         <div>
           <label htmlFor="b-color" className={labelClass}>Accent colour</label>
           <div className="flex items-center gap-3">
@@ -87,7 +143,7 @@ export default function Branding() {
           )}
         </div>
         <div>
-          <label htmlFor="b-logo" className={labelClass}>Logo link (https)</label>
+          <label htmlFor="b-logo" className={labelClass}>Or a logo link (https) <span className="text-gray-500">{uploaded ? '(an uploaded logo is used instead)' : ''}</span></label>
           <input id="b-logo" placeholder="https://yourgym.com/logo.png" value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} className={inputClass} />
         </div>
         <div>
@@ -110,14 +166,7 @@ export default function Branding() {
           {info.previousAddresses.length > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Still redirecting: {info.previousAddresses.map((p) => `${p.slug}.${info.baseDomain} (until ${new Date(p.until).toLocaleDateString()})`).join(', ')}</p>}
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3">
-          <BrandMark brand={preview} size={40} />
-          <div className="min-w-0">
-            <div className="font-extrabold text-gray-900 dark:text-gray-100 truncate">{info.name}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300 truncate">{form.tagline || 'Your tagline here'}</div>
-            {origin && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{origin}</div>}
-          </div>
-        </div>
+        {origin && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Your address: {origin}</p>}
 
         <div className="flex items-center gap-3">
           <span className="rounded-xl px-4 py-2 font-semibold text-sm" style={{ backgroundImage: previewFill, color: `rgb(${inkFor(form.color || DEFAULT_ACCENT, form.color2)})` }}>Button preview</span>

@@ -13,6 +13,10 @@ const tenantSchema = new mongoose.Schema({
     color2: { type: String, default: '' },
     gradientAngle: { type: Number, enum: [90, 135, 180], default: 135 },
     logoUrl: { type: String, default: '' },
+    // Name shown in place of the registered gym name (menu, login page, browser tab). Empty = the registered name.
+    displayName: { type: String, trim: true, maxlength: 40, default: '' },
+    // File name of an uploaded logo (see utils/photos.js, folder tenant-logos). Never sent to clients: they get a served URL.
+    logoFile: { type: String, default: '' },
     tagline: { type: String, trim: true, maxlength: 80, default: '' },
   },
   // The gym's own extra member fields (see utils/memberFields.js). Values live on each member.

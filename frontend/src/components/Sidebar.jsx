@@ -4,9 +4,8 @@ import {
   QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Logo from './Logo';
+import BrandLogo from './BrandLogo';
 import InstallButton from './InstallButton';
-import BrandMark from './BrandMark';
 import UserMenu from './UserMenu';
 import { useBrand } from '../context/BrandContext';
 import { useFeature } from '../hooks/useFeature';
@@ -74,15 +73,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           md:sticky md:top-0 md:h-screen md:w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between px-5 pb-4 pt-5">
-          {brand?.logoUrl ? (
-            <span className="flex min-w-0 items-center gap-3"><BrandMark brand={brand} size={40} /><span className="truncate text-lg font-extrabold tracking-tight">{brand.name}</span></span>
-          ) : (
-            <Logo size={40} tagline onDark />
-          )}
+          <BrandLogo size={40} tagline onDark />
           <button onClick={onClose} aria-label="Close menu" className="rounded-lg p-1 text-gray-400 hover:text-gray-100 md:hidden"><X className="h-5 w-5" /></button>
         </div>
 
-        <nav aria-label="Main" className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 py-2">
+        <nav aria-label="Main" className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
           <NavLink to="/" end onClick={onClose} className={linkClass}><LayoutDashboard className="h-5 w-5 shrink-0" aria-hidden="true" />Dashboard</NavLink>
           {links.map((link) => (
             <NavLink key={link.to} to={link.to} onClick={onClose} className={linkClass}>

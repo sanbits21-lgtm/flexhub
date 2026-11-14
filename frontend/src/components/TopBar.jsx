@@ -4,9 +4,7 @@ import { AlertTriangle, Bell, CalendarClock, Menu, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { dashboardAPI } from '../services/api';
 import UserMenu from './UserMenu';
-import Logo from './Logo';
-import BrandMark from './BrandMark';
-import { useBrand } from '../context/BrandContext';
+import BrandLogo from './BrandLogo';
 
 const STAFF_WITH_MEMBERS = ['tenant-admin', 'branch-manager'];
 
@@ -72,7 +70,6 @@ function Bell_({ items }) {
 // the account menu. Search takes you to the members list for what you typed (Ctrl+K from anywhere).
 export default function TopBar({ onMenu }) {
   const { user } = useAuth();
-  const { brand } = useBrand();
   const navigate = useNavigate();
   const input = useRef(null);
   const [query, setQuery] = useState('');
@@ -99,7 +96,7 @@ export default function TopBar({ onMenu }) {
     <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-gray-50/85 px-4 py-3 pt-safe backdrop-blur dark:border-white/5 dark:bg-gray-900/85 md:px-6">
       <button type="button" onClick={onMenu} aria-label="Open menu" className="-ml-1 rounded-xl p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-white/10 md:hidden"><Menu className="h-6 w-6" /></button>
       <span className="min-w-0 md:hidden">
-        {brand?.logoUrl ? <span className="flex items-center gap-2 font-bold"><BrandMark brand={brand} size={26} /><span className="truncate">{brand.name}</span></span> : <Logo size={30} />}
+        <BrandLogo size={30} />
       </span>
 
       {canSearch ? (

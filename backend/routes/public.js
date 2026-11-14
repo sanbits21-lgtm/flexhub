@@ -3,6 +3,7 @@ const router = express.Router();
 const { publicBrand } = require('../utils/subdomain');
 const { validate, schemas } = require('../middleware/validate');
 const signup = require('../controllers/signupController');
+const { publicLogo } = require('../controllers/tenantSettingsController');
 
 // No authentication: the login page needs the gym's name and look before anyone signs in.
 // Only fields meant for display are returned.
@@ -11,6 +12,8 @@ router.get('/tenant', (req, res) => {
   if (req.unknownHost || req.hostTenant) return res.status(404).json({ message: 'No gym at this address.' });
   res.json(null); // the main/platform address: nothing gym-specific to show
 });
+
+router.get('/logo/:slug', publicLogo);
 
 router.get('/signup-config', signup.config);
 router.post('/signup', validate(schemas.signup), signup.signup);

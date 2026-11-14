@@ -105,12 +105,17 @@ const brandColors = (tenant) => ({
   gradientAngle: tenant.brand?.gradientAngle || 135,
 });
 
+// The logo to show: an uploaded one (served by /api/public/logo, the file name doubles as a cache-buster) wins over a pasted link.
+const logoOf = (tenant) => (tenant.brand?.logoFile ? `/api/public/logo/${tenant.slug}?v=${tenant.brand.logoFile.slice(-12, -4)}` : tenant.brand?.logoUrl || '');
+
 const publicBrand = (tenant) => ({
-  name: tenant.name,
+  name: tenant.brand?.displayName || tenant.name,
   slug: tenant.slug,
   ...brandColors(tenant),
-  logoUrl: tenant.brand?.logoUrl || '',
+  logoUrl: logoOf(tenant),
   tagline: tenant.brand?.tagline || '',
+  // False means "show the FitzyClub identity as it is": no own name and no own logo.
+  customBrand: !!(tenant.brand?.displayName || tenant.brand?.logoFile || tenant.brand?.logoUrl),
 });
 
-module.exports = { cleanSlug, changeSlug, isSlugFree, labelFromHost, baseDomain, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, publicBrand, REDIRECT_DAYS, RESERVED };
+module.exports = { logoOf, cleanSlug, changeSlug, isSlugFree, labelFromHost, baseDomain, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, publicBrand, REDIRECT_DAYS, RESERVED };

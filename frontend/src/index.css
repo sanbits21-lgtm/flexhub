@@ -26,9 +26,9 @@
   filter: brightness(1.1);
 }
 
-/* The sidebar menu still scrolls (wheel, touch, keyboard) but never draws a scrollbar. */
-.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* No scrollbars anywhere in the app. Everything still scrolls (wheel, touch, trackpad, keyboard); the bars just are not drawn. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* Installed as a PWA there is no browser chrome, so the app draws under the status bar
    and the home indicator. These pay back the viewport-fit=cover in index.html. On

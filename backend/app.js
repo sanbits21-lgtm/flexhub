@@ -59,7 +59,7 @@ app.use(cors({
 // member import (hundreds of rows) and a profile photo (base64, up to 1 MB) need more.
 const bigBody = express.json({ limit: '5mb' });
 const smallBody = express.json({ limit: '100kb' });
-app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo|profile\/photo)/.test(req.path) ? bigBody : smallBody)(req, res, next));
+app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo|profile\/photo|tenant-settings\/branding\/logo)/.test(req.path) ? bigBody : smallBody)(req, res, next));
 
 // Which gym is this address? (iron.example.com). Before static files so a renamed gym's old
 // address can redirect to the new one.

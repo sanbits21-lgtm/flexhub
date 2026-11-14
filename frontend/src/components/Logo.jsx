@@ -28,19 +28,21 @@ export function LogoMark({ size = 40, className = '' }) {
   );
 }
 
-// Mark and wordmark: "Fitzy" in the page's ink, "Club" in the accent. `tagline` adds the line under it.
-export default function Logo({ size = 40, tagline = false, onDark = false, className = '' }) {
+// Mark and wordmark: "Fitzy" in the page's ink, "Club" in FitzyClub's own lime (never the gym's accent: this is the
+// platform's identity, shown exactly as designed whenever a gym has not set its own). `tagline` adds the line under it;
+// `taglineText` swaps in the gym's own line.
+export default function Logo({ size = 40, tagline = false, taglineText = '', onDark = false, className = '' }) {
   return (
     <span className={`inline-flex items-center gap-3 ${className}`}>
       <LogoMark size={size} />
       <span className="flex min-w-0 flex-col leading-none">
         <span className="font-extrabold italic tracking-tight" style={{ fontSize: size * 0.62 }}>
           <span className={onDark ? 'text-white' : 'text-gray-900 dark:text-white'}>Fitzy</span>
-          <span className={onDark ? 'text-accent' : 'text-green-700 dark:text-accent'}>Club</span>
+          <span className={onDark ? 'text-[#C8F83A]' : 'text-green-700 dark:text-[#C8F83A]'}>Club</span>
         </span>
         {tagline && (
           <span className={`mt-1 truncate italic ${onDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`} style={{ fontSize: Math.max(10, size * 0.27) }}>
-            One Platform. Every Sport.
+            {taglineText || 'One Platform. Every Sport.'}
           </span>
         )}
       </span>

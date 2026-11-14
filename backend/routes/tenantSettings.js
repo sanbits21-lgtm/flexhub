@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, requireRole, scopeContext } = require('../middleware/auth');
 const { attachFeatures, requireFeature } = require('../middleware/features');
 const { validate, schemas } = require('../middleware/validate');
-const { getMine, getMemberAppLink, getPaymentAccounts, updateBranchAccount, updateMine, getBranding, updateBranding, getMemberFields, createMemberField } = require('../controllers/tenantSettingsController');
+const { getMine, getMemberAppLink, getPaymentAccounts, updateBranchAccount, updateMine, getBranding, updateBranding, uploadLogo, removeLogo, getMemberFields, createMemberField } = require('../controllers/tenantSettingsController');
 
 router.use(protect, scopeContext, attachFeatures, requireRole('tenant-admin', 'branch-manager'));
 // GET is intentionally NOT gated by pages.paymentSettings: it's also how the Add
@@ -24,6 +24,8 @@ router.post('/member-fields', requireRole('tenant-admin'), createMemberField);
 // Branding / address: tenant-admin only, branding behind its own feature flag.
 router.get('/branding', requireRole('tenant-admin'), requireFeature('features:branding'), getBranding);
 router.put('/branding', requireRole('tenant-admin'), requireFeature('features:branding'), updateBranding);
+router.put('/branding/logo', requireRole('tenant-admin'), requireFeature('features:branding'), uploadLogo);
+router.delete('/branding/logo', requireRole('tenant-admin'), requireFeature('features:branding'), removeLogo);
 
 module.exports = router;
 

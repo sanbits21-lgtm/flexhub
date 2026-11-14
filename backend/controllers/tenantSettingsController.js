@@ -4,7 +4,12 @@ const { logAudit } = require('../utils/audit');
 const { gymMemberAppUrl } = require('../utils/links');
 const { resolveFeatures } = require('../utils/features');
 const { MAX_FIELDS, cleanLabel, cleanType, uniqueKey } = require('../utils/memberFields');
-const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, baseDomain, REDIRECT_DAYS } = require('../utils/subdomain');
+const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, publicBrand, baseDomain, REDIRECT_DAYS } = require('../utils/subdomain');
+const { MAX_PHOTO_BYTES, sniffImage, imageSize, storePhoto, removePhotoFile, sendPhoto } = require('../utils/photos');
+
+const LOGO_FOLDER = 'tenant-logos';
+// A logo can be small (it is shown at menu size), but not so small it turns to mush.
+const MIN_LOGO_PIXELS = 64;
 
 // Read-only for branch-manager too (they need it to show the UPI QR when collecting a
 // member's payment); only tenant-admin may change it — deliberately scoped to just these
@@ -107,7 +112,15 @@ const brandingView = (tenant) => ({
   name: tenant.name,
   slug: tenant.slug,
   baseDomain: baseDomain(),
-  brand: { ...brandColors(tenant), logoUrl: tenant.brand?.logoUrl || '', tagline: tenant.brand?.tagline || '' },
+  brand: {
+    ...brandColors(tenant),
+    logoUrl: tenant.brand?.logoUrl || '',
+    hasLogoFile: !!tenant.brand?.logoFile,
+    displayName: tenant.brand?.displayName || '',
+    tagline: tenant.brand?.tagline || '',
+  },
+  // What the rest of the site (menu, login page) will show after this save.
+  public: publicBrand(tenant),
   canChangeAddress: !!resolveFeatures(tenant)['features:customSubdomain'],
   redirectDays: REDIRECT_DAYS,
   previousAddresses: (tenant.previousSlugs || []).filter((p) => p.until > new Date()),
@@ -119,15 +132,58 @@ exports.getBranding = async (req, res) => {
   res.json(brandingView(tenant));
 };
 
+// The gym's logo as an uploaded picture. The type comes from the bytes, never from what the browser claims.
+exports.uploadLogo = async (req, res) => {
+  const raw = typeof req.body?.image === 'string' ? req.body.image.replace(/^data:[^;]+;base64,/, '') : '';
+  if (!raw || !/^[A-Za-z0-9+/=\s]+$/.test(raw)) return res.status(400).json({ message: 'Send the logo as base64 in "image".' });
+  const buf = Buffer.from(raw, 'base64');
+  if (buf.length > MAX_PHOTO_BYTES) return res.status(413).json({ message: 'Logo is too large. Maximum is 1 MB.' });
+  const type = sniffImage(buf);
+  if (!type) return res.status(400).json({ message: 'Logo must be a PNG, JPEG or WebP image.' });
+  const size = imageSize(buf, type);
+  if (!size || !size.width || !size.height) return res.status(400).json({ message: 'Could not read the size of that picture. Try a different one.' });
+  if (Math.min(size.width, size.height) < MIN_LOGO_PIXELS) return res.status(400).json({ message: `Logo is too small (${size.width}x${size.height}). Use at least ${MIN_LOGO_PIXELS}x${MIN_LOGO_PIXELS} pixels.` });
+  const tenant = await Tenant.findById(req.scope.tenantId);
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  const previous = tenant.brand.logoFile;
+  tenant.brand.logoFile = await storePhoto(LOGO_FOLDER, tenant._id, buf, type);
+  await tenant.save();
+  await removePhotoFile(LOGO_FOLDER, previous);
+  logAudit(req, 'UPDATE_TENANT_LOGO', { type: 'Tenant', id: tenant._id });
+  res.json(brandingView(tenant));
+};
+
+exports.removeLogo = async (req, res) => {
+  const tenant = await Tenant.findById(req.scope.tenantId);
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  const previous = tenant.brand.logoFile;
+  tenant.brand.logoFile = '';
+  await tenant.save();
+  await removePhotoFile(LOGO_FOLDER, previous);
+  logAudit(req, 'REMOVE_TENANT_LOGO', { type: 'Tenant', id: tenant._id });
+  res.json(brandingView(tenant));
+};
+
+// Public (the login page shows it before anyone signs in): a gym's logo by its address name.
+exports.publicLogo = async (req, res) => {
+  const tenant = await Tenant.findOne({ slug: String(req.params.slug || '').toLowerCase(), isActive: true }).select('brand.logoFile');
+  if (!tenant?.brand?.logoFile) return res.status(404).json({ message: 'No logo' });
+  return sendPhoto(res, LOGO_FOLDER, tenant.brand.logoFile);
+};
+
 exports.updateBranding = async (req, res) => {
   const tenant = await Tenant.findById(req.scope.tenantId);
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
-  const { color, color2, gradientAngle, logoUrl, tagline, slug } = req.body || {};
+  const { color, color2, gradientAngle, logoUrl, displayName, tagline, slug } = req.body || {};
 
   if (color !== undefined) tenant.brand.color = cleanBrandColor(color);
   if (color2 !== undefined) tenant.brand.color2 = cleanBrandColor(color2);
   if (gradientAngle !== undefined) tenant.brand.gradientAngle = cleanGradientAngle(gradientAngle);
   if (logoUrl !== undefined) tenant.brand.logoUrl = cleanLogoUrl(logoUrl);
+  if (displayName !== undefined) {
+    if (typeof displayName !== 'string' || displayName.trim().length > 40) return res.status(400).json({ message: 'The name must be 40 characters or fewer.' });
+    tenant.brand.displayName = displayName.trim();
+  }
   if (tagline !== undefined) {
     if (typeof tagline !== 'string' || tagline.length > 80) return res.status(400).json({ message: 'Tagline must be 80 characters or fewer.' });
     tenant.brand.tagline = tagline.trim();
