@@ -82,7 +82,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           <button onClick={onClose} aria-label="Close menu" className="rounded-lg p-1 text-gray-400 hover:text-gray-100 md:hidden"><X className="h-5 w-5" /></button>
         </div>
 
-        <nav aria-label="Main" className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+        <nav aria-label="Main" className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 py-2">
           <NavLink to="/" end onClick={onClose} className={linkClass}><LayoutDashboard className="h-5 w-5 shrink-0" aria-hidden="true" />Dashboard</NavLink>
           {links.map((link) => (
             <NavLink key={link.to} to={link.to} onClick={onClose} className={linkClass}>

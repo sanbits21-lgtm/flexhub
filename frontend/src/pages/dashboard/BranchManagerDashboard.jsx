@@ -4,7 +4,7 @@ import { attendanceAPI, equipmentAPI, paymentsAPI } from '../../services/api';
 import StatCard from '../../components/StatCard';
 import Widget from '../../components/Widget';
 import DataTable from '../../components/DataTable';
-import { QuickActions } from '../../components/DashboardCards';
+import { QuickActions, SportsActivities, UpcomingBookings } from '../../components/DashboardCards';
 import { DashboardFrame, useExpiryTiles, paymentColumns, checkinColumns, formatDate, orEmpty } from './shared';
 
 export default function BranchManagerDashboard({ data, reload }) {
@@ -33,6 +33,8 @@ export default function BranchManagerDashboard({ data, reload }) {
   });
 
   const tiles = [
+    { id: 'bookings', title: 'Upcoming bookings', span: 'lg:col-span-6', node: <UpcomingBookings sessions={data.upcomingSessions || []} /> },
+    { id: 'activities', title: 'Sports activities', span: 'lg:col-span-6', node: <SportsActivities activities={data.activities || []} /> },
     { id: 'payments', title: 'Recent payments', span: 'lg:col-span-8', node: (
       <Widget title="Recent payments" icon={CreditCard}>
         <DataTable tableId="dash.bm.payments" embedded rows={payments} columns={paymentColumns} />
@@ -71,7 +73,7 @@ export default function BranchManagerDashboard({ data, reload }) {
 
   return (
     <>
-      <DashboardFrame title="Overview" layoutId="branch-manager-v2" kpis={kpis} tiles={tiles} cta={{ to: '/members', label: 'View Members' }} />
+      <DashboardFrame title="Overview" layoutId="branch-manager-v3" kpis={kpis} tiles={tiles} cta={{ to: '/members', label: 'View Members' }} />
       {modal}
     </>
   );

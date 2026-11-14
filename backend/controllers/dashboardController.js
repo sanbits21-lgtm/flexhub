@@ -8,6 +8,9 @@ const MemberPayment = require('../models/MemberPayment');
 const { statusFilter } = require('../utils/membershipStatus');
 const Equipment = require('../models/Equipment');
 const TenantSubscriptionInvoice = require('../models/TenantSubscriptionInvoice');
+const Booking = require('../models/Booking');
+const ClassSession = require('../models/ClassSession');
+const ClassType = require('../models/ClassType');
 
 const startOfMonth = () => {
   const d = new Date();
@@ -42,6 +45,50 @@ const platformSummary = async () => {
     activeTenants,
     tenantsByPlan,
     mrr: mrrAgg[0]?.mrr || 0,
+  };
+};
+
+// The class side of the dashboard: bookings made this month (and the last six months, for the card's sparkline),
+// the next few scheduled sessions with how full they are, and the activities the gym offers. `match` carries the
+// tenant, and the branch when one is selected. All of it is empty for a gym that does not run classes.
+const classInsights = async (match, months) => {
+  const now = new Date();
+  const windowStart = new Date(months[0].key + '-01');
+  const live = { $in: ['booked', 'attended'] };
+  const typeMatch = { tenantId: match.tenantId, isActive: true };
+  if (match.branchId) typeMatch.$or = [{ branchId: null }, { branchId: match.branchId }];
+
+  const [bookingsAgg, upcoming, types] = await Promise.all([
+    Booking.aggregate([
+      { $match: { ...match, status: live, bookedAt: { $gte: windowStart } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$bookedAt' } }, count: { $sum: 1 } } },
+    ]),
+    ClassSession.find({ ...match, status: 'scheduled', startAt: { $gte: now } })
+      .sort({ startAt: 1 }).limit(4).populate('classTypeId', 'name').populate('branchId', 'name').lean(),
+    ClassType.find(typeMatch).select('name').sort({ name: 1 }).limit(6).lean(),
+  ]);
+
+  const counts = upcoming.length
+    ? await Booking.aggregate([
+      { $match: { tenantId: match.tenantId, classSessionId: { $in: upcoming.map((u) => u._id) }, status: live } },
+      { $group: { _id: '$classSessionId', count: { $sum: 1 } } },
+    ])
+    : [];
+
+  const bookingsByMonth = months.map((m) => ({ month: m.label, count: bookingsAgg.find((x) => x._id === m.key)?.count || 0 }));
+  return {
+    bookingsThisMonth: bookingsByMonth[bookingsByMonth.length - 1].count,
+    bookingsByMonth,
+    upcomingSessions: upcoming.map((u) => ({
+      id: u._id,
+      name: u.classTypeId?.name || 'Class',
+      branchName: u.branchId?.name || '',
+      startAt: u.startAt,
+      endAt: u.endAt,
+      capacity: u.capacity,
+      booked: counts.find((c) => c._id.equals(u._id))?.count || 0,
+    })),
+    activities: types.map((c) => ({ id: c._id, name: c.name })),
   };
 };
 
@@ -116,6 +163,7 @@ const tenantSummary = async (scope) => {
     Member.find({ ...lapseTrackMatch, membershipEnd: { $gte: now, $lte: soonWindow } }).select(memberListFields).sort({ membershipEnd: 1 }).limit(20),
   ]);
 
+  const insights = await classInsights(match, months);
   const membersByMonth = months.map((m) => ({
     month: m.label,
     count: membersByMonthAgg.find((x) => x._id === m.key)?.count || 0,
@@ -140,6 +188,7 @@ const tenantSummary = async (scope) => {
   });
 
   return {
+    ...insights,
     activeMembers,
     revenueThisMonth: revenueAgg[0]?.revenue || 0,
     attendanceTrend,
@@ -182,7 +231,9 @@ const branchSummary = async (scope) => {
     Member.find({ ...lapseTrackMatch, membershipEnd: { $gte: now, $lte: soonWindow } }).select(memberListFields).sort({ membershipEnd: 1 }).limit(20),
   ]);
 
+  const insights = await classInsights(match, lastNMonths(6));
   return {
+    ...insights,
     activeMembers,
     todaysCheckins,
     expiringSoon,

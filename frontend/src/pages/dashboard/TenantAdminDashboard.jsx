@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, Building2, CreditCard, Dumbbell, IndianRupee, QrCode, TrendingUp, UserPlus, Users, Activity } from 'lucide-react';
+import { BarChart3, Building2, CalendarCheck, CreditCard, Dumbbell, IndianRupee, QrCode, TrendingUp, UserPlus, Users, Activity } from 'lucide-react';
 import { dashboardAPI, paymentsAPI } from '../../services/api';
 import StatCard from '../../components/StatCard';
 import Widget from '../../components/Widget';
 import DataTable from '../../components/DataTable';
 import BarChartCard from '../../components/BarChartCard';
-import { MembershipDonut, QuickActions, RevenueCard } from '../../components/DashboardCards';
+import { MembershipDonut, QuickActions, RevenueCard, SportsActivities, UpcomingBookings, UpgradeCard } from '../../components/DashboardCards';
+import { useAuth } from '../../context/AuthContext';
 import { DashboardFrame, useExpiryTiles, paymentColumns } from './shared';
 
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL;
+
 export default function TenantAdminDashboard({ data, reload }) {
+  const { subscription } = useAuth();
+  const trialing = !!subscription?.onTrial && !subscription.trialExpired;
   const [branchId, setBranchId] = useState('');
   const [branchSummary, setBranchSummary] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -48,7 +53,7 @@ export default function TenantAdminDashboard({ data, reload }) {
   const kpi = (id, title, node) => ({ id, title, node });
   const kpis = [
     kpi('total', 'Total members', <StatCard icon={Users} tone="lime" label="Total members" value={totalMembers.toLocaleString('en-IN')} series={joins} />),
-    kpi('new', 'New members this month', <StatCard icon={UserPlus} tone="blue" label="New members this month" value={(joins[joins.length - 1] ?? 0).toLocaleString('en-IN')} series={joins} />),
+    kpi('bookings', 'Bookings this month', <StatCard icon={CalendarCheck} tone="blue" label="Bookings this month" value={(view.bookingsThisMonth ?? 0).toLocaleString('en-IN')} series={(view.bookingsByMonth || []).map((d) => d.count)} />),
     kpi('revenue', 'Revenue this month', <StatCard icon={IndianRupee} tone="violet" label="Revenue this month" value={`₹${Number(view.revenueThisMonth || 0).toLocaleString('en-IN')}`} series={collected} />),
     branchRow
       ? kpi('equipment', 'Equipment', <StatCard icon={Dumbbell} tone="amber" label="Equipment" value={branchRow.equipmentCount} hint={`${branchRow.trainerCount} trainer${branchRow.trainerCount === 1 ? '' : 's'}`} />)
@@ -63,9 +68,12 @@ export default function TenantAdminDashboard({ data, reload }) {
   });
 
   const tiles = [
-    { id: 'collections-chart', title: 'Revenue overview', span: 'lg:col-span-6', node: <RevenueCard icon={TrendingUp} data={view.collectionsByMonth || []} /> },
-    { id: 'membership', title: 'Membership', span: 'lg:col-span-3', node: <MembershipDonut active={view.activeMembers || 0} total={totalMembers} /> },
-    { id: 'quick', title: 'Quick actions', span: 'lg:col-span-3', node: (
+    { id: 'collections-chart', title: 'Revenue overview', span: trialing ? 'lg:col-span-5' : 'lg:col-span-7', node: <RevenueCard icon={TrendingUp} data={view.collectionsByMonth || []} /> },
+    { id: 'bookings', title: 'Upcoming bookings', span: trialing ? 'lg:col-span-4' : 'lg:col-span-5', node: <UpcomingBookings sessions={view.upcomingSessions || []} /> },
+    ...(trialing ? [{ id: 'upgrade', title: 'Upgrade', span: 'lg:col-span-3', node: <UpgradeCard supportEmail={SUPPORT_EMAIL} daysLeft={subscription.daysLeft} /> }] : []),
+    { id: 'membership', title: 'Membership', span: 'lg:col-span-4', node: <MembershipDonut active={view.activeMembers || 0} total={totalMembers} /> },
+    { id: 'activities', title: 'Sports activities', span: 'lg:col-span-4', node: <SportsActivities activities={view.activities || []} /> },
+    { id: 'quick', title: 'Quick actions', span: 'lg:col-span-4', node: (
       <QuickActions actions={[
         { label: 'Add Member', to: '/members?add=1', icon: UserPlus },
         { label: 'Record Payment', to: '/payments', icon: CreditCard },
@@ -104,7 +112,7 @@ export default function TenantAdminDashboard({ data, reload }) {
 
   return (
     <>
-      <DashboardFrame title="Overview" layoutId="tenant-admin-v2" actions={branchFilter} kpis={kpis} tiles={tiles} cta={{ to: '/reports', label: 'View Reports' }} />
+      <DashboardFrame title="Overview" layoutId="tenant-admin-v3" actions={branchFilter} kpis={kpis} tiles={tiles} cta={{ to: '/reports', label: 'View Reports' }} />
       {modal}
     </>
   );

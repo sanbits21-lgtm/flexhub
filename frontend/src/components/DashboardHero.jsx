@@ -11,13 +11,13 @@ const SUBTITLE = {
 };
 
 // The welcome strip at the top of every dashboard. Drop a photo at frontend/public/images/dashboard-hero.jpg and
-// it appears on the right, fading into the card; without one the strip is the gradient and the stripes alone.
+// it appears on the right, fading into the card; without one the bundled dumbbell artwork (hero-dumbbell.svg) shows instead.
 export default function DashboardHero({ cta }) {
   const { user } = useAuth();
   const first = (user?.name || '').trim().split(/\s+/)[0] || 'there';
   return (
     <section className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80">
-      <div aria-hidden="true" className="absolute inset-y-0 right-0 w-2/5 bg-cover bg-right opacity-0 grayscale dark:opacity-60" style={{ backgroundImage: "url('/images/dashboard-hero.jpg')" }} />
+      <div aria-hidden="true" className="absolute inset-y-0 right-0 w-3/5 opacity-0 dark:opacity-90" style={{ backgroundImage: "url('/images/dashboard-hero.jpg'), url('/images/hero-dumbbell.svg')", backgroundSize: 'cover, contain', backgroundPosition: 'right, right', backgroundRepeat: 'no-repeat' }} />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-gray-800 dark:via-gray-800/85 dark:to-transparent" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-56 w-16 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-80" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-4 h-56 w-6 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-60" />

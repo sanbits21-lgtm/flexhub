@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ArrowUpRight, Users } from 'lucide-react';
+import {
+  Activity, ArrowRight, ArrowUpRight, Bike, CalendarDays, Dumbbell, Flower2, HeartPulse, Music, Sparkles, Swords, Trophy, Users, Waves,
+} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import Widget from './Widget';
 import { trendOf } from './StatCard';
@@ -94,13 +96,99 @@ export function MembershipDonut({ title = 'Membership', icon, active = 0, total 
 /** Four shortcuts to the things done most. */
 export function QuickActions({ actions, className = '' }) {
   return (
-    <Widget title="Quick actions" className={className} bodyClassName="grid grid-cols-2 gap-3 p-4 pt-1 content-start">
+    <Widget title="Quick actions" className={className} bodyClassName="grid grid-cols-2 gap-3 p-4 pt-1 content-start xl:grid-cols-4">
       {actions.map((a) => (
-        <Link key={a.label} to={a.to} className="group flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-2 py-4 text-center text-sm font-medium text-gray-800 transition hover:border-accent/60 hover:bg-accent/10 dark:border-white/5 dark:bg-white/5 dark:text-gray-100">
+        <Link key={a.label} to={a.to} className="group flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-1.5 py-4 text-center text-xs font-medium text-gray-800 transition hover:border-accent/60 hover:bg-accent/10 dark:border-white/5 dark:bg-white/5 dark:text-gray-100">
           <a.icon className="h-6 w-6 text-green-700 dark:text-accent" aria-hidden="true" />
           {a.label}
         </Link>
       ))}
     </Widget>
+  );
+}
+
+const clock = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const dayLabel = (d) => {
+  const day = new Date(d); const today = new Date();
+  if (day.toDateString() === today.toDateString()) return 'Today';
+  const tomorrow = new Date(today.getTime() + 86400000);
+  return day.toDateString() === tomorrow.toDateString() ? 'Tomorrow' : day.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+const ACTIVITY_ICONS = [
+  [/swim|pool|aqua/i, Waves], [/yoga|pilates|stretch|meditat/i, Flower2], [/box|mma|karate|judo|martial|wrestl|taekwondo/i, Swords],
+  [/zumba|dance|aerobic/i, Music], [/cycl|spin|bike/i, Bike], [/cardio|hiit|run|treadmill/i, HeartPulse],
+  [/football|soccer|cricket|tennis|badminton|basket|volley|squash|sport/i, Trophy], [/gym|weight|strength|crossfit|lift|body/i, Dumbbell],
+];
+const activityIcon = (name) => ACTIVITY_ICONS.find(([re]) => re.test(name))?.[1] || Activity;
+
+/** The next few scheduled classes, with how full each is. */
+export function UpcomingBookings({ sessions = [], className = '' }) {
+  return (
+    <Widget title="Upcoming bookings" icon={CalendarDays} className={className} bodyClassName="px-4 pb-4">
+      {sessions.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No classes scheduled yet. Classes you schedule will show up here.</p>
+      ) : (
+        <ul className="space-y-3">
+          {sessions.map((s) => {
+            const Icon = activityIcon(s.name);
+            const full = s.capacity && s.booked >= s.capacity;
+            return (
+              <li key={s.id} className="flex items-center gap-3">
+                <div className="w-16 shrink-0 text-xs text-gray-500 dark:text-gray-400"><div className="font-semibold text-gray-800 dark:text-gray-200">{clock(s.startAt)}</div>{dayLabel(s.startAt)}</div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-600/10 text-green-700 dark:bg-accent/15 dark:text-accent"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{s.name}</p>
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">{[s.branchName, s.capacity ? `${s.booked}/${s.capacity} booked` : `${s.booked} booked`].filter(Boolean).join(' • ')}</p>
+                </div>
+                <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold ${full ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-600/10 text-green-700 dark:bg-accent/15 dark:text-accent'}`}>{full ? 'Full' : 'Open'}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Widget>
+  );
+}
+
+/** The activities the gym offers, as tiles. */
+export function SportsActivities({ activities = [], className = '' }) {
+  return (
+    <Widget title="Sports activities" icon={Trophy} className={className} bodyClassName="p-4 pt-1">
+      {activities.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No activities set up yet. Add class types and they will appear here.</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {activities.map((a) => {
+            const Icon = activityIcon(a.name);
+            return (
+              <div key={a.id} className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-2 py-4 text-center text-xs font-medium text-gray-800 dark:border-white/5 dark:bg-white/5 dark:text-gray-100">
+                <Icon className="h-6 w-6 text-green-700 dark:text-accent" aria-hidden="true" />
+                <span className="line-clamp-2 break-words">{a.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Widget>
+  );
+}
+
+/** The "take your club to the next level" card. Without a support address there is nobody to send them to, so no button. */
+export function UpgradeCard({ supportEmail, daysLeft, className = '' }) {
+  return (
+    <section className={`relative flex h-80 flex-col justify-between overflow-hidden rounded-3xl border border-gray-200/80 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-gray-800/80 ${className}`}>
+      <div aria-hidden="true" className="absolute inset-0 bg-contain bg-bottom bg-no-repeat opacity-80" style={{ backgroundImage: "url('/images/hero-dumbbell.svg')" }} />
+      <div className="relative">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-accent"><Sparkles className="h-4 w-4" aria-hidden="true" /> {daysLeft} day{daysLeft === 1 ? '' : 's'} left in your trial</p>
+        <h3 className="mt-2 text-xl font-extrabold leading-tight text-gray-900 dark:text-white">Take your club to the next level</h3>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Unlock more members and keep everything running for your gym.</p>
+      </div>
+      {supportEmail && (
+        <a href={`mailto:${supportEmail}?subject=Upgrade%20my%20plan`} className="relative inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-ink hover:brightness-110">
+          Upgrade now <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </a>
+      )}
+    </section>
   );
 }

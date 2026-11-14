@@ -26,6 +26,10 @@
   filter: brightness(1.1);
 }
 
+/* The sidebar menu still scrolls (wheel, touch, keyboard) but never draws a scrollbar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
 /* Installed as a PWA there is no browser chrome, so the app draws under the status bar
    and the home indicator. These pay back the viewport-fit=cover in index.html. On
    non-notched devices and in a normal browser tab the insets are 0, so this is a no-op. */

@@ -120,7 +120,7 @@ export default function TopBar({ onMenu }) {
 
       <div className="ml-auto flex items-center gap-1 md:ml-0">
         {canSearch && <Bell_ items={items} />}
-        <UserMenu variant="avatar" />
+        <div className="md:hidden"><UserMenu variant="avatar" /></div>
       </div>
     </header>
   );
