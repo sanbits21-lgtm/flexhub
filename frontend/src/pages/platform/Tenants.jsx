@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { packagesAPI, tenantsAPI } from '../../services/api';
 import TempPasswordDialog from '../../components/TempPasswordDialog';
+import ExtendTrialDialog from '../../components/ExtendTrialDialog';
 import { limitsLabel } from '../../utils/packages';
 import DataTable from '../../components/DataTable';
 import PendingApprovals from '../../components/PendingApprovals';
@@ -36,6 +37,7 @@ export default function Tenants() {
   const [heldPlanEnd, setHeldPlanEnd] = useState('');
   const [editError, setEditError] = useState('');
   const [renewing, setRenewing] = useState(null); // { tenant, months, amount }
+  const [extending, setExtending] = useState(null); // the gym whose trial is being extended
   const [ownersOf, setOwnersOf] = useState(null); // the gym whose owners can be helped with a password
   const [renewError, setRenewError] = useState('');
 
@@ -100,12 +102,6 @@ export default function Tenants() {
     } catch (err) {
       setRenewError(err.response?.data?.message || 'Could not record the renewal.');
     }
-  };
-
-  const extendTrial = async (tenant) => {
-    const from = Math.max(Date.now(), tenant.trialEndsAt ? new Date(tenant.trialEndsAt).getTime() : 0);
-    await tenantsAPI.update(tenant._id, { trialEndsAt: new Date(from + 7 * 86400000).toISOString() });
-    load();
   };
 
   const handleSuspend = async (tenant) => {
@@ -227,7 +223,7 @@ export default function Tenants() {
             render: (row) => (
               <div className="flex gap-2">
                 <Link to={`/tenants/${row._id}/workspace`} className="text-blue-600 dark:text-blue-400 hover:underline">Workspace</Link>
-                {row.billingPlan === 'trial' && row.trialEndsAt && <button onClick={() => extendTrial(row)} className="text-blue-600 dark:text-blue-400 hover:underline">+7 days</button>}
+                {row.billingPlan === 'trial' && <button onClick={() => setExtending(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Extend trial</button>}
                 <button onClick={() => startRenew(row)} className="text-blue-600 dark:text-blue-400 hover:underline">{row.billingPlan === 'trial' ? 'Activate plan' : 'Renew'}</button>
                 <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
                 <button onClick={() => setOwnersOf(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Owners</button>
@@ -244,6 +240,8 @@ export default function Tenants() {
         ]}
         rows={tenants.filter((t) => t.approvalStatus !== 'pending')}
       />
+
+      <ExtendTrialDialog tenant={extending} onClose={() => setExtending(null)} onDone={() => { setExtending(null); load(); }} />
 
       <TempPasswordDialog
         open={!!ownersOf}

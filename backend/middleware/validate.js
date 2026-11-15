@@ -333,6 +333,12 @@ const schemas = {
     link: z.string().trim().max(300).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
   }).passthrough(),
 
+  // Extend a free trial by a number of days, or set the day it ends. Exactly one of the two.
+  tenantExtendTrial: z.object({
+    days: z.coerce.number().int('must be a whole number').min(1, 'must be at least 1').max(365, 'must be 365 or fewer').optional(),
+    endsAt: z.string().trim().min(1).optional(),
+  }).passthrough().refine((v) => (v.days === undefined) !== (v.endsAt === undefined), { message: 'give either days or endsAt, not both and not neither', path: ['days'] }),
+
   billingOrder: z.object({
     packageId: objectId,
     periods: z.coerce.number().int().min(1).max(12).optional(),

@@ -309,6 +309,44 @@ exports.updateFeatures = async (req, res) => {
 };
 
 // Creates an additional Tenant Admin for an existing tenant.
+// Gives a gym on a free trial more time: add days (from the later of today and the current end, so extending an
+// ended trial counts from today, not from a date in the past), or set the day it ends. The owner is told, and the
+// reminder emails start again for the new end date. A gym on a paid plan has no trial; that is what Renew is for.
+exports.extendTrial = async (req, res) => {
+  const tenant = await Tenant.findOne(tenantByIdFilter(req));
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  if (tenant.approvalStatus !== 'approved') return res.status(409).json({ message: 'Approve this gym before extending its trial.' });
+  if (tenant.billingPlan !== 'trial') return res.status(409).json({ message: 'This gym is not on a free trial. Use Renew to extend a paid plan.' });
+
+  const now = Date.now();
+  const previous = tenant.trialEndsAt ? tenant.trialEndsAt.getTime() : null;
+  let next;
+  if (req.body.days !== undefined) {
+    next = Math.max(now, previous || 0) + req.body.days * 86400000;
+  } else {
+    next = new Date(req.body.endsAt).getTime();
+    if (Number.isNaN(next)) return res.status(400).json({ message: 'The date is not valid.' });
+    if (next <= now) return res.status(400).json({ message: 'The trial must end in the future. To stop a gym now, suspend it.' });
+  }
+  if (next > now + 2 * 366 * 86400000) return res.status(400).json({ message: 'A trial cannot run more than two years from today.' });
+
+  tenant.trialEndsAt = new Date(next);
+  tenant.expiryNotice = undefined; // the reminder sequence starts again for the new end date
+  await tenant.save();
+
+  const to = await ownerEmails(tenant);
+  await Promise.all(to.map((email) => templated({
+    to: email,
+    subject: `${tenant.name}'s free trial now runs until ${fmt(next)}`,
+    heading: 'Your free trial was extended',
+    body: `${tenant.name}'s free trial now ends on ${fmt(next)}. Everything works as before until then.`,
+    buttonText: 'Open FitzyClub',
+    buttonUrl: gymLoginUrl(tenant, req),
+  })));
+  logAudit(req, 'EXTEND_TRIAL', { type: 'Tenant', id: tenant._id, metadata: { from: previous ? new Date(previous) : null, to: tenant.trialEndsAt, days: req.body.days ?? null } });
+  res.json(tenant);
+};
+
 // The owners of a gym, for platform staff to help with sign-in problems.
 exports.listOwners = async (req, res) => {
   const tenant = await Tenant.findOne(tenantByIdFilter(req));
