@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { iosInstallSteps, useInstallPrompt } from '../hooks/useInstallPrompt';
 
 const DISMISS_KEY = 'installBannerDismissed';
 
@@ -37,7 +37,7 @@ export default function InstallBanner() {
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Install FitzyClub</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {isIos
-            ? <>Tap <span className="font-medium">Share</span>, then <span className="font-medium">Add to Home Screen</span>.</>
+            ? iosInstallSteps()
             : 'Add it to your home screen for quicker, full-screen access.'}
         </p>
         {!isIos && (

@@ -5,6 +5,23 @@ const isStandalone = () =>
 
 const isIos = () => /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
+// Where the Share button is depends on the browser: Safari keeps it at the bottom of the screen, Chrome (CriOS), Firefox
+// (FxiOS) and Edge (EdgiOS) put it in the address bar at the top. Adding to the home screen from those needs iOS 16.4 or newer.
+const iosBrowser = () => {
+  const ua = window.navigator.userAgent;
+  if (/CriOS/i.test(ua)) return 'chrome';
+  if (/FxiOS|EdgiOS|OPiOS|GSA\//i.test(ua)) return 'other';
+  return 'safari';
+};
+
+/** One line of plain steps for putting the app on an iPhone's home screen, for the browser being used. */
+export const iosInstallSteps = () => {
+  const browser = iosBrowser();
+  if (browser === 'chrome') return 'Tap the Share icon at the top right of the address bar, scroll down and choose "Add to Home Screen". If you do not see it, open this page in Safari.';
+  if (browser === 'other') return 'Tap Share, scroll down and choose "Add to Home Screen". If you do not see it, open this page in Safari.';
+  return 'Tap the Share button at the bottom of the screen, scroll down and choose "Add to Home Screen".';
+};
+
 // Shared by InstallButton (sidebar link, all devices) and InstallBanner (mobile-only,
 // dismissible). One listener, one source of truth, so both stay in sync when the app
 // gets installed from wherever the user actually clicked.

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { iosInstallSteps, useInstallPrompt } from '../hooks/useInstallPrompt';
 
 // Small, always-available link in the sidebar footer — the discoverable-but-quiet path
 // for anyone (desktop included) who wants to install without waiting for the mobile
@@ -16,7 +16,7 @@ export default function InstallButton() {
         <button onClick={() => setShowIosHint((v) => !v)} className="hover:text-gray-200">
           Install app
         </button>
-        {showIosHint && <p className="mt-1 leading-snug">Tap Share, then “Add to Home Screen”.</p>}
+        {showIosHint && <p className="mt-1 leading-snug">{iosInstallSteps()}</p>}
       </div>
     );
   }
