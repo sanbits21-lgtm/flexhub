@@ -22,11 +22,20 @@ module.exports = function tenantRefs(schema, refs) {
   schema.pre('validate', async function enforceSameGym() {
     if (!this.tenantId) return; // platform-level records (platform admins) belong to no gym
 
+    // A path holds one id, or a list of them (a plan's branches): every id in the list has to be this gym's.
+    const present = (value) => (Array.isArray(value) ? value.length > 0 : !!value);
     const checks = Object.entries(refs)
-      .filter(([path]) => this.get(path) && (this.isNew || this.isModified(path)))
+      .filter(([path]) => present(this.get(path)) && (this.isNew || this.isModified(path)))
       .map(async ([path, modelName]) => {
-        const ok = await mongoose.model(modelName).exists({ _id: this.get(path), tenantId: this.tenantId });
-        if (!ok) this.invalidate(path, 'does not belong to this gym', this.get(path));
+        const value = this.get(path);
+        if (Array.isArray(value)) {
+          const wanted = [...new Set(value.map(String))];
+          const found = await mongoose.model(modelName).countDocuments({ _id: { $in: wanted }, tenantId: this.tenantId });
+          if (found !== wanted.length) this.invalidate(path, 'does not belong to this gym', value);
+          return;
+        }
+        const ok = await mongoose.model(modelName).exists({ _id: value, tenantId: this.tenantId });
+        if (!ok) this.invalidate(path, 'does not belong to this gym', value);
       });
     await Promise.all(checks);
   });

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { branchesAPI, dashboardAPI } from '../../services/api';
+import { branchesAPI, dashboardAPI, membershipPlansAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
+import PlanChecklist from '../../components/PlanChecklist';
 import ListToolbar, { fieldClass, matches, primaryBtn, toolBtn } from '../../components/ListToolbar';
 
 const emptyForm = { name: '', phone: '', timezone: 'Asia/Kolkata', capacity: '' };
+// Does this plan apply at the branch? No branches listed means every branch (a branch being added has no id yet).
+const offersAt = (plan, branchId) => !(plan.branchIds || []).length || (branchId && plan.branchIds.includes(branchId));
 const emptyManagerForm = { name: '', email: '', phone: '', password: '' };
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
@@ -15,6 +18,9 @@ export default function Branches() {
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [plans, setPlans] = useState(null); // the active plans, for the checklist
+  const [chosen, setChosen] = useState(new Set()); // plan ids ticked in the open branch form
+  const [editing, setEditing] = useState(null); // the branch being edited
   const [managerFor, setManagerFor] = useState(null); // the branch a manager is being added to
   const [managerForm, setManagerForm] = useState(emptyManagerForm);
   const [saving, setSaving] = useState(false);
@@ -22,6 +28,7 @@ export default function Branches() {
 
   const load = () => {
     branchesAPI.list().then((res) => setBranches(res.data));
+    membershipPlansAPI.list().then((res) => setPlans((res.data.data || res.data.plans || res.data).filter((p) => p.isActive)));
     dashboardAPI.summary().then((res) => {
       const byBranch = {};
       (res.data.perBranch || []).forEach((b) => { byBranch[b.branchId] = b; });
@@ -47,10 +54,19 @@ export default function Branches() {
     }
   };
 
-  const handleCreate = submit(() => branchesAPI.create(form), () => { setForm(emptyForm); setShowAdd(false); });
+  const planIds = () => [...chosen];
+  const handleCreate = submit(() => branchesAPI.create({ ...form, planIds: planIds() }), () => { setForm(emptyForm); setShowAdd(false); });
+  const handleEdit = submit(() => branchesAPI.update(editing._id, { name: form.name, phone: form.phone, capacity: form.capacity === '' ? undefined : Number(form.capacity), planIds: planIds() }), () => setEditing(null));
   const handleCreateManager = submit(() => branchesAPI.createManager(managerFor._id, managerForm), () => { setManagerForm(emptyManagerForm); setManagerFor(null); });
 
-  const openAdd = () => { setForm(emptyForm); setError(''); setShowAdd(true); };
+  const openAdd = () => { setForm(emptyForm); setChosen(new Set((plans || []).filter((p) => offersAt(p, null)).map((p) => p._id))); setError(''); setShowAdd(true); };
+  const openEdit = (branch) => {
+    setForm({ name: branch.name, phone: branch.phone || '', timezone: branch.timezone || 'Asia/Kolkata', capacity: branch.capacity ?? '' });
+    setChosen(new Set((plans || []).filter((p) => offersAt(p, branch._id)).map((p) => p._id)));
+    setError('');
+    setEditing(branch);
+  };
+  const togglePlan = (id) => setChosen((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const openManager = (branch) => { setManagerForm(emptyManagerForm); setError(''); setManagerFor(branch); };
 
   const rows = (branches || []).filter((b) => matches(search, b.name, b.phone));
@@ -94,9 +110,10 @@ export default function Branches() {
             },
             {
               key: 'actions', label: 'Actions', render: (r) => (
-                <button onClick={() => openManager(r)} className="text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap">
-                  + Add Manager
-                </button>
+                <div className="flex gap-3 whitespace-nowrap">
+                  <button onClick={() => openEdit(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                  <button onClick={() => openManager(r)} className="text-blue-600 dark:text-blue-400 hover:underline">+ Add Manager</button>
+                </div>
               ),
             },
           ]}
@@ -110,9 +127,24 @@ export default function Branches() {
           <input placeholder="Branch name" aria-label="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={fieldClass} />
           <input placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
           <input placeholder="Capacity (optional)" aria-label="Capacity" type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={fieldClass} />
+          <PlanChecklist plans={plans} selected={chosen} onToggle={togglePlan} />
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Add Branch'}</button>
             <button type="button" onClick={() => setShowAdd(false)} className={toolBtn}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!editing} onClose={() => setEditing(null)} title={`Edit branch: ${editing?.name || ''}`}>
+        <form onSubmit={handleEdit} className="space-y-3">
+          {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          <input placeholder="Branch name" aria-label="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={fieldClass} />
+          <input placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
+          <input placeholder="Capacity (optional)" aria-label="Capacity" type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={fieldClass} />
+          <PlanChecklist plans={plans} selected={chosen} onToggle={togglePlan} />
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            <button type="button" onClick={() => setEditing(null)} className={toolBtn}>Cancel</button>
           </div>
         </form>
       </Modal>

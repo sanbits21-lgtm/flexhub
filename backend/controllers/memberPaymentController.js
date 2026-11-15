@@ -6,6 +6,7 @@ const MemberPayment = require('../models/MemberPayment');
 const { logAudit } = require('../utils/audit');
 const q = require('../utils/query');
 const { pageParams } = require('../utils/paginate');
+const { planAllowedAt } = require('../utils/planBranches');
 
 // Aggregation does not cast ids the way find() does, so string ids are converted here.
 const toObjectIds = (filter) => {
@@ -105,9 +106,9 @@ exports.create = async (req, res) => {
   // must be one of THIS gym's, usable at the member's branch. Without this check a payment could point at
   // another gym's plan and read its name.
   if (membershipPlanId) {
-    const plan = await MembershipPlan.findOne({ _id: membershipPlanId, tenantId: req.scope.tenantId }).select('branchId');
+    const plan = await MembershipPlan.findOne({ _id: membershipPlanId, tenantId: req.scope.tenantId }).select('branchIds');
     if (!plan) return res.status(400).json({ message: 'Membership plan not found for this gym' });
-    if (plan.branchId && String(plan.branchId) !== String(member.branchId)) {
+    if (!planAllowedAt(plan, member.branchId)) {
       return res.status(400).json({ message: 'This plan belongs to a different branch' });
     }
   }

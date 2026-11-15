@@ -117,7 +117,7 @@ describe('which account a UPI payment is stamped with', () => {
 
 describe('bulk import and branch-specific plans', () => {
   it('refuses a plan that belongs to another branch, and accepts a gym-wide one', async () => {
-    const southOnly = await MembershipPlan.create({ tenantId: t.tenant._id, branchId: north._id, name: 'North only', durationUnit: 'monthly', price: 500 });
+    const southOnly = await MembershipPlan.create({ tenantId: t.tenant._id, branchIds: [north._id], name: 'North only', durationUnit: 'monthly', price: 500 });
     const body = { branchId: t.branch._id.toString(), members: [
       { name: 'Wrong Branch Plan', phone: '9680000011', membershipPlanId: southOnly._id.toString() },
       { name: 'Gym Wide Plan', phone: '9680000012', membershipPlanId: t.plan._id.toString() },

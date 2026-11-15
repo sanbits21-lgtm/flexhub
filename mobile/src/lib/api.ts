@@ -201,7 +201,7 @@ export type ManagerSummary = {
   expiringSoonMembers: ExpiryRow[];
 };
 
-export type PlanRow = { _id: string; name: string; durationUnit: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly'; price: number; description?: string; branchId?: string | null; isActive: boolean };
+export type PlanRow = { _id: string; name: string; durationUnit: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly'; price: number; description?: string; branchIds?: string[]; isActive: boolean };
 
 export type PaymentRow = {
   _id: string;

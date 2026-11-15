@@ -109,6 +109,7 @@ const Tenant = require('../models/Tenant');
 const { accountFor } = require('../utils/paymentAccounts');
 const { memberRoom } = require('../utils/subscription');
 const { revokeActor } = require('../utils/sessions');
+const { planAllowedAt } = require('../utils/planBranches');
 
 const memberFieldDefs = async (tenantId) => (await Tenant.findById(tenantId).select('memberFields').lean())?.memberFields || [];
 
@@ -150,7 +151,7 @@ exports.create = async (req, res) => {
   if (membershipPlanId) {
     const plan = await MembershipPlan.findOne({ _id: membershipPlanId, tenantId: req.body.tenantId });
     if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
-    if (plan.branchId && String(plan.branchId) !== String(req.body.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
+    if (!planAllowedAt(plan, req.body.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
     end = addPlanDuration(start, plan.durationUnit);
   }
 
@@ -222,7 +223,7 @@ exports.bulkCreate = async (req, res) => {
   const branch = await Branch.findOne({ _id: branchId, tenantId: req.body.tenantId });
   if (!branch) return res.status(400).json({ message: 'Branch not found for this tenant' });
 
-  const plans = await MembershipPlan.find({ tenantId: req.body.tenantId }).select('durationUnit price branchId');
+  const plans = await MembershipPlan.find({ tenantId: req.body.tenantId }).select('durationUnit price branchIds');
   const planById = new Map(plans.map((p) => [p._id.toString(), p]));
   const fieldDefs = await memberFieldDefs(req.body.tenantId);
   // Opt-in so older clients keep their behaviour: skip a row whose phone already belongs to a
@@ -255,7 +256,7 @@ exports.bulkCreate = async (req, res) => {
         plan = planById.get(String(row.membershipPlanId));
         if (!plan) throw new Error('Membership plan not found for this tenant');
         // A plan set up for one branch is only for that branch (tenant-wide plans have no branch).
-        if (plan.branchId && String(plan.branchId) !== String(branchId)) throw new Error('This plan belongs to a different branch');
+        if (!planAllowedAt(plan, branchId)) throw new Error('This plan belongs to a different branch');
         membershipPlanId = plan._id;
         end = addPlanDuration(start, plan.durationUnit);
       }
@@ -385,7 +386,7 @@ exports.update = async (req, res) => {
     if (planId) {
       const plan = await MembershipPlan.findOne({ _id: planId, tenantId: req.scope.tenantId });
       if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
-      if (plan.branchId && String(plan.branchId) !== String(existing.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
+      if (!planAllowedAt(plan, existing.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
       const start = membershipStart ? new Date(membershipStart) : (existing.membershipStart || new Date());
       update.membershipEnd = addPlanDuration(start, plan.durationUnit);
     }
@@ -416,7 +417,7 @@ exports.renew = async (req, res) => {
   if (!planId) return res.status(400).json({ message: 'A membership plan is required to renew' });
   const plan = await MembershipPlan.findOne({ _id: planId, tenantId: member.tenantId });
   if (!plan) return res.status(400).json({ message: 'Membership plan not found for this tenant' });
-  if (plan.branchId && String(plan.branchId) !== String(member.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
+  if (!planAllowedAt(plan, member.branchId)) return res.status(400).json({ message: 'This plan belongs to a different branch' });
 
   // Renewing early onto the SAME plan extends from the existing expiry so unused days
   // aren't burned. Switching to a DIFFERENT plan is treated as a correction/change, not

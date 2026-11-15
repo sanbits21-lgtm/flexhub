@@ -74,7 +74,7 @@ const buildGym = async (label) => {
   const north = await Branch.create({ tenantId: t.tenant._id, name: `${label} North` });
   const northManager = await User.create({ name: `${label} north manager`, email: `northmgr-${label}-${Date.now()}@example.com`, phone: '9000000055', password: PASSWORD, role: 'branch-manager', tenantId: t.tenant._id, branchId: north._id });
   const northManagerToken = await login(northManager.email);
-  const branchPlan = await MembershipPlan.create({ tenantId: t.tenant._id, branchId: north._id, name: `${label}-branchplan`, durationUnit: 'monthly', price: 700 });
+  const branchPlan = await MembershipPlan.create({ tenantId: t.tenant._id, branchIds: [north._id], name: `${label}-branchplan`, durationUnit: 'monthly', price: 700 });
 
   const base = { branchId: t.branch._id.toString(), planId: t.plan._id.toString() };
   const member = await createMember(t.managerToken, { ...base, name: `${label} member`, phone: '9700000001' });
@@ -376,7 +376,7 @@ describe('the data layer refuses a record that points at another gym, whatever r
     await pointsAtB(Equipment.create({ tenantId: A.t.tenant._id, branchId: B.ids.branch, name: 'X' }));
     await pointsAtB(User.create({ name: 'X', email: `x-${Date.now()}@example.com`, phone: '9740000002', password: PASSWORD, role: 'branch-manager', tenantId: A.t.tenant._id, branchId: B.ids.branch }));
     await pointsAtB(Rating.create({ ...a(), memberId: A.ids.member, targetType: 'trainer', trainerId: B.ids.trainer, stars: 5 }));
-    await pointsAtB(MembershipPlan.create({ tenantId: A.t.tenant._id, branchId: B.ids.branch, name: 'X', durationUnit: 'monthly', price: 1 }));
+    await pointsAtB(MembershipPlan.create({ tenantId: A.t.tenant._id, branchIds: [B.ids.branch], name: 'X', durationUnit: 'monthly', price: 1 }));
   });
 
   it('on a change to an existing record, and accepts the same save with A\'s own reference', async () => {

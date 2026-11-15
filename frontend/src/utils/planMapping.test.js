@@ -8,7 +8,7 @@ const plans = [
   { _id: 'm', name: 'Monthly', durationUnit: 'monthly', price: 1000 },
   { _id: 'q', name: 'Quarterly', durationUnit: 'quarterly', price: 2700 },
   { _id: 'y', name: 'Yearly', durationUnit: 'yearly', price: 9000 },
-  { _id: 'g', name: 'Gold', durationUnit: 'half_yearly', price: 5000, branchId: 'north' },
+  { _id: 'g', name: 'Gold', durationUnit: 'half_yearly', price: 5000, branchIds: ['north'] },
 ];
 
 test('lists each distinct plan name once, whatever its case or spacing, most used first', () => {
@@ -37,7 +37,7 @@ test('guesses the length a name hints at', () => {
 });
 
 test('suggests a plan only when exactly one is a clear candidate', () => {
-  const open = plans.filter((p) => !p.branchId);
+  const open = plans.filter((p) => !p.branchIds?.length);
   assert.equal(suggestPlan('Quarterly Gold', open)?._id, 'q'); // a plan's name appears in it
   assert.equal(suggestPlan('3 months', open)?._id, 'q'); // the length says so, one plan has it
   assert.equal(suggestPlan('1 yr', open)?._id, 'y');

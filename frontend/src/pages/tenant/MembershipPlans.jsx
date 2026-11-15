@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { membershipPlansAPI, branchesAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
+import BranchPicker from '../../components/BranchPicker';
 import ListToolbar, { fieldClass, matches, primaryBtn, toolBtn } from '../../components/ListToolbar';
 import { fmtRupees } from '../../utils/receipt';
 
@@ -15,7 +16,7 @@ const DURATION_OPTIONS = [
 const durationLabel = (unit) => DURATION_OPTIONS.find((o) => o.value === unit)?.label || unit;
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
-const emptyForm = { name: '', durationUnit: 'monthly', price: '', description: '', branchId: '', isActive: true };
+const emptyForm = { name: '', durationUnit: 'monthly', price: '', description: '', branchIds: [], isActive: true };
 
 export default function MembershipPlans() {
   const { user } = useAuth();
@@ -36,6 +37,12 @@ export default function MembershipPlans() {
   useEffect(() => { load(); }, [branchFilter]);
 
   const branchName = (id) => branches.find((b) => b._id === id)?.name;
+  // "All branches" when none are listed, else their names (two, then a count).
+  const branchesLabel = (ids = []) => {
+    if (!ids.length) return 'All branches';
+    const names = ids.map((id) => branchName(id) || 'Unknown branch');
+    return names.length <= 2 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+  };
 
   const openAdd = () => { setForm(emptyForm); setError(''); setEditing('new'); };
   const openEdit = (plan) => {
@@ -45,7 +52,7 @@ export default function MembershipPlans() {
       durationUnit: plan.durationUnit,
       price: String(plan.price),
       description: plan.description || '',
-      branchId: plan.branchId || '',
+      branchIds: plan.branchIds || [],
       isActive: plan.isActive,
     });
     setEditing(plan);
@@ -58,7 +65,7 @@ export default function MembershipPlans() {
     setSaving(true);
     setError('');
     try {
-      const body = { ...form, price: Number(form.price), branchId: form.branchId || null };
+      const body = { ...form, price: Number(form.price) };
       if (editing === 'new') await membershipPlansAPI.create(body);
       else await membershipPlansAPI.update(editing._id, body);
       close();
@@ -124,7 +131,7 @@ export default function MembershipPlans() {
             { key: 'name', label: 'Name' },
             { key: 'durationUnit', label: 'Duration', render: (r) => durationLabel(r.durationUnit) },
             { key: 'price', label: 'Price', render: (r) => fmtRupees(r.price) },
-            ...(canManage ? [{ key: 'branch', label: 'Branch', render: (r) => (r.branchId ? branchName(r.branchId) || 'Unknown branch' : 'All branches') }] : []),
+            ...(canManage ? [{ key: 'branch', label: 'Branch', render: (r) => branchesLabel(r.branchIds) }] : []),
             { key: 'isActive', label: 'Active', render: (r) => (r.isActive ? 'Yes' : 'No') },
             ...(canManage ? [{
               key: 'actions',
@@ -170,13 +177,7 @@ export default function MembershipPlans() {
             <label htmlFor="mp-desc" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Description (optional)</label>
             <input id="mp-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={fieldClass} />
           </div>
-          <div>
-            <label htmlFor="mp-form-branch" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Branch</label>
-            <select id="mp-form-branch" value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value })} className={fieldClass}>
-              <option value="">All branches</option>
-              {branches.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
-            </select>
-          </div>
+          <BranchPicker branches={branches} value={form.branchIds} onChange={(branchIds) => setForm({ ...form, branchIds })} idPrefix="mp" />
           {editing !== 'new' && (
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />

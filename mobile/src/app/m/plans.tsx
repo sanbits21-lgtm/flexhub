@@ -10,7 +10,7 @@ import { cap, rupees } from '../../lib/format';
 import { useLoad } from '../../lib/hooks';
 
 const DURATIONS = [{ value: 'monthly', label: 'Monthly' }, { value: 'quarterly', label: 'Quarterly' }, { value: 'half_yearly', label: 'Half-yearly' }, { value: 'yearly', label: 'Yearly' }] as const;
-const blank = { name: '', durationUnit: 'monthly' as PlanRow['durationUnit'], price: '', description: '', branchId: '', isActive: true };
+const blank = { name: '', durationUnit: 'monthly' as PlanRow['durationUnit'], price: '', description: '', branchId: '', branchTouched: false, multi: false, isActive: true };
 
 // Everyone can see the catalogue (a manager needs it to renew members); only the gym owner edits it.
 export default function Plans() {
@@ -25,14 +25,14 @@ export default function Plans() {
   const set = <K extends keyof typeof blank>(k: K, v: (typeof blank)[K]) => setF((s) => ({ ...s, [k]: v }));
 
   const openNew = () => { setF({ ...blank }); setErr(null); setEdit({}); };
-  const openEdit = (p: PlanRow) => { if (!admin) return; setF({ name: p.name, durationUnit: p.durationUnit, price: String(p.price), description: p.description ?? '', branchId: p.branchId ?? '', isActive: p.isActive }); setErr(null); setEdit({ id: p._id }); };
+  const openEdit = (p: PlanRow) => { if (!admin) return; setF({ name: p.name, durationUnit: p.durationUnit, price: String(p.price), description: p.description ?? '', branchId: p.branchIds?.length === 1 ? p.branchIds[0] ?? '' : '', branchTouched: false, multi: (p.branchIds?.length ?? 0) > 1, isActive: p.isActive }); setErr(null); setEdit({ id: p._id }); };
 
   const save = async () => {
     setErr(null);
     if (!f.name.trim() || f.price === '') { setErr('A plan needs a name and a price.'); return; }
     setSaving(true);
     try {
-      const body = { name: f.name.trim(), durationUnit: f.durationUnit, price: Number(f.price), description: f.description.trim(), branchId: f.branchId || null, ...(edit?.id ? { isActive: f.isActive } : {}) };
+      const body = { name: f.name.trim(), durationUnit: f.durationUnit, price: Number(f.price), description: f.description.trim(), ...(edit?.id && !f.branchTouched ? {} : { branchId: f.branchId || null }), ...(edit?.id ? { isActive: f.isActive } : {}) };
       if (edit?.id) await api.put(`/membership-plans/${edit.id}`, body); else await api.post('/membership-plans', body);
       setEdit(null);
       await reload();
@@ -54,7 +54,7 @@ export default function Plans() {
       {list.length === 0 ? <Card><EmptyState icon="pricetags-outline" title="No plans yet" text={admin ? 'Create the plans members can buy.' : undefined} /></Card> : (
         <Card style={{ paddingVertical: 4 }}>
           {list.map((p, i) => (
-            <Row key={p._id} icon="pricetag" title={p.name} subtitle={`${cap(p.durationUnit)}${p.branchId ? ` | ${branchName(p.branchId) || 'one branch'}` : ' | all branches'}${p.description ? ` | ${p.description}` : ''}`}
+            <Row key={p._id} icon="pricetag" title={p.name} subtitle={`${cap(p.durationUnit)}${p.branchIds?.length ? ` | ${p.branchIds.map((id) => branchName(id) || 'a branch').join(', ')}` : ' | all branches'}${p.description ? ` | ${p.description}` : ''}`}
               right={<View style={{ alignItems: 'flex-end', gap: 4 }}><Pill label={rupees(p.price)} tone="accent" />{!p.isActive && <Pill label="Inactive" tone="neutral" />}</View>} onPress={admin ? () => openEdit(p) : undefined} last={i === list.length - 1} />
           ))}
         </Card>
@@ -66,7 +66,7 @@ export default function Plans() {
         <Choice label="Duration" value={f.durationUnit} options={DURATIONS} onChange={(v) => set('durationUnit', v)} />
         <Field label="Price (Rs)" value={f.price} onChangeText={(v) => set('price', v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" />
         <Field label="Description (optional)" value={f.description} onChangeText={(v) => set('description', v)} />
-        <Select label="Available at" value={f.branchId} placeholder="All branches" clearLabel="All branches" onChange={(v) => set('branchId', v)} options={branches.map((b) => ({ value: b._id, label: b.name }))} />
+        <Select label="Available at" value={f.branchId} placeholder={f.multi && !f.branchTouched ? 'Several branches (change on the website)' : 'All branches'} clearLabel="All branches" onChange={(v) => setF((s) => ({ ...s, branchId: v, branchTouched: true }))} options={branches.map((b) => ({ value: b._id, label: b.name }))} />
         {edit?.id && <Toggle label="Active" hint="Inactive plans cannot be sold" value={f.isActive} onChange={(v) => set('isActive', v)} />}
         <ErrorText>{err}</ErrorText>
         <View style={{ gap: 10, marginTop: 6 }}>

@@ -28,8 +28,8 @@ export const findPlan = (plans, name) => {
   return n ? plans.find((p) => norm(p.name) === n) || null : null;
 };
 
-/** Plans a branch may enrol members into: gym-wide ones (no branch) and that branch's own. */
-export const plansForBranch = (plans, branchId) => plans.filter((p) => p.isActive !== false && (!p.branchId || String(p.branchId) === String(branchId)));
+/** Plans a branch may enrol members into: ones offered everywhere (no branches listed) and ones that list this branch. */
+export const plansForBranch = (plans, branchId) => plans.filter((p) => p.isActive !== false && (!p.branchIds?.length || p.branchIds.some((b) => String(b) === String(branchId))));
 
 /**
  * The distinct plan names used in one column of the file, with how many rows use each, most used first.
