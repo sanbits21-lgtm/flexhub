@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, requireRole, scopeContext } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 const {
-  list, getOne, create, update, suspend, approve, renew, reject, createTenantAdmin, getFeatures, updateFeatures,
+  list, getOne, create, update, suspend, approve, renew, reject, createTenantAdmin, listOwners, resetOwnerPassword, getFeatures, updateFeatures,
 } = require('../controllers/tenantController');
 
 router.use(protect, scopeContext, requireRole('super-admin', 'platform-admin'));
@@ -16,6 +16,8 @@ router.patch('/:id/suspend', suspend);
 router.post('/:id/approve', approve);
 router.post('/:id/reject', reject);
 router.post('/:id/tenant-admins', createTenantAdmin);
+router.get('/:id/tenant-admins', listOwners);
+router.post('/:id/tenant-admins/:userId/reset-password', resetOwnerPassword);
 // Workspace — no additional role check needed, this whole router is already
 // super-admin/platform-admin only.
 router.get('/:id/features', getFeatures);

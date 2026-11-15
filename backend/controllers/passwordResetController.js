@@ -8,6 +8,7 @@ const { gymUrl, publicOrigin } = require('../utils/links');
 const { passwordProblem } = require('../utils/passwordPolicy');
 const { revokeActor } = require('../utils/sessions');
 const throttle = require('../utils/loginThrottle');
+const { liftLock } = require('../utils/signInLock');
 
 // "Forgot password" by email, for staff and for members.
 //
@@ -101,12 +102,7 @@ const audit = (req, kind, doc) => AuditLog.create({
   ip: req.ip,
 }).catch(() => {});
 
-const forget = async (kind, doc) => {
-  // The lock is keyed by whatever the person typed to sign in, so lift it for each way they could have typed it.
-  const scopes = ['', String(doc.tenantId || '')];
-  const typed = kind === 'member' ? [doc.memberCode, doc.email] : [doc.email];
-  await Promise.all(typed.filter(Boolean).flatMap((id) => scopes.map((s) => throttle.clear(throttle.keyFor(kind, id, s)))));
-};
+const forget = liftLock;
 
 const reset = (kind) => async (req, res) => {
   const { Model } = KINDS[kind];

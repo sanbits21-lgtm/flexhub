@@ -42,9 +42,13 @@ describe('trainer password reset', () => {
     expect((await request(app).post(`/api/staff/${t.trainer._id}/reset-password`).set(auth(t.adminToken))).status).toBe(200);
   });
 
-  it('only resets trainers, never another manager or admin', async () => {
-    expect((await request(app).post(`/api/staff/${t.manager._id}/reset-password`).set(auth(t.adminToken))).status).toBe(404);
+  it('a branch manager resets trainers only; the owner can also reset a manager; nobody resets the owner this way', async () => {
+    expect((await request(app).post(`/api/staff/${t.manager._id}/reset-password`).set(auth(t.managerToken))).status).toBe(404); // another manager's (here, their own) password is not theirs to reset
     expect((await request(app).post(`/api/staff/${t.admin._id}/reset-password`).set(auth(t.managerToken))).status).toBe(404);
+    expect((await request(app).post(`/api/staff/${t.admin._id}/reset-password`).set(auth(t.adminToken))).status).toBe(404); // owners are reset by platform staff
+    // a manager of their own, so that ending their sessions does not disturb the shared one other tests use
+    const another = await User.create({ name: 'Spare manager', email: `spare-${Date.now()}@example.com`, phone: '9000000071', password: PASSWORD, role: 'branch-manager', tenantId: t.tenant._id, branchId: t.branch._id });
+    expect((await request(app).post(`/api/staff/${another._id}/reset-password`).set(auth(t.adminToken))).status).toBe(200);
   });
 
   it('signs the trainer out of sessions they already had', async () => {

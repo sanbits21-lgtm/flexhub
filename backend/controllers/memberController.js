@@ -495,6 +495,7 @@ exports.issueAppAccess = async (req, res) => {
   member.passwordResetAt = new Date(); // signs the member out of any phone already logged in
   await member.save();
   await revokeActor('member', member._id);
+  await require('../utils/signInLock').liftLock('member', member); // a member locked out by wrong guesses can use the new password at once
   logAudit(req, 'ISSUE_MEMBER_APP_ACCESS', { type: 'Member', id: member._id });
   res.json({ memberCode: member.memberCode, email: member.email || null, password });
 };

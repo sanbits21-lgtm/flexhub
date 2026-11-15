@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { packagesAPI, tenantsAPI } from '../../services/api';
+import TempPasswordDialog from '../../components/TempPasswordDialog';
 import { limitsLabel } from '../../utils/packages';
 import DataTable from '../../components/DataTable';
 import PendingApprovals from '../../components/PendingApprovals';
@@ -35,6 +36,7 @@ export default function Tenants() {
   const [heldPlanEnd, setHeldPlanEnd] = useState('');
   const [editError, setEditError] = useState('');
   const [renewing, setRenewing] = useState(null); // { tenant, months, amount }
+  const [ownersOf, setOwnersOf] = useState(null); // the gym whose owners can be helped with a password
   const [renewError, setRenewError] = useState('');
 
   const load = () => tenantsAPI.list().then((res) => setTenants(res.data));
@@ -228,6 +230,7 @@ export default function Tenants() {
                 {row.billingPlan === 'trial' && row.trialEndsAt && <button onClick={() => extendTrial(row)} className="text-blue-600 dark:text-blue-400 hover:underline">+7 days</button>}
                 <button onClick={() => startRenew(row)} className="text-blue-600 dark:text-blue-400 hover:underline">{row.billingPlan === 'trial' ? 'Activate plan' : 'Renew'}</button>
                 <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                <button onClick={() => setOwnersOf(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Owners</button>
                 <button
                   onClick={() => handleSuspend(row)}
                   disabled={row.billingStatus === 'suspended'}
@@ -240,6 +243,15 @@ export default function Tenants() {
           },
         ]}
         rows={tenants.filter((t) => t.approvalStatus !== 'pending')}
+      />
+
+      <TempPasswordDialog
+        open={!!ownersOf}
+        onClose={() => setOwnersOf(null)}
+        title={`Owners: ${ownersOf?.name || ''}`}
+        intro="If an owner cannot sign in and cannot use the email link, for example they lost access to their email, create a temporary password and give it to them. They are emailed that it was reset."
+        load={async () => (await tenantsAPI.owners(ownersOf._id)).data.map((o) => ({ ...o, hint: o.emailVerified === false ? 'email not confirmed' : o.lastLoginAt ? `last in ${new Date(o.lastLoginAt).toLocaleDateString('en-IN')}` : 'never signed in' }))}
+        reset={(userId) => tenantsAPI.resetOwnerPassword(ownersOf._id, userId)}
       />
     </div>
   );

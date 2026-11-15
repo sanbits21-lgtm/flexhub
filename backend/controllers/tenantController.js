@@ -309,6 +309,38 @@ exports.updateFeatures = async (req, res) => {
 };
 
 // Creates an additional Tenant Admin for an existing tenant.
+// The owners of a gym, for platform staff to help with sign-in problems.
+exports.listOwners = async (req, res) => {
+  const tenant = await Tenant.findOne(tenantByIdFilter(req));
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  const owners = await User.find({ tenantId: tenant._id, role: 'tenant-admin' }).select('name email phone isActive emailVerified lastLoginAt createdAt').sort({ createdAt: 1 }).lean();
+  res.json(owners);
+};
+
+// An owner who cannot get into their email (so the reset link is no use) gets a temporary password from platform staff:
+// shown once, every session of theirs ended, any sign-in lock lifted, and they are emailed that it happened.
+exports.resetOwnerPassword = async (req, res) => {
+  const tenant = await Tenant.findOne(tenantByIdFilter(req));
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  const owner = await User.findOne({ _id: req.params.userId, tenantId: tenant._id, role: 'tenant-admin' });
+  if (!owner) return res.status(404).json({ message: 'Owner not found' });
+  const password = require('../utils/tempPassword').generateTempPassword();
+  owner.password = password; // hashed by the model's pre-save hook
+  owner.passwordResetAt = new Date();
+  await owner.save();
+  await require('../utils/sessions').revokeActor('user', owner._id);
+  await require('../utils/signInLock').liftLock('user', owner);
+  templated({
+    to: owner.email,
+    subject: `Your ${tenant.name} password was reset`,
+    heading: 'Your password was reset',
+    body: 'Our team gave you a temporary password after you asked for help signing in. If you did not ask, contact us right away.',
+  }).catch(() => {});
+  logAudit(req, 'RESET_OWNER_PASSWORD', { type: 'User', id: owner._id, metadata: { tenantId: String(tenant._id) } });
+  // `emailConfirmed` lets the screen warn when the owner never confirmed their email: they cannot sign in until they do.
+  res.json({ name: owner.name, email: owner.email, password, emailConfirmed: owner.emailVerified !== false });
+};
+
 exports.createTenantAdmin = async (req, res) => {
   const tenant = await Tenant.findOne(tenantByIdFilter(req));
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });

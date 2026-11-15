@@ -50,6 +50,7 @@ export default function Login() {
         <AuthField id="login-password" label="Password" icon={Lock} password value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Your password" />
         <AuthButton type="submit" icon={LogIn} disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</AuthButton>
         <RuleText><Link to="/forgot-password" className={authLink}>Forgot your password?</Link></RuleText>
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400">No access to your email? Your gym owner or branch manager can give you a temporary password. Owners can ask FitzyClub support.</p>
         <div className="space-y-3 text-center text-sm text-gray-600 dark:text-gray-300">
           <p className="flex items-center justify-center gap-2">
             <Users className="h-4 w-4 text-gray-400" aria-hidden="true" />

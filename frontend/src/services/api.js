@@ -90,6 +90,8 @@ export const tenantsAPI = {
   renew: (id, data) => api.post(`/tenants/${id}/renew`, data || {}),
   reject: (id, reason) => api.post(`/tenants/${id}/reject`, { reason }),
   createTenantAdmin: (id, data) => api.post(`/tenants/${id}/tenant-admins`, data),
+  owners: (id) => api.get(`/tenants/${id}/tenant-admins`),
+  resetOwnerPassword: (id, userId) => api.post(`/tenants/${id}/tenant-admins/${userId}/reset-password`),
   getFeatures: (id) => api.get(`/tenants/${id}/features`),
   updateFeatures: (id, features) => api.put(`/tenants/${id}/features`, { features }),
 };

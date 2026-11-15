@@ -7,6 +7,8 @@ const { logAudit } = require('../utils/audit');
 const { sendList } = require('../utils/paginate');
 const q = require('../utils/query');
 const { generateTempPassword } = require('../utils/tempPassword');
+const { liftLock } = require('../utils/signInLock');
+const { templated } = require('../utils/mailer');
 
 // Lists staff within the caller's scope (tenant-admin sees managers+trainers across the
 // tenant; branch-manager sees trainers in their own branch).
@@ -129,13 +131,26 @@ exports.getAssignedMembers = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const filter = { ...req.scope };
   delete filter.trainerId;
-  const trainer = await User.findOne({ ...filter, _id: req.params.id, role: 'trainer', isActive: true });
-  if (!trainer) return res.status(404).json({ message: 'Trainer not found' });
+  // The gym owner can reset a trainer or a branch manager; a branch manager only a trainer of their own branch (a manager's
+  // password is not another manager's to reset, and never the owner's).
+  const roles = req.user.role === 'tenant-admin' ? ['trainer', 'branch-manager'] : ['trainer'];
+  const person = await User.findOne({ ...filter, _id: req.params.id, role: { $in: roles }, isActive: true });
+  if (!person) return res.status(404).json({ message: roles.length > 1 ? 'Staff member not found' : 'Trainer not found' });
   const password = generateTempPassword();
-  trainer.password = password; // hashed by the model's pre-save hook
-  trainer.passwordResetAt = new Date();
-  await trainer.save();
-  await revokeActor('user', trainer._id);
-  logAudit(req, 'RESET_TRAINER_PASSWORD', { type: 'User', id: trainer._id });
-  res.json({ name: trainer.name, email: trainer.email, password });
+  person.password = password; // hashed by the model's pre-save hook
+  person.passwordResetAt = new Date();
+  await person.save();
+  await revokeActor('user', person._id);
+  await liftLock('user', person); // otherwise a person locked out by wrong guesses is handed a password that still does not work
+  // They are told by email that someone reset it (never the password itself), so an unexpected reset is noticed.
+  if (person.email) {
+    templated({
+      to: person.email,
+      subject: 'Your FitzyClub password was reset',
+      heading: 'Your password was reset',
+      body: `${req.user.name} at your gym gave you a temporary password. If you did not expect this, tell your gym right away.`,
+    }).catch(() => {});
+  }
+  logAudit(req, person.role === 'trainer' ? 'RESET_TRAINER_PASSWORD' : 'RESET_MANAGER_PASSWORD', { type: 'User', id: person._id });
+  res.json({ name: person.name, email: person.email, password });
 };

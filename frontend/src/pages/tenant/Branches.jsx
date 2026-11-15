@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { branchesAPI, dashboardAPI, membershipPlansAPI } from '../../services/api';
+import { branchesAPI, dashboardAPI, membershipPlansAPI, staffAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import PlanChecklist from '../../components/PlanChecklist';
+import TempPasswordDialog from '../../components/TempPasswordDialog';
 import ListToolbar, { fieldClass, matches, primaryBtn, toolBtn } from '../../components/ListToolbar';
 
 const emptyForm = { name: '', phone: '', timezone: 'Asia/Kolkata', capacity: '' };
@@ -21,6 +22,7 @@ export default function Branches() {
   const [plans, setPlans] = useState(null); // the active plans, for the checklist
   const [chosen, setChosen] = useState(new Set()); // plan ids ticked in the open branch form
   const [editing, setEditing] = useState(null); // the branch being edited
+  const [managersOf, setManagersOf] = useState(null); // the branch whose managers can be helped with a password
   const [managerFor, setManagerFor] = useState(null); // the branch a manager is being added to
   const [managerForm, setManagerForm] = useState(emptyManagerForm);
   const [saving, setSaving] = useState(false);
@@ -113,6 +115,7 @@ export default function Branches() {
                 <div className="flex gap-3 whitespace-nowrap">
                   <button onClick={() => openEdit(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
                   <button onClick={() => openManager(r)} className="text-blue-600 dark:text-blue-400 hover:underline">+ Add Manager</button>
+                  <button onClick={() => setManagersOf(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Managers</button>
                 </div>
               ),
             },
@@ -148,6 +151,15 @@ export default function Branches() {
           </div>
         </form>
       </Modal>
+
+      <TempPasswordDialog
+        open={!!managersOf}
+        onClose={() => setManagersOf(null)}
+        title={`Managers: ${managersOf?.name || ''}`}
+        intro="If a manager forgot their password or cannot use their email, create a temporary password and give it to them in person."
+        load={async () => (await staffAPI.list({ role: 'branch-manager', branchId: managersOf._id })).data.map((m) => ({ ...m, hint: m.phone }))}
+        reset={(id) => staffAPI.resetPassword(id)}
+      />
 
       <Modal open={!!managerFor} onClose={() => setManagerFor(null)} title={`New manager: ${managerFor?.name || ''}`}>
         <form onSubmit={handleCreateManager} className="space-y-3">

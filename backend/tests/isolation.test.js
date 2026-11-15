@@ -109,9 +109,10 @@ const buildGym = async (label) => {
   await AnnouncementRead.create({ tenantId: t.tenant._id, announcementId: announcement._id, memberId: member._id });
   // A gym's own subscription payment, waiting for platform staff.
   const billingPackage = await SubscriptionPackage.create({ name: `Fixture package ${label.length}`, price: 1000, maxBranches: 1, isActive: false }); // the catalogue is platform-wide, so it carries no gym's name and is not on offer
+  const fixtureUtr = String(Math.floor(1e11 + Math.random() * 9e11)); // random: two gyms built in the same second must not share one
   const subscriptionOrder = await SubscriptionOrder.create({
     tenantId: t.tenant._id, packageId: billingPackage._id, packageName: `${label} package`, kind: 'upgrade', periods: 1, months: 1, amount: 1000, total: 1000,
-    status: 'awaiting_confirmation', reference: `${label}REF`, utr: `99${Date.now()}`.slice(0, 12), utrKey: `99${Date.now()}`.slice(0, 12), expiresAt: new Date(Date.now() + 86400000), submittedAt: new Date(),
+    status: 'awaiting_confirmation', reference: `${label}REF`, utr: fixtureUtr, utrKey: fixtureUtr, expiresAt: new Date(Date.now() + 86400000), submittedAt: new Date(),
   });
 
   return {
