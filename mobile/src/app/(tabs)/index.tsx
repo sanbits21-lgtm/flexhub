@@ -3,7 +3,7 @@ import { Redirect, router } from 'expo-router';
 import { Avatar } from '../../components/Avatar';
 import { Banner, Card, Hero, HomeSkeleton, LoadError, Muted, Pill, Row, Screen, Section, Stat, StatGrid } from '../../components/ui';
 import ManagerHome from '../../screens/ManagerHome';
-import { api, type MySessions, type Profile, type Summary } from '../../lib/api';
+import { api, type MySessions, type NoticesResponse, type Profile, type Summary } from '../../lib/api';
 import { isManagerRole, useAuth } from '../../lib/auth';
 import { cap, daysUntil, fmtDate } from '../../lib/format';
 import { useLoad } from '../../lib/hooks';
@@ -25,12 +25,13 @@ const greeting = () => {
 function MemberHome() {
   const { can } = useAuth();
   const { data, error, loading, reload } = useLoad(async () => {
-    const [profile, summary, sessions] = await Promise.all([
+    const [profile, summary, sessions, notices] = await Promise.all([
       api.get<Profile>('/member-app/me'),
       api.get<Summary>('/dashboard/summary'),
       api.get<MySessions>('/member-app/sessions').catch(() => null),
+      api.get<NoticesResponse>('/member-app/notices').catch(() => null),
     ]);
-    return { profile, summary, sessions };
+    return { profile, summary, sessions, notices };
   });
 
   if (loading) return <Screen title="Home" subtitle={greeting()}><HomeSkeleton /></Screen>;
@@ -65,6 +66,12 @@ function MemberHome() {
       </StatGrid>
 
       {expired && <Banner tone="warn">Your membership has ended. Renew at the front desk to keep training.</Banner>}
+
+      {data?.notices && data.notices.items.length > 0 && (
+        <Card>
+          <Row icon="notifications" tone="accent" title="Notices" subtitle={data.notices.items[0]?.title} right={data.notices.unread > 0 ? <Pill label={`${data.notices.unread} new`} tone="accent" /> : undefined} onPress={() => router.push('/notices')} last />
+        </Card>
+      )}
 
       <Section title="Up next" />
       <Card>

@@ -245,6 +245,7 @@ exports.deleteAccount = async (req, res) => {
   });
   await Promise.all([
     MemberPlan.deleteMany({ memberId: member._id }),
+    require('../models/AnnouncementRead').deleteMany({ memberId: member._id }),
     PtSession.updateMany({ memberId: member._id, status: 'scheduled', startAt: { $gte: now } }, { $set: { status: 'cancelled' } }),
     Booking.updateMany({ memberId: member._id, status: { $in: ['booked', 'waitlisted'] } }, { $set: { status: 'cancelled' } }),
   ]);

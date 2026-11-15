@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   BarChart3, Building, Building2, CalendarCheck, CreditCard, Dumbbell, LayoutDashboard, Landmark, Package, Palette,
-  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight,
+  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight, Megaphone, Receipt, Banknote,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
@@ -36,6 +36,9 @@ const NAV_BY_ROLE = {
     { to: '/trainer-report', label: 'Trainer Collections & Salary', icon: Wallet },
     { to: '/membership-plans', label: 'Membership Plans', icon: Tags },
     { to: '/payments', label: 'Payments', icon: CreditCard },
+    { to: '/expenses', label: 'Expenses', icon: Receipt, feature: 'pages:expenses' },
+    { to: '/payroll', label: 'Payroll', icon: Banknote, feature: 'pages:expenses' },
+    { to: '/announcements', label: 'Announcements', icon: Megaphone, feature: 'features:announcements' },
     { to: '/reports', label: 'Reports', icon: BarChart3 },
     { to: '/payment-settings', label: 'Payment Settings', icon: Landmark },
     { to: '/branding', label: 'Branding & Address', icon: Palette },
@@ -48,6 +51,8 @@ const NAV_BY_ROLE = {
     { to: '/equipment', label: 'Equipment', icon: Dumbbell },
     { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
     { to: '/payments', label: 'Payments', icon: CreditCard },
+    { to: '/expenses', label: 'Expenses', icon: Receipt, feature: 'pages:expenses' },
+    { to: '/announcements', label: 'Announcements', icon: Megaphone, feature: 'features:announcements' },
   ],
   trainer: [
     { to: '/my-members', label: 'My Members', icon: Users },
@@ -66,8 +71,10 @@ const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL;
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, subscription } = useAuth();
   const { brand } = useBrand();
+  const { features } = useAuth();
   const canBrand = useFeature('features:branding');
-  const links = (NAV_BY_ROLE[user?.role] || []).filter((l) => l.to !== '/branding' || canBrand);
+  // A page whose feature the gym does not have is left out of the menu (a link to a page that only says "not included" is noise).
+  const links = (NAV_BY_ROLE[user?.role] || []).filter((l) => (l.to !== '/branding' || canBrand) && (!l.feature || !features || features[l.feature] !== false));
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed((c) => {
     try { localStorage.setItem(COLLAPSED_KEY, c ? '0' : '1'); } catch { /* convenience only */ }

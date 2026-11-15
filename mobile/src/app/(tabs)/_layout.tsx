@@ -48,6 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="pass" options={{ title: 'My pass', tabBarButton: () => null }} />
       <Tabs.Screen name="receipts" options={{ title: 'Payments', tabBarButton: () => null }} />
       <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarButton: () => null }} />
+      <Tabs.Screen name="notices" options={{ title: 'Notices', tabBarButton: () => null }} />
 
       {/* trainer */}
       <Tabs.Screen name="clients" options={{ title: 'Members', tabBarIcon: icon('people'), ...show(trainer) }} />

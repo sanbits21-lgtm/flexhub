@@ -3,6 +3,32 @@
 export const MIN_PHOTO_PIXELS = 200;
 const OUTPUT_SIZE = 512;
 
+const RECEIPT_MAX = 1600;
+
+/**
+ * A photographed bill: kept whole (no crop), shrunk to fit 1600 px on the long side, as JPEG (a phone photo is several
+ * MB, the server takes 1 MB). Resolves to base64 JPEG without the data: prefix.
+ */
+export const receiptJpegBase64 = (file) => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    if (Math.min(img.width, img.height) < MIN_PHOTO_PIXELS) {
+      reject(new Error(`That picture is too small (${img.width}x${img.height}). Take a clearer photo.`));
+      return;
+    }
+    const scale = Math.min(1, RECEIPT_MAX / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image. Use a JPEG, PNG or WebP picture.')); };
+  img.src = url;
+});
+
 export const MIN_LOGO_PIXELS = 64;
 const LOGO_MAX = 512;
 

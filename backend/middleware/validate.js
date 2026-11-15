@@ -58,6 +58,8 @@ const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 const MEMBERSHIP_STATUSES = ['active', 'expired', 'frozen', 'cancelled'];
 const DURATION_UNITS = ['monthly', 'quarterly', 'half_yearly', 'yearly'];
 const CLASS_SESSION_STATUSES = ['scheduled', 'cancelled', 'completed'];
+const EXPENSE_CATEGORIES = ['salary-trainer', 'salary-manager', 'salary-other', 'maintenance', 'rent', 'utilities', 'equipment', 'marketing', 'other'];
+const EXPENSE_METHODS = ['cash', 'upi', 'bank', 'cheque', 'other'];
 
 // Adds the "too easy to guess" check to a schema that has a password. `pick` finds the object that
 // holds password (and the person's name/email/phone) and `path` is where to report it.
@@ -256,6 +258,95 @@ const schemas = {
   bookingCreate: z.object({
     classSessionId: objectId,
     memberId: objectId,
+  }).passthrough(),
+
+  // ---- expenses, payroll, notices ----
+  expenseCreate: z.object({
+    category: z.enum(EXPENSE_CATEGORIES),
+    amount: positiveMoney,
+    date: z.union([z.string().min(1, 'is required'), z.date()]),
+    branchId: optionalObjectId,
+    equipmentId: optionalObjectId,
+    paidTo: z.string().trim().max(100).optional().or(z.literal('')),
+    method: z.enum(EXPENSE_METHODS).optional(),
+    note: z.string().trim().max(300).optional().or(z.literal('')),
+  }).passthrough(),
+
+  expenseUpdate: z.object({
+    category: z.enum(EXPENSE_CATEGORIES).optional(),
+    amount: positiveMoney.optional(),
+    date: z.union([z.string().min(1), z.date()]).optional(),
+    paidTo: z.string().trim().max(100).optional().or(z.literal('')),
+    method: z.enum(EXPENSE_METHODS).optional(),
+    note: z.string().trim().max(300).optional().or(z.literal('')),
+  }).passthrough(),
+
+  equipmentService: z.object({
+    servicedAt: z.union([z.string(), z.date()]).optional().or(z.literal('')),
+    cost: money.optional().or(z.literal('')),
+    vendor: z.string().trim().max(100).optional().or(z.literal('')),
+    nextServiceDue: z.union([z.string(), z.date()]).optional().nullable().or(z.literal('')),
+    note: z.string().trim().max(300).optional().or(z.literal('')),
+  }).passthrough(),
+
+  payeeWrite: z.object({
+    name: personName,
+    roleLabel: z.string().trim().max(60).optional().or(z.literal('')),
+    branchId: optionalObjectId,
+    monthlySalary: money.optional(),
+    isActive: z.boolean().optional(),
+  }).passthrough(),
+
+  payrollRun: z.object({
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'must look like 2026-11'),
+    lines: z.array(z.object({
+      kind: z.enum(['staff', 'payee']),
+      id: objectId,
+      bonus: money.optional().or(z.literal('')),
+      deduction: money.optional().or(z.literal('')),
+      date: z.union([z.string(), z.date()]).optional().or(z.literal('')),
+      method: z.enum(EXPENSE_METHODS).optional(),
+      note: z.string().trim().max(300).optional().or(z.literal('')),
+    })).min(1, 'choose at least one person').max(200),
+  }).passthrough(),
+
+  announcementCreate: z.object({
+    title: z.string().trim().min(1, 'is required').max(80, 'is too long (80 at most)'),
+    body: z.string().trim().min(1, 'is required').max(1000, 'is too long (1000 at most)'),
+    kind: z.enum(['news', 'offer', 'notice']).optional(),
+    branchIds: z.array(objectId).max(100).optional(),
+    audience: z.object({
+      type: z.enum(['everyone', 'active', 'expiring', 'expired', 'plan']),
+      days: z.coerce.number().int().min(1).max(60).optional(),
+      planId: optionalObjectId,
+    }).optional(),
+    startsAt: z.union([z.string(), z.date()]).optional().or(z.literal('')),
+    expiresAt: z.union([z.string(), z.date()]).optional().nullable().or(z.literal('')),
+    link: z.string().trim().max(300).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
+  }).passthrough(),
+
+  announcementUpdate: z.object({
+    title: z.string().trim().min(1).max(80).optional(),
+    body: z.string().trim().min(1).max(1000).optional(),
+    kind: z.enum(['news', 'offer', 'notice']).optional(),
+    expiresAt: z.union([z.string(), z.date()]).optional().nullable().or(z.literal('')),
+    link: z.string().trim().max(300).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
+  }).passthrough(),
+
+  audiencePreview: z.object({
+    branchIds: z.array(objectId).max(100).optional(),
+    audience: z.object({
+      type: z.enum(['everyone', 'active', 'expiring', 'expired', 'plan']),
+      days: z.coerce.number().int().min(1).max(60).optional(),
+      planId: optionalObjectId,
+    }).optional(),
+  }).passthrough(),
+
+  reminderSettings: z.object({
+    enabled: z.boolean(),
+    daysBefore: z.array(z.coerce.number().int().min(1).max(60)).min(1).max(4).optional(),
+    expiringText: z.string().trim().max(300).optional().or(z.literal('')),
+    expiredText: z.string().trim().max(300).optional().or(z.literal('')),
   }).passthrough(),
 };
 

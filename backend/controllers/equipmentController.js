@@ -1,5 +1,6 @@
 const Equipment = require('../models/Equipment');
 const Branch = require('../models/Branch');
+const Expense = require('../models/Expense');
 const { logAudit } = require('../utils/audit');
 const { sendList } = require('../utils/paginate');
 
@@ -49,6 +50,32 @@ exports.update = async (req, res) => {
   if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
   logAudit(req, 'UPDATE_EQUIPMENT', { type: 'Equipment', id: equipment._id });
   res.json(equipment);
+};
+
+// Logs a service visit: when it was done, what it cost, and when it is next due. The cost goes into the books as a
+// maintenance expense (when expenses are switched on for the gym), tied to this equipment and its branch.
+exports.logService = async (req, res) => {
+  const equipment = await Equipment.findOne({ ...stripUnscoped(req), _id: req.params.id });
+  if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+  const b = req.body;
+  const servicedAt = b.servicedAt ? new Date(b.servicedAt) : new Date();
+  const next = b.nextServiceDue ? new Date(b.nextServiceDue) : null;
+  if (Number.isNaN(servicedAt.getTime()) || (next && Number.isNaN(next.getTime()))) return res.status(400).json({ message: 'A date is not valid.' });
+  equipment.lastServicedAt = servicedAt;
+  if (b.nextServiceDue !== undefined) equipment.nextServiceDue = next || undefined;
+  if (equipment.status === 'under_maintenance') equipment.status = 'operational';
+  await equipment.save();
+
+  const cost = Number(b.cost) || 0;
+  let expense = null;
+  if (cost > 0 && !(req.features && req.features['pages:expenses'] === false)) {
+    expense = await Expense.create({
+      tenantId: equipment.tenantId, branchId: equipment.branchId, category: 'maintenance', amount: cost, date: servicedAt,
+      paidTo: b.vendor || undefined, method: 'cash', note: b.note || `Service: ${equipment.name}`, equipmentId: equipment._id, createdBy: req.user._id,
+    });
+  }
+  logAudit(req, 'SERVICE_EQUIPMENT', { type: 'Equipment', id: equipment._id });
+  res.json({ equipment, expense });
 };
 
 exports.remove = async (req, res) => {

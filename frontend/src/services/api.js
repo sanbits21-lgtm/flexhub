@@ -147,6 +147,36 @@ export const equipmentAPI = {
   create: (data) => api.post('/equipment', data),
   update: (id, data) => api.put(`/equipment/${id}`, data),
   remove: (id) => api.delete(`/equipment/${id}`),
+  service: (id, data) => api.post(`/equipment/${id}/service`, data),
+};
+
+export const expensesAPI = {
+  list: (params) => api.get('/expenses', { params }),
+  summary: (params) => api.get('/expenses/summary', { params }),
+  create: (data) => api.post('/expenses', data),
+  update: (id, data) => api.put(`/expenses/${id}`, data),
+  void: (id, reason) => api.post(`/expenses/${id}/void`, { reason }),
+  uploadReceipt: (id, image) => api.put(`/expenses/${id}/receipt`, { image }),
+  receipt: (id) => api.get(`/expenses/${id}/receipt`, { responseType: 'blob' }),
+};
+
+export const payrollAPI = {
+  preview: (month) => api.get('/payroll', { params: { month } }),
+  run: (data) => api.post('/payroll', data),
+  payees: () => api.get('/payroll/payees'),
+  createPayee: (data) => api.post('/payroll/payees', data),
+  updatePayee: (id, data) => api.put(`/payroll/payees/${id}`, data),
+  removePayee: (id) => api.delete(`/payroll/payees/${id}`),
+};
+
+export const announcementsAPI = {
+  list: () => api.get('/announcements'),
+  create: (data) => api.post('/announcements', data),
+  update: (id, data) => api.put(`/announcements/${id}`, data),
+  withdraw: (id) => api.post(`/announcements/${id}/withdraw`),
+  preview: (data) => api.post('/announcements/preview', data),
+  getReminders: () => api.get('/announcements/reminders'),
+  putReminders: (data) => api.put('/announcements/reminders', data),
 };
 
 export const membershipPlansAPI = {

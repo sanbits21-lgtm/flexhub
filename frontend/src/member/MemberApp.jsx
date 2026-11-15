@@ -13,6 +13,7 @@ import Pass from './pages/Pass';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
 import Progress from './pages/Progress';
+import Notices from './pages/Notices';
 
 // The installable member app. It is a section of the same site (so one deployment, one login
 // server) with its own manifest: opened from here, the browser offers to install THIS app,
@@ -47,6 +48,7 @@ export default function MemberApp() {
           <Route path="gym" element={<Gym />} />
           <Route path="pass" element={<Pass />} />
           <Route path="progress" element={<Progress />} />
+          <Route path="notices" element={<Notices />} />
           <Route path="payments" element={<Payments />} />
           <Route path="profile" element={<Profile />} />
         </Route>

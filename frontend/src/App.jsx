@@ -36,6 +36,9 @@ import Payments from './pages/branch/Payments';
 import MyMembers from './pages/trainer/MyMembers';
 import MemberAppQr from './pages/branch/MemberAppQr';
 import Ratings from './pages/branch/Ratings';
+import Expenses from './pages/tenant/Expenses';
+import Payroll from './pages/tenant/Payroll';
+import Announcements from './pages/branch/Announcements';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -90,6 +93,9 @@ export default function App() {
 
           <Route path="/member-app-qr" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><MemberAppQr /></AppLayout></RoleRoute>} />
           <Route path="/ratings" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><FeatureRoute feature="features:ratings"><Ratings /></FeatureRoute></AppLayout></RoleRoute>} />
+          <Route path="/expenses" element={<RoleRoute allow={['tenant-admin', 'branch-manager']}><AppLayout><FeatureRoute feature="pages:expenses"><Expenses /></FeatureRoute></AppLayout></RoleRoute>} />
+          <Route path="/payroll" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="pages:expenses"><Payroll /></FeatureRoute></AppLayout></RoleRoute>} />
+          <Route path="/announcements" element={<RoleRoute allow={['tenant-admin', 'branch-manager']}><AppLayout><FeatureRoute feature="features:announcements"><Announcements /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/my-members" element={<RoleRoute allow={['trainer']}><AppLayout><MyMembers /></AppLayout></RoleRoute>} />
 
           {/* A mistyped or outdated address goes home (or to the login page when signed out), not to a blank screen. */}

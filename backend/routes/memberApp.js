@@ -5,6 +5,7 @@ const { attachFeatures, requireFeature } = require('../middleware/features');
 const c = require('../controllers/memberAppController');
 const progress = require('../controllers/memberProgressController');
 const ratings = require('../controllers/ratingController');
+const notices = require('../controllers/memberNoticeController');
 
 // Member-only API for the mobile app. A separate router (rather than loosening
 // /api/equipment and /api/staff, which are staff-only on purpose) keeps the member's
@@ -32,6 +33,9 @@ router.post('/sessions/:id/cancel', requireFeature('features:personalTraining'),
 router.get('/pass', requireFeature('features:qrCheckIn'), c.pass);
 router.get('/payments', requireFeature('features:memberPayments'), c.myPayments);
 router.get('/plans', c.getPlans);
+router.get('/notices', notices.list);
+router.post('/notices/read-all', notices.markAllRead);
+router.post('/notices/:id/read', notices.markRead);
 router.post('/plans/generate', c.generate);
 
 // Own body changes and badges (private to the member).

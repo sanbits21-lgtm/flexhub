@@ -19,6 +19,18 @@ const FEATURE_REGISTRY = {
     category: 'feature',
     default: false,
   },
+  'pages:expenses': {
+    label: 'Expenses & payroll',
+    description: 'Record what the gym spends (salaries, maintenance, rent, utilities), run monthly payroll, and see profit against collections (/expenses, /payroll).',
+    category: 'page',
+    default: true,
+  },
+  'features:announcements': {
+    label: 'Member notices',
+    description: 'Lets the owner and branch managers publish news and offers that members read in the app, and sends automatic renewal reminders.',
+    category: 'feature',
+    default: true,
+  },
   'pages:reports': {
     label: 'Reports',
     description: 'Plan mix, attendance trend and equipment health reports (/reports).',

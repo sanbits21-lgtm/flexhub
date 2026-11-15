@@ -7,6 +7,8 @@ import Modal from '../../components/Modal';
 import ListToolbar, { fieldClass, matches, primaryBtn, toolBtn } from '../../components/ListToolbar';
 
 const emptyForm = { name: '', category: '', branchId: '' };
+const todayInput = () => new Date().toISOString().slice(0, 10);
+const emptyService = () => ({ servicedAt: todayInput(), cost: '', vendor: '', nextServiceDue: '', note: '' });
 const STATUS_LABEL = { operational: 'Operational', under_maintenance: 'Under maintenance', retired: 'Retired' };
 const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong. Please try again.';
 
@@ -25,6 +27,9 @@ export default function Equipment() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [servicing, setServicing] = useState(null); // the item whose service is being logged
+  const [service, setService] = useState(emptyService());
+  const [serviceMsg, setServiceMsg] = useState('');
 
   const load = () => equipmentAPI.list(branchId ? { branchId } : {}).then((res) => setEquipment(res.data));
   useEffect(() => {
@@ -43,6 +48,23 @@ export default function Equipment() {
       await equipmentAPI.create(form);
       setForm(emptyForm);
       setShowAdd(false);
+      load();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleService = async (e) => {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await equipmentAPI.service(servicing._id, { ...service, cost: service.cost === '' ? undefined : Number(service.cost) });
+      setServicing(null);
+      setServiceMsg(res.data.expense ? `Service logged and the cost was added to Expenses.` : 'Service logged.');
       load();
     } catch (err) {
       setError(errorMessage(err));
@@ -87,6 +109,8 @@ export default function Equipment() {
         )}
       />
 
+      {serviceMsg && <p role="status" className="rounded-xl bg-accent/10 px-3 py-2 text-sm text-gray-800 dark:text-gray-200">{serviceMsg} <button type="button" onClick={() => setServiceMsg('')} className="ml-2 underline">Dismiss</button></p>}
+
       {equipment === null ? (
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">Loading equipment...</p>
       ) : (
@@ -100,19 +124,58 @@ export default function Equipment() {
               key: 'actions',
               label: 'Actions',
               render: (row) => (
-                <button
-                  onClick={() => handleRetire(row)}
-                  disabled={row.status === 'retired'}
-                  className="text-red-600 dark:text-red-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
-                >
-                  {row.status === 'retired' ? 'Retired' : 'Retire'}
-                </button>
+                <div className="flex gap-3 whitespace-nowrap">
+                  <button
+                    onClick={() => { setService(emptyService()); setError(''); setServicing(row); }}
+                    disabled={row.status === 'retired'}
+                    className="text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                  >
+                    Log service
+                  </button>
+                  <button
+                    onClick={() => handleRetire(row)}
+                    disabled={row.status === 'retired'}
+                    className="text-red-600 dark:text-red-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                  >
+                    {row.status === 'retired' ? 'Retired' : 'Retire'}
+                  </button>
+                </div>
               ),
             },
           ]}
           rows={rows}
         />
       )}
+
+      <Modal open={!!servicing} onClose={() => setServicing(null)} title={`Log service: ${servicing?.name || ''}`}>
+        <form onSubmit={handleService} className="space-y-3">
+          {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="sv-date" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Serviced on</label>
+              <input id="sv-date" type="date" value={service.servicedAt} onChange={(e) => setService({ ...service, servicedAt: e.target.value })} required className={fieldClass} />
+            </div>
+            <div>
+              <label htmlFor="sv-next" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Next service due</label>
+              <input id="sv-next" type="date" value={service.nextServiceDue} onChange={(e) => setService({ ...service, nextServiceDue: e.target.value })} className={fieldClass} />
+            </div>
+            <div>
+              <label htmlFor="sv-cost" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cost (₹, optional)</label>
+              <input id="sv-cost" type="number" min="0" step="any" value={service.cost} onChange={(e) => setService({ ...service, cost: e.target.value })} className={fieldClass} />
+            </div>
+            <div>
+              <label htmlFor="sv-vendor" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Done by (optional)</label>
+              <input id="sv-vendor" maxLength={100} value={service.vendor} onChange={(e) => setService({ ...service, vendor: e.target.value })} className={fieldClass} />
+            </div>
+          </div>
+          <input placeholder="Note (optional)" aria-label="Note" maxLength={300} value={service.note} onChange={(e) => setService({ ...service, note: e.target.value })} className={fieldClass} />
+          <p className="text-xs text-gray-500 dark:text-gray-400">A cost is added to Expenses as maintenance for this branch.</p>
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Log service'}</button>
+            <button type="button" onClick={() => setServicing(null)} className={toolBtn}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Equipment">
         <form onSubmit={handleCreate} className="space-y-3">

@@ -19,6 +19,15 @@ const tenantSchema = new mongoose.Schema({
     logoFile: { type: String, default: '' },
     tagline: { type: String, trim: true, maxlength: 80, default: '' },
   },
+  // Notices to members (see models/Announcement.js). The renewal reminder is automatic and off until the owner turns it on.
+  notices: {
+    reminders: {
+      enabled: { type: Boolean, default: false },
+      daysBefore: { type: [Number], default: [7, 3, 1] },
+      expiringText: { type: String, trim: true, maxlength: 300, default: '' },
+      expiredText: { type: String, trim: true, maxlength: 300, default: '' },
+    },
+  },
   // The gym's own extra member fields (see utils/memberFields.js). Values live on each member.
   memberFields: [{
     _id: false,

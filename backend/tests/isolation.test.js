@@ -15,6 +15,10 @@ const MemberPayment = require('../models/MemberPayment');
 const MemberPlan = require('../models/MemberPlan');
 const Equipment = require('../models/Equipment');
 const ClassType = require('../models/ClassType');
+const Expense = require('../models/Expense');
+const Payee = require('../models/Payee');
+const Announcement = require('../models/Announcement');
+const AnnouncementRead = require('../models/AnnouncementRead');
 
 delete process.env.ANTHROPIC_API_KEY;
 
@@ -68,7 +72,7 @@ const workout = () => ({
 
 const buildGym = async (label) => {
   const t = await seedTenant(label);
-  const features = Object.fromEntries(['features:ratings', 'features:qrCheckIn', 'features:personalTraining', 'features:memberPayments', 'features:bulkUpload', 'features:upiPayments', 'pages:classes', 'pages:equipment', 'pages:attendance', 'pages:reports', 'pages:paymentSettings', 'pages:trainerReport', 'features:branding'].map((k) => [`features.${k}`, true]));
+  const features = Object.fromEntries(['features:ratings', 'features:qrCheckIn', 'features:personalTraining', 'features:memberPayments', 'features:bulkUpload', 'features:upiPayments', 'pages:classes', 'pages:equipment', 'pages:attendance', 'pages:reports', 'pages:paymentSettings', 'pages:trainerReport', 'features:branding', 'pages:expenses', 'features:announcements'].map((k) => [`features.${k}`, true]));
   await Tenant.updateOne({ _id: t.tenant._id }, { maxBranches: 5, maxMembers: 200, $set: features });
   await MembershipPlan.updateOne({ _id: t.plan._id }, { name: `${label}-plan` });
   const north = await Branch.create({ tenantId: t.tenant._id, name: `${label} North` });
@@ -96,6 +100,11 @@ const buildGym = async (label) => {
   const staffPlan = (await request(app).post(`/api/members/${member._id}/plans`).set(auth(t.managerToken)).send({ type: 'workout', content: workout() })).body;
   const progress = await request(app).post('/api/member-app/progress').set(auth(memberToken)).send({ weightKg: 80 });
   const entryId = progress.body.metrics[0]._id;
+  // The books and the notices: B's own, named after B so any appearance in A's responses is caught.
+  const payee = await Payee.create({ tenantId: t.tenant._id, name: `${label} cleaner`, monthlySalary: 7000 });
+  const expense = await Expense.create({ tenantId: t.tenant._id, branchId: t.branch._id, category: 'rent', amount: 1234, date: new Date(), paidTo: `${label} landlord`, createdBy: t.admin._id });
+  const announcement = await Announcement.create({ tenantId: t.tenant._id, title: `${label} notice`, body: `${label} body`, branchIds: [] });
+  await AnnouncementRead.create({ tenantId: t.tenant._id, announcementId: announcement._id, memberId: member._id });
 
   return {
     t, label, northManagerToken, memberToken,
@@ -103,13 +112,13 @@ const buildGym = async (label) => {
       tenant: t.tenant._id.toString(), branch: t.branch._id.toString(), north: north._id.toString(), plan: t.plan._id.toString(), branchPlan: branchPlan._id.toString(),
       member: member._id, northMember: northMember._id, trainer: t.trainer._id.toString(), manager: t.manager._id.toString(), admin: t.admin._id.toString(),
       classType: classType._id, session: classSession._id.toString(), booking: booking._id.toString(), pt: ptSession._id.toString(), equipment: equipment._id,
-      payment: payment._id, attendance: attendance._id.toString(), memberPlan: staffPlan._id, entry: entryId,
+      payment: payment._id, attendance: attendance._id.toString(), memberPlan: staffPlan._id, entry: entryId, payee: payee._id, expense: expense._id, announcement: announcement._id,
     },
   };
 };
 
 // Everything in the database that belongs to a gym, as one comparable string.
-const MODELS = [User, Member, Branch, MembershipPlan, ClassSession, ClassType, Booking, PtSession, Attendance, Rating, MemberPayment, MemberPlan, Equipment];
+const MODELS = [User, Member, Branch, MembershipPlan, ClassSession, ClassType, Booking, PtSession, Attendance, Rating, MemberPayment, MemberPlan, Equipment, Expense, Payee, Announcement, AnnouncementRead];
 const gymState = async (tenantId) => {
   const parts = [];
   for (const Model of MODELS) {
@@ -173,7 +182,8 @@ describe('gym A cannot reach gym B through any route', () => {
       '/api/class-sessions': ['session', 'classType'], '/api/bookings': ['booking', 'session'], '/api/pt-sessions': ['pt'],
       '/api/member-app/sessions': ['pt', 'session'], '/api/equipment': ['equipment'], '/api/tenants': ['tenant'],
       '/api/platform-admins': ['admin', 'tenant'], '/api/packages': ['tenant'], '/api/attendance': ['member', 'attendance'],
-      '/api/profile': ['trainer', 'manager', 'admin'],
+      '/api/profile': ['trainer', 'manager', 'admin'], '/api/expenses': ['expense', 'equipment'], '/api/payroll': ['payee', 'trainer'],
+      '/api/announcements': ['announcement'], '/api/member-app/notices': ['announcement'],
     };
     const kindsFor = (path) => {
       const prefix = Object.keys(BY_PREFIX).find((p) => path.startsWith(p));

@@ -14,16 +14,17 @@ const greeting = () => {
 export default function Home() {
   const { can } = useMemberAuth();
   const { data, error, stale, loading, reload } = useLoad('home', async () => {
-    const [profile, summary, sessions] = await Promise.all([
+    const [profile, summary, sessions, notices] = await Promise.all([
       memberApi.get('/member-app/me').then((r) => r.data),
       memberApi.get('/dashboard/summary').then((r) => r.data),
       memberApi.get('/member-app/sessions').then((r) => r.data).catch(() => null),
+      memberApi.get('/member-app/notices').then((r) => r.data).catch(() => null),
     ]);
-    return { profile, summary, sessions };
+    return { profile, summary, sessions, notices };
   });
 
   if (loading) return <Loading />;
-  const { profile, summary, sessions } = data || {};
+  const { profile, summary, sessions, notices } = data || {};
   const left = daysUntil(summary?.membershipEnd);
   const expired = summary?.membershipStatus === 'expired' || (left !== null && left < 0);
   const incomplete = profile && (!profile.fitnessGoal || !profile.weightKg || !profile.heightCm);
@@ -57,6 +58,18 @@ export default function Home() {
       </div>
 
       {expired && <Banner tone="warn">Your membership has ended. Renew at the front desk to keep training.</Banner>}
+
+      {notices?.items?.length > 0 && (
+        <Link to="/member/notices" className="block">
+          <Card className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Notices</p>
+              <p className="truncate font-semibold text-gray-900 dark:text-gray-100">{notices.items[0].title}</p>
+            </div>
+            {notices.unread > 0 && <span className="shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-ink">{notices.unread} new</span>}
+          </Card>
+        </Link>
+      )}
 
       <Section title="Up next" />
       <Card>

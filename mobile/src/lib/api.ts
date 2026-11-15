@@ -77,6 +77,9 @@ export const api = {
 
 // ---------- types (mirror backend/controllers/memberAppController.js) ----------
 
+export type NoticeItem = { id: string; kind: 'news' | 'offer' | 'notice' | 'reminder'; title: string; body: string; link: string | null; at: string; read: boolean; auto: boolean };
+export type NoticesResponse = { items: NoticeItem[]; unread: number };
+
 export type Profile = {
   _id: string;
   memberCode: string;
