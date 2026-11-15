@@ -27,7 +27,7 @@ const gymStateBlock = async (req) => {
     return { status: 403, code: 'GYM_SUSPENDED', message: 'This gym account is suspended. Please contact support.' };
   }
   const expired = expiryBlock(tenant);
-  if (expired && req.actorType === 'user' && !SAFE_METHODS.has(req.method) && !req.originalUrl.startsWith('/api/auth/')) return expired;
+  if (expired && req.actorType === 'user' && !SAFE_METHODS.has(req.method) && !req.originalUrl.startsWith('/api/auth/') && !req.originalUrl.startsWith('/api/billing/')) return expired;
   return null;
 };
 

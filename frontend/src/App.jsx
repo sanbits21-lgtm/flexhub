@@ -39,6 +39,8 @@ import Ratings from './pages/branch/Ratings';
 import Expenses from './pages/tenant/Expenses';
 import Payroll from './pages/tenant/Payroll';
 import Announcements from './pages/branch/Announcements';
+import Billing from './pages/tenant/Billing';
+import PaymentsToConfirm from './pages/platform/PaymentsToConfirm';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -93,6 +95,8 @@ export default function App() {
 
           <Route path="/member-app-qr" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><MemberAppQr /></AppLayout></RoleRoute>} />
           <Route path="/ratings" element={<RoleRoute allow={['branch-manager', 'tenant-admin']}><AppLayout><FeatureRoute feature="features:ratings"><Ratings /></FeatureRoute></AppLayout></RoleRoute>} />
+          <Route path="/billing" element={<RoleRoute allow={['tenant-admin']}><AppLayout><Billing /></AppLayout></RoleRoute>} />
+          <Route path="/billing-orders" element={<RoleRoute allow={['super-admin', 'platform-admin']}><AppLayout><PaymentsToConfirm /></AppLayout></RoleRoute>} />
           <Route path="/expenses" element={<RoleRoute allow={['tenant-admin', 'branch-manager']}><AppLayout><FeatureRoute feature="pages:expenses"><Expenses /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/payroll" element={<RoleRoute allow={['tenant-admin']}><AppLayout><FeatureRoute feature="pages:expenses"><Payroll /></FeatureRoute></AppLayout></RoleRoute>} />
           <Route path="/announcements" element={<RoleRoute allow={['tenant-admin', 'branch-manager']}><AppLayout><FeatureRoute feature="features:announcements"><Announcements /></FeatureRoute></AppLayout></RoleRoute>} />

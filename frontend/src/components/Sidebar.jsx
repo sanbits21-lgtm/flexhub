@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   BarChart3, Building, Building2, CalendarCheck, CreditCard, Dumbbell, LayoutDashboard, Landmark, Package, Palette,
-  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight, Megaphone, Receipt, Banknote,
+  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight, Megaphone, Receipt, Banknote, Gem, BadgeCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
@@ -18,12 +18,14 @@ const NAV_BY_ROLE = {
     { to: '/platform-admins', label: 'Platform Admins', icon: ShieldCheck },
     { to: '/tenants', label: 'Tenants', icon: Building },
     { to: '/packages', label: 'Packages', icon: Package },
+    { to: '/billing-orders', label: 'Payments to confirm', icon: BadgeCheck },
     { to: '/audit-logs', label: 'Audit Log', icon: ScrollText },
     { to: '/platform-settings', label: 'Platform Settings', icon: Settings },
   ],
   'platform-admin': [
     { to: '/tenants', label: 'Tenants', icon: Building },
     { to: '/packages', label: 'Packages', icon: Package },
+    { to: '/billing-orders', label: 'Payments to confirm', icon: BadgeCheck },
     { to: '/audit-logs', label: 'Audit Log', icon: ScrollText },
   ],
   'tenant-admin': [
@@ -40,6 +42,7 @@ const NAV_BY_ROLE = {
     { to: '/payroll', label: 'Payroll', icon: Banknote, feature: 'pages:expenses' },
     { to: '/announcements', label: 'Announcements', icon: Megaphone, feature: 'features:announcements' },
     { to: '/reports', label: 'Reports', icon: BarChart3 },
+    { to: '/billing', label: 'Billing', icon: Gem },
     { to: '/payment-settings', label: 'Payment Settings', icon: Landmark },
     { to: '/branding', label: 'Branding & Address', icon: Palette },
   ],
@@ -64,9 +67,6 @@ const readCollapsed = () => { try { return localStorage.getItem(COLLAPSED_KEY) =
 
 // `slim` is the icon-only desktop menu; on a phone the menu is a drawer and always shows labels.
 const linkClass = (slim) => ({ isActive }) => `flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px] transition ${slim ? 'md:justify-center md:px-0' : ''} ${isActive ? 'bg-accent font-semibold text-accent-ink shadow-[0_8px_24px_-12px_rgb(var(--accent)/0.8)]' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`;
-
-// The support address for "upgrade" (set VITE_SUPPORT_EMAIL when building). Without it the button is simply not shown.
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL;
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, subscription } = useAuth();
@@ -125,12 +125,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               <p className="mt-0.5 flex items-center gap-2 truncate text-sm font-medium text-gray-100"><Building2 className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />{brand.name}</p>
             </div>
           )}
-          {onTrial && SUPPORT_EMAIL && (
+          {onTrial && (
             <div className={`relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800 to-gray-900 p-4 ${hideWhenSlim}`}>
               <div aria-hidden="true" className="absolute -right-6 -top-6 h-20 w-12 rotate-45 bg-gradient-to-b from-accent to-accent/0 opacity-60" />
               <p className="flex items-center gap-1.5 text-sm font-bold text-white"><Sparkles className="h-4 w-4 text-accent" aria-hidden="true" /> Grow your club</p>
               <p className="mt-1 text-xs text-gray-300">{subscription.daysLeft} day{subscription.daysLeft === 1 ? '' : 's'} left in your free trial.</p>
-              <a href={`mailto:${SUPPORT_EMAIL}?subject=Upgrade%20my%20plan`} className="mt-3 inline-flex rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-accent-ink hover:brightness-110">Upgrade plan</a>
+              <Link to="/billing" onClick={onClose} className="mt-3 inline-flex rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-accent-ink hover:brightness-110">Upgrade plan</Link>
             </div>
           )}
           <div className={hideWhenSlim}><UserMenu variant="card" placement="top" /></div>

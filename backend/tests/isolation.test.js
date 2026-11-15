@@ -19,6 +19,8 @@ const Expense = require('../models/Expense');
 const Payee = require('../models/Payee');
 const Announcement = require('../models/Announcement');
 const AnnouncementRead = require('../models/AnnouncementRead');
+const SubscriptionOrder = require('../models/SubscriptionOrder');
+const SubscriptionPackage = require('../models/SubscriptionPackage');
 
 delete process.env.ANTHROPIC_API_KEY;
 
@@ -105,6 +107,12 @@ const buildGym = async (label) => {
   const expense = await Expense.create({ tenantId: t.tenant._id, branchId: t.branch._id, category: 'rent', amount: 1234, date: new Date(), paidTo: `${label} landlord`, createdBy: t.admin._id });
   const announcement = await Announcement.create({ tenantId: t.tenant._id, title: `${label} notice`, body: `${label} body`, branchIds: [] });
   await AnnouncementRead.create({ tenantId: t.tenant._id, announcementId: announcement._id, memberId: member._id });
+  // A gym's own subscription payment, waiting for platform staff.
+  const billingPackage = await SubscriptionPackage.create({ name: `Fixture package ${label.length}`, price: 1000, maxBranches: 1, isActive: false }); // the catalogue is platform-wide, so it carries no gym's name and is not on offer
+  const subscriptionOrder = await SubscriptionOrder.create({
+    tenantId: t.tenant._id, packageId: billingPackage._id, packageName: `${label} package`, kind: 'upgrade', periods: 1, months: 1, amount: 1000, total: 1000,
+    status: 'awaiting_confirmation', reference: `${label}REF`, utr: `99${Date.now()}`.slice(0, 12), utrKey: `99${Date.now()}`.slice(0, 12), expiresAt: new Date(Date.now() + 86400000), submittedAt: new Date(),
+  });
 
   return {
     t, label, northManagerToken, memberToken,
@@ -112,13 +120,13 @@ const buildGym = async (label) => {
       tenant: t.tenant._id.toString(), branch: t.branch._id.toString(), north: north._id.toString(), plan: t.plan._id.toString(), branchPlan: branchPlan._id.toString(),
       member: member._id, northMember: northMember._id, trainer: t.trainer._id.toString(), manager: t.manager._id.toString(), admin: t.admin._id.toString(),
       classType: classType._id, session: classSession._id.toString(), booking: booking._id.toString(), pt: ptSession._id.toString(), equipment: equipment._id,
-      payment: payment._id, attendance: attendance._id.toString(), memberPlan: staffPlan._id, entry: entryId, payee: payee._id, expense: expense._id, announcement: announcement._id,
+      payment: payment._id, attendance: attendance._id.toString(), memberPlan: staffPlan._id, entry: entryId, payee: payee._id, expense: expense._id, announcement: announcement._id, order: subscriptionOrder._id,
     },
   };
 };
 
 // Everything in the database that belongs to a gym, as one comparable string.
-const MODELS = [User, Member, Branch, MembershipPlan, ClassSession, ClassType, Booking, PtSession, Attendance, Rating, MemberPayment, MemberPlan, Equipment, Expense, Payee, Announcement, AnnouncementRead];
+const MODELS = [User, Member, Branch, MembershipPlan, ClassSession, ClassType, Booking, PtSession, Attendance, Rating, MemberPayment, MemberPlan, Equipment, Expense, Payee, Announcement, AnnouncementRead, SubscriptionOrder];
 const gymState = async (tenantId) => {
   const parts = [];
   for (const Model of MODELS) {
@@ -183,7 +191,7 @@ describe('gym A cannot reach gym B through any route', () => {
       '/api/member-app/sessions': ['pt', 'session'], '/api/equipment': ['equipment'], '/api/tenants': ['tenant'],
       '/api/platform-admins': ['admin', 'tenant'], '/api/packages': ['tenant'], '/api/attendance': ['member', 'attendance'],
       '/api/profile': ['trainer', 'manager', 'admin'], '/api/expenses': ['expense', 'equipment'], '/api/payroll': ['payee', 'trainer'],
-      '/api/announcements': ['announcement'], '/api/member-app/notices': ['announcement'],
+      '/api/billing': ['order'], '/api/billing-admin': ['order'], '/api/announcements': ['announcement'], '/api/member-app/notices': ['announcement'],
     };
     const kindsFor = (path) => {
       const prefix = Object.keys(BY_PREFIX).find((p) => path.startsWith(p));

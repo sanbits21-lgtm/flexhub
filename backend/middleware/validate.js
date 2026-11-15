@@ -333,6 +333,24 @@ const schemas = {
     link: z.string().trim().max(300).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
   }).passthrough(),
 
+  billingOrder: z.object({
+    packageId: objectId,
+    periods: z.coerce.number().int().min(1).max(12).optional(),
+  }).passthrough(),
+
+  billingSubmit: z.object({
+    utr: z.string().trim().regex(/^\d{12}$/, 'must be the 12-digit transaction number from your payment app (UTR / reference number)'),
+    image: z.string().max(7_000_000).optional(),
+  }).passthrough(),
+
+  billingApprove: z.object({
+    received: z.coerce.number().positive('must be the amount that reached the bank').max(MAX_MONEY),
+  }).passthrough(),
+
+  billingReject: z.object({
+    reason: z.string().trim().min(3, 'is required').max(200, 'is too long'),
+  }).passthrough(),
+
   audiencePreview: z.object({
     branchIds: z.array(objectId).max(100).optional(),
     audience: z.object({

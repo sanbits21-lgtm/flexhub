@@ -9,6 +9,9 @@ const defaults = () => ({
   trialDays: envNumber('TRIAL_DAYS', 14),
   trialMaxMembers: envNumber('TRIAL_MAX_MEMBERS', 50),
   trialMaxBranches: envNumber('TRIAL_MAX_BRANCHES', 1),
+  billingUpiId: process.env.BILLING_UPI_ID || '',
+  billingPayeeName: process.env.BILLING_PAYEE_NAME || '',
+  billingGstPercent: 0,
 });
 
 /** The settings in force: stored values over environment defaults. */
@@ -33,6 +36,21 @@ const updateSettings = async (input, userId) => {
   if (input.trialDays !== undefined) set.trialDays = whole(input.trialDays, 'Trial length', 1, 365);
   if (input.trialMaxMembers !== undefined) set.trialMaxMembers = whole(input.trialMaxMembers, 'Trial member limit', 1, 100000);
   if (input.trialMaxBranches !== undefined) set.trialMaxBranches = whole(input.trialMaxBranches, 'Trial branch limit', 1, 100);
+  if (input.billingUpiId !== undefined) {
+    const upi = String(input.billingUpiId).trim();
+    if (upi && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) throw new BadRequest('The UPI ID must look like name@bank.');
+    set.billingUpiId = upi;
+  }
+  if (input.billingPayeeName !== undefined) {
+    const name = String(input.billingPayeeName).trim();
+    if (name.length > 60) throw new BadRequest('The payee name must be 60 characters or fewer.');
+    set.billingPayeeName = name;
+  }
+  if (input.billingGstPercent !== undefined) {
+    const gst = Number(input.billingGstPercent);
+    if (!Number.isFinite(gst) || gst < 0 || gst > 28) throw new BadRequest('GST must be between 0 and 28 percent.');
+    set.billingGstPercent = gst;
+  }
   await PlatformSettings.updateOne({ key: 'main' }, { $set: { ...set, updatedBy: userId } }, { upsert: true });
   return getSettings();
 };

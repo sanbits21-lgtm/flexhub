@@ -220,6 +220,21 @@ export const packagesAPI = {
   remove: (id) => api.delete(`/packages/${id}`),
 };
 
+export const billingAPI = {
+  overview: () => api.get('/billing'),
+  createOrder: (packageId, periods) => api.post('/billing/orders', { packageId, periods }),
+  submit: (id, data) => api.post(`/billing/orders/${id}/submit`, data),
+  cancel: (id) => api.post(`/billing/orders/${id}/cancel`, {}),
+  proof: (id) => api.get(`/billing/orders/${id}/proof`, { responseType: 'blob' }),
+};
+
+export const billingAdminAPI = {
+  list: (status) => api.get('/billing-admin/orders', { params: status ? { status } : {} }),
+  approve: (id, received) => api.post(`/billing-admin/orders/${id}/approve`, { received }),
+  reject: (id, reason) => api.post(`/billing-admin/orders/${id}/reject`, { reason }),
+  proof: (id) => api.get(`/billing-admin/orders/${id}/proof`, { responseType: 'blob' }),
+};
+
 export const platformSettingsAPI = {
   get: () => api.get('/platform-settings'),
   // The server waits for the mail server (up to ~10 s), so these get a longer limit than a normal call.

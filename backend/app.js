@@ -59,7 +59,7 @@ app.use(cors({
 // member import (hundreds of rows) and a profile photo (base64, up to 1 MB) need more.
 const bigBody = express.json({ limit: '5mb' });
 const smallBody = express.json({ limit: '100kb' });
-app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo|profile\/photo|tenant-settings\/branding\/logo|expenses\/[^/]+\/receipt)/.test(req.path) ? bigBody : smallBody)(req, res, next));
+app.use((req, res, next) => (/^\/api\/(members\/bulk|member-app\/me\/photo|profile\/photo|tenant-settings\/branding\/logo|expenses\/[^/]+\/receipt|billing\/orders\/[^/]+\/submit)/.test(req.path) ? bigBody : smallBody)(req, res, next));
 
 // Which gym is this address? (iron.example.com). Before static files so a renamed gym's old
 // address can redirect to the new one.
@@ -166,6 +166,8 @@ app.use('/api/pt-sessions', ptSessionRoutes);
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/payroll', require('./routes/payroll'));
 app.use('/api/announcements', require('./routes/announcements'));
+app.use('/api/billing', require('./routes/billing'));
+app.use('/api/billing-admin', require('./routes/billingAdmin'));
 
 // Single-service deployment: serve the built frontend from this same process when
 // present, so the whole app is one Node service (no separate static host needed, and

@@ -9,6 +9,10 @@ const platformSettingsSchema = new mongoose.Schema({
   trialDays: { type: Number, min: 1, max: 365 },
   trialMaxMembers: { type: Number, min: 1, max: 100000 },
   trialMaxBranches: { type: Number, min: 1, max: 100 },
+  // Where gyms send their subscription payments (step 1 of self-serve upgrades: a UPI QR confirmed by hand).
+  billingUpiId: { type: String, trim: true, maxlength: 256 },
+  billingPayeeName: { type: String, trim: true, maxlength: 60 },
+  billingGstPercent: { type: Number, min: 0, max: 28 },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
