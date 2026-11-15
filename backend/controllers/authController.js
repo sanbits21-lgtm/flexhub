@@ -3,6 +3,7 @@ const Tenant = require('../models/Tenant');
 const generateToken = require('../utils/generateToken');
 const { startSession, deliver, revokeActor } = require('../utils/sessions');
 const throttle = require('../utils/loginThrottle');
+const { guardCurrentPassword } = require('../utils/passwordGuard');
 const { passwordProblem } = require('../utils/passwordPolicy');
 const { resolveFeatures } = require('../utils/features');
 const { publicBrand } = require('../utils/subdomain');
@@ -90,14 +91,18 @@ exports.getMe = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
+  const guard = guardCurrentPassword('user', req.user._id);
+  if (await guard.locked(res)) return;
   const { currentPassword, newPassword } = req.body;
   if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 72) {
     return res.status(400).json({ message: 'New password must be 8 to 72 characters.' });
   }
   const user = await User.findById(req.user._id);
   if (!(await user.matchPassword(currentPassword))) {
+    await guard.wrong();
     return res.status(400).json({ message: 'Current password is incorrect' });
   }
+  await guard.right();
   const weak = passwordProblem(newPassword, user);
   if (weak) return res.status(400).json({ message: weak });
   user.password = newPassword;

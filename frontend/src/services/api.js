@@ -64,6 +64,7 @@ export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   logoutAll: () => api.post('/auth/logout-all'),
+  changePassword: (currentPassword, newPassword) => api.post('/auth/change-password', { currentPassword, newPassword }),
   signupConfig: () => api.get('/public/signup-config'),
   signup: (data) => api.post('/public/signup', data),
   verifyEmail: (token) => api.post('/public/verify-email', { token }),

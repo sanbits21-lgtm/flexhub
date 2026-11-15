@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronDown, LogOut } from 'lucide-react';
+import { Camera, ChevronDown, KeyRound, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StaffAvatar from './StaffAvatar';
 import ProfilePhotoModal from './ProfilePhotoModal';
+import ChangePasswordModal from './ChangePasswordModal';
 import ThemeToggle from './ThemeToggle';
 
 const ROLE_LABEL = { 'super-admin': 'Owner', 'platform-admin': 'Platform admin', 'tenant-admin': 'Admin', 'branch-manager': 'Branch manager', trainer: 'Trainer' };
 const initialsOf = (name = '') => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 
-// The signed-in person: who they are, change your photo, switch theme, log out. Used twice: as a card at
+// The signed-in person: who they are, change your photo or password, switch theme, log out. Used twice: as a card at
 // the foot of the sidebar (`variant="card"`) and as a round avatar in the top bar (`variant="avatar"`).
 export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const box = useRef(null);
   const canHavePhoto = ['tenant-admin', 'branch-manager', 'trainer'].includes(user?.role);
 
@@ -61,6 +63,9 @@ export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
               <Camera className="h-4 w-4" aria-hidden="true" /> {user.hasPhoto ? 'Change photo' : 'Add a photo'}
             </button>
           )}
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); setPasswordOpen(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">
+            <KeyRound className="h-4 w-4" aria-hidden="true" /> Change password
+          </button>
           <div className="flex items-center justify-between px-3 py-1 text-sm text-gray-700 dark:text-gray-200">
             <span>Theme</span>
             <ThemeToggle className="text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10" />
@@ -71,6 +76,7 @@ export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
         </div>
       )}
       {canHavePhoto && <ProfilePhotoModal open={photoOpen} onClose={() => setPhotoOpen(false)} />}
+      <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
   );
 }

@@ -37,7 +37,7 @@ export default function TempPasswordDialog({ open, onClose, title, intro, load, 
 
         {creds ? (
           <>
-            <p>Give these to {creds.name}. The password is shown <strong>once</strong>, and they should change it after signing in. We also emailed them that it was reset.</p>
+            <p>Give these to {creds.name}. The password is shown <strong>once</strong>. We do not email it. Ask them to change it after signing in, from the profile menu (Change password). We did email them that it was reset, without the password.</p>
             {creds.emailConfirmed === false && <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-amber-800 dark:text-amber-300">This person never confirmed their email address, so they cannot sign in until they do.</p>}
             <dl className="grid grid-cols-[6rem_1fr] gap-y-1">
               <dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="break-all font-mono">{creds.email}</dd>

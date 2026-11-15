@@ -13,6 +13,7 @@ const { withDerivedStatus } = require('../utils/membershipStatus');
 const { generatePlan, buildProfile } = require('../utils/planGenerator');
 const { logAudit } = require('../utils/audit');
 const { checkPhoto, storePhoto, removePhotoFile, sendPhoto } = require('../utils/photos');
+const { guardCurrentPassword } = require('../utils/passwordGuard');
 const jwt = require('jsonwebtoken');
 const MemberPayment = require('../models/MemberPayment');
 
@@ -202,6 +203,8 @@ exports.generate = async (req, res) => {
 // ---------- password ----------
 
 exports.changePassword = async (req, res) => {
+  const guard = guardCurrentPassword('member', req.member._id);
+  if (await guard.locked(res)) return;
   const { currentPassword, newPassword } = req.body || {};
   if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 72) {
     return res.status(400).json({ message: 'New password must be 8 to 72 characters.' });
@@ -209,7 +212,8 @@ exports.changePassword = async (req, res) => {
   const member = await Member.findById(req.member._id);
   // 400, not 401: a wrong password here is a bad request. 401 means the SESSION is bad, and the apps
   // answer that by signing the member out.
-  if (!(await member.matchPassword(currentPassword))) return res.status(400).json({ message: 'Current password is incorrect.' });
+  if (!(await member.matchPassword(currentPassword))) { await guard.wrong(); return res.status(400).json({ message: 'Current password is incorrect.' }); }
+  await guard.right();
   const weak = passwordProblem(newPassword, member);
   if (weak) return res.status(400).json({ message: weak });
   member.password = newPassword;
@@ -226,10 +230,13 @@ exports.changePassword = async (req, res) => {
 // member code, because the gym must retain its books. Future sessions are cancelled so a
 // trainer is not left waiting for someone who no longer exists.
 exports.deleteAccount = async (req, res) => {
+  const guard = guardCurrentPassword('member', req.member._id);
+  if (await guard.locked(res)) return;
   const { password } = req.body || {};
   if (typeof password !== 'string' || !password) return res.status(400).json({ message: 'Enter your password to delete your account.' });
   const member = await Member.findById(req.member._id);
-  if (!(await member.matchPassword(password))) return res.status(400).json({ message: 'Password is incorrect.' });
+  if (!(await member.matchPassword(password))) { await guard.wrong(); return res.status(400).json({ message: 'Password is incorrect.' }); }
+  await guard.right();
 
   const photo = member.photoUrl;
   const now = new Date();

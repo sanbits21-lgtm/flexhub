@@ -127,3 +127,57 @@ describe('platform staff reset a gym owner', () => {
     expect(res.body.emailConfirmed).toBe(false);
   });
 });
+
+describe('guessing the current password while signed in', () => {
+  const change = (token, currentPassword, newPassword = 'Brand-New-Pass-77') => request(app).post('/api/auth/change-password').set(auth(token)).send({ currentPassword, newPassword });
+  const freshStaff = async (label) => {
+    const email = `${uniq(label)}@example.com`;
+    const user = await User.create({ name: `Guard ${label}`, email, phone: '9000000072', password: PASSWORD, role: 'trainer', tenantId: t.tenant._id, branchId: t.branch._id });
+    return { user, email, token: await login(email) };
+  };
+
+  it('locks after five wrong passwords, even for the right one, and says how long', async () => {
+    const who = await freshStaff('lock');
+    for (let i = 0; i < 5; i += 1) expect((await change(who.token, 'not-it')).status).toBe(400);
+    const locked = await change(who.token, PASSWORD);
+    expect(locked.status).toBe(429);
+    expect(locked.body).toMatchObject({ code: 'PASSWORD_CHECK_LOCKED' });
+    expect(locked.body.message).toMatch(/Try again in 15 minutes/);
+    expect(Number(locked.headers['retry-after'])).toBeGreaterThan(14 * 60);
+    expect((await User.findById(who.user._id)).password).toMatch(/^\$2[aby]\$/); // nothing was changed
+    expect((await staffLogin(who.email, PASSWORD)).status).toBe(200); // signing in is a separate count and still works
+  });
+
+  it('a right password clears the count, and the new password works', async () => {
+    const who = await freshStaff('clear');
+    for (let i = 0; i < 3; i += 1) await change(who.token, 'not-it');
+    const ok = await change(who.token, PASSWORD);
+    expect(ok.status).toBe(200);
+    for (let i = 0; i < 4; i += 1) expect((await change(ok.body.token, 'still-not-it')).status).toBe(400); // counting from zero again
+    expect((await staffLogin(who.email, 'Brand-New-Pass-77')).status).toBe(200);
+    expect((await staffLogin(who.email, PASSWORD)).status).toBe(401);
+  });
+
+  it('one person being locked does not lock anyone else', async () => {
+    const a = await freshStaff('a');
+    const b = await freshStaff('b');
+    for (let i = 0; i < 5; i += 1) await change(a.token, 'not-it');
+    expect((await change(a.token, PASSWORD)).status).toBe(429);
+    expect((await change(b.token, PASSWORD)).status).toBe(200);
+  });
+
+  it('members get the same limit on changing their password and on deleting their account', async () => {
+    const m = await createMember(t.managerToken, { branchId: t.branch._id.toString(), planId: t.plan._id.toString(), name: 'Guard Member', phone: '9690000077' });
+    const access = await request(app).post(`/api/members/${m._id}/app-access`).set(auth(t.managerToken));
+    const token = (await memberLogin(access.body.memberCode, access.body.password)).body.token;
+    const changeM = (cur) => request(app).put('/api/member-app/me/password').set(auth(token)).send({ currentPassword: cur, newPassword: 'Another-Good-Pass-9' });
+    const del = (pw) => request(app).delete('/api/member-app/me').set(auth(token)).send({ password: pw });
+    for (let i = 0; i < 3; i += 1) expect((await changeM('nope-nope')).status).toBe(400);
+    for (let i = 0; i < 2; i += 1) expect((await del('nope-nope')).status).toBe(400); // the two screens share one count
+    expect((await changeM(access.body.password)).status).toBe(429);
+    const locked = await del(access.body.password);
+    expect(locked.status).toBe(429);
+    expect(locked.body.code).toBe('PASSWORD_CHECK_LOCKED');
+    expect((await Member.findById(m._id)).isActive).toBe(true); // the account was not deleted
+  });
+});

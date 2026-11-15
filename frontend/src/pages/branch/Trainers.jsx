@@ -202,7 +202,7 @@ export default function Trainers() {
         )}
         {reset?.creds && (
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <p>Give these to the trainer. The password is shown once, and they can change it under Account in the app.</p>
+            <p>Give these to the trainer. The password is shown once. They can change it from the profile menu on the website (Change password), or under Account in the app.</p>
             <dl className="grid grid-cols-[6rem_1fr] gap-y-1">
               <dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-mono break-all">{reset.creds.email}</dd>
               <dt className="text-gray-500 dark:text-gray-400">Password</dt><dd className="font-mono">{reset.creds.password}</dd>
