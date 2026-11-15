@@ -23,6 +23,7 @@ export default function PlatformSettings() {
         trialDays: Number(form.trialDays),
         trialMaxMembers: Number(form.trialMaxMembers),
         trialMaxBranches: Number(form.trialMaxBranches),
+        memberAppUrl: form.memberAppUrl || '',
         billingUpiId: form.billingUpiId || '',
         billingPayeeName: form.billingPayeeName || '',
         billingGstPercent: Number(form.billingGstPercent) || 0,
@@ -59,6 +60,13 @@ export default function PlatformSettings() {
         {num('trialDays', 'Trial length (days)', 'Counted from the day you approve a gym, not from when it registers. You can override this for one gym when approving it.', 365)}
         {num('trialMaxMembers', 'Members allowed during the trial', 'Adding more is blocked until the gym moves to a paid plan.', 100000)}
         {num('trialMaxBranches', 'Branches allowed during the trial', 'Applies to new approvals; existing gyms keep what they were given.', 100)}
+        <h2 className="font-semibold text-gray-900 dark:text-gray-100 pt-2">Member app address</h2>
+        <div>
+          <label htmlFor="memberAppUrl" className={labelClass}>Address the front-desk QR code opens (all gyms)</label>
+          <input id="memberAppUrl" placeholder="https://{slug}.fitzyclub.in/member" maxLength={300} value={form.memberAppUrl || ''} onChange={(e) => setForm({ ...form, memberAppUrl: e.target.value })} className={inputClass} />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use <code>{'{slug}'}</code> for each gym's own name (https://{'{slug}'}.fitzyclub.in/member), or leave it out for one address shared by every gym (https://fitzyclub.in/member). Empty means the automatic address. A gym owner can still set their own. This changes the QR code and link only; emails keep using the real site address.</p>
+        </div>
+
         <h2 className="font-semibold text-gray-900 dark:text-gray-100 pt-2">Where gyms pay for their plan</h2>
         <p className="text-sm text-gray-600 dark:text-gray-300">Gym owners pay by scanning a UPI QR for this account, then you confirm each payment under Payments to confirm. Leave the UPI ID empty to switch paying off (owners are then asked to contact you).</p>
         <div>

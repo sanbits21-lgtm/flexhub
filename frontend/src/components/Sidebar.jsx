@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   BarChart3, Building, Building2, CalendarCheck, CreditCard, Dumbbell, LayoutDashboard, Landmark, Package, Palette,
-  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight, Megaphone, Receipt, Banknote, Gem, BadgeCheck,
+  QrCode, ScrollText, Settings, ShieldCheck, Star, Tags, UserCog, Users, Wallet, X, Sparkles, ChevronLeft, ChevronRight, Megaphone, Receipt, Banknote, Gem, BadgeCheck, ScanLine,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
@@ -32,6 +32,7 @@ const NAV_BY_ROLE = {
     { to: '/branches', label: 'Branches', icon: Building2 },
     { to: '/members', label: 'Members', icon: Users },
     { to: '/member-app-qr', label: 'Member App QR', icon: QrCode },
+    { to: '/scan', label: 'Scan pass', icon: ScanLine, feature: 'features:qrCheckIn' },
     { to: '/ratings', label: 'Ratings', icon: Star },
     { to: '/equipment', label: 'Equipment', icon: Dumbbell },
     { to: '/trainers', label: 'Trainers', icon: UserCog },
@@ -49,6 +50,7 @@ const NAV_BY_ROLE = {
   'branch-manager': [
     { to: '/members', label: 'Members', icon: Users },
     { to: '/member-app-qr', label: 'Member App QR', icon: QrCode },
+    { to: '/scan', label: 'Scan pass', icon: ScanLine, feature: 'features:qrCheckIn' },
     { to: '/ratings', label: 'Ratings', icon: Star },
     { to: '/trainers', label: 'Trainers', icon: UserCog },
     { to: '/equipment', label: 'Equipment', icon: Dumbbell },

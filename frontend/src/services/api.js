@@ -191,6 +191,7 @@ export const membershipPlansAPI = {
 };
 
 export const attendanceAPI = {
+  scan: (token) => api.post('/attendance/scan', { token }),
   list: (params) => api.get('/attendance', { params }),
   forMember: (id) => api.get(`/attendance/member/${id}`),
   checkIn: (memberId) => api.post('/attendance/check-in', { memberId }),
@@ -255,6 +256,7 @@ export const ratingsAPI = {
 export const tenantSettingsAPI = {
   get: () => api.get('/tenant-settings'),
   memberAppLink: () => api.get('/tenant-settings/member-app-link'),
+  setMemberAppLink: (url) => api.put('/tenant-settings/member-app-link', { url }),
   paymentAccounts: () => api.get('/tenant-settings/payment-accounts'),
   updateBranchPayment: (branchId, data) => api.put(`/tenant-settings/branches/${branchId}/payment`, data),
   getBranding: () => api.get('/tenant-settings/branding'),

@@ -28,6 +28,8 @@ const tenantSchema = new mongoose.Schema({
       expiredText: { type: String, trim: true, maxlength: 300, default: '' },
     },
   },
+  // The gym's own member app address, if its owner set one. Empty = the platform's, else the automatic one.
+  memberAppUrl: { type: String, trim: true, maxlength: 300, default: '' },
   // The gym's own extra member fields (see utils/memberFields.js). Values live on each member.
   memberFields: [{
     _id: false,

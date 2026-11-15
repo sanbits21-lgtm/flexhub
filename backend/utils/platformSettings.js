@@ -1,5 +1,6 @@
 const PlatformSettings = require('../models/PlatformSettings');
 const { BadRequest } = require('./query');
+const { cleanAddress } = require('./memberAppLink');
 
 const envNumber = (name, fallback) => (Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
 
@@ -9,6 +10,7 @@ const defaults = () => ({
   trialDays: envNumber('TRIAL_DAYS', 14),
   trialMaxMembers: envNumber('TRIAL_MAX_MEMBERS', 50),
   trialMaxBranches: envNumber('TRIAL_MAX_BRANCHES', 1),
+  memberAppUrl: process.env.MEMBER_APP_URL || '',
   billingUpiId: process.env.BILLING_UPI_ID || '',
   billingPayeeName: process.env.BILLING_PAYEE_NAME || '',
   billingGstPercent: 0,
@@ -36,6 +38,7 @@ const updateSettings = async (input, userId) => {
   if (input.trialDays !== undefined) set.trialDays = whole(input.trialDays, 'Trial length', 1, 365);
   if (input.trialMaxMembers !== undefined) set.trialMaxMembers = whole(input.trialMaxMembers, 'Trial member limit', 1, 100000);
   if (input.trialMaxBranches !== undefined) set.trialMaxBranches = whole(input.trialMaxBranches, 'Trial branch limit', 1, 100);
+  if (input.memberAppUrl !== undefined) set.memberAppUrl = cleanAddress(input.memberAppUrl, { template: true });
   if (input.billingUpiId !== undefined) {
     const upi = String(input.billingUpiId).trim();
     if (upi && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi)) throw new BadRequest('The UPI ID must look like name@bank.');

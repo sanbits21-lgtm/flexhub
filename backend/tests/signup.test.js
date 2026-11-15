@@ -287,7 +287,7 @@ describe('trial terms are a setting', () => {
 
   it('starts from the defaults and can be read by platform staff', async () => {
     const res = await request(app).get('/api/platform-settings').set(auth(platformAdmin.token));
-    expect(res.body).toEqual({ selfSignupEnabled: true, trialDays: 14, trialMaxMembers: 50, trialMaxBranches: 1, billingUpiId: '', billingPayeeName: '', billingGstPercent: 0 });
+    expect(res.body).toEqual({ selfSignupEnabled: true, trialDays: 14, trialMaxMembers: 50, trialMaxBranches: 1, memberAppUrl: '', billingUpiId: '', billingPayeeName: '', billingGstPercent: 0 });
   });
 
   it('is changed by the super-admin only, with validation', async () => {

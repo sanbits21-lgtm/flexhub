@@ -1,19 +1,42 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { tenantSettingsAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 // A QR code the gym shows (printed at the front desk, or full screen on the manager's computer)
 // so a member can point their phone at it and land on the member app, instead of typing an address.
 // The code holds only the public address of the app: no member data, and it never expires.
+const SOURCE = { gym: 'set by you', platform: 'set by FitzyClub for all gyms', automatic: 'the automatic address' };
+
 export default function MemberAppQr() {
+  const { user } = useAuth();
+  const owner = user?.role === 'tenant-admin';
+  const [custom, setCustom] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState(null); // { ok, text }
   const [link, setLink] = useState(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [big, setBig] = useState(false);
 
   useEffect(() => {
-    tenantSettingsAPI.memberAppLink().then((res) => setLink(res.data)).catch(() => setError('Could not load the link. Try again.'));
+    tenantSettingsAPI.memberAppLink().then((res) => { setLink(res.data); setCustom(res.data.custom || ''); }).catch(() => setError('Could not load the link. Try again.'));
   }, []);
+
+  const saveAddress = async (value) => {
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const res = await tenantSettingsAPI.setMemberAppLink(value);
+      setLink(res.data);
+      setCustom(res.data.custom || '');
+      setSaveMsg({ ok: true, text: value ? 'Saved. The QR code now points to your address.' : 'Back to the standard address. The QR code was updated.' });
+    } catch (err) {
+      setSaveMsg({ ok: false, text: err.response?.data?.message || 'Could not save the address.' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const copy = async () => {
     try { await navigator.clipboard.writeText(link.url); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard blocked */ }
@@ -59,6 +82,24 @@ export default function MemberAppQr() {
               <li>Add it to the home screen to open it like any other app.</li>
             </ol>
             <p className="mt-3 text-gray-500 dark:text-gray-400">The code opens the sign-in page only. It does not sign anyone in, and it never expires.</p>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-200">
+            <p className="font-semibold">Where the code points</p>
+            <p className="mt-1 break-all font-mono text-xs">{link.url}</p>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">This is {SOURCE[link.source] || 'the standard address'}.</p>
+            {owner ? (
+              <form onSubmit={(e) => { e.preventDefault(); saveAddress(custom.trim()); }} className="mt-3 space-y-2">
+                <label htmlFor="ma-address" className="block text-xs text-gray-500 dark:text-gray-400">Use your own address (optional)</label>
+                <input id="ma-address" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="https://go.yourgym.com/join" maxLength={300} className="w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" />
+                <p className="text-xs text-gray-500 dark:text-gray-400">It must open your FitzyClub member app, for example a short link that redirects to it. Reset emails to members still use the standard address.</p>
+                {saveMsg && <p role="status" className={`text-xs ${saveMsg.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{saveMsg.text}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" disabled={saving || custom.trim() === (link.custom || '')} className={btn}>{saving ? 'Saving...' : 'Save address'}</button>
+                  {link.custom && <button type="button" disabled={saving} onClick={() => saveAddress('')} className={btn}>Use the standard address</button>}
+                </div>
+              </form>
+            ) : <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Only the gym owner can change it.</p>}
           </div>
         </div>
       </div>

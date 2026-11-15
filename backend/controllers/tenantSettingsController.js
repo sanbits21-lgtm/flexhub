@@ -4,6 +4,8 @@ const { logAudit } = require('../utils/audit');
 const { gymMemberAppUrl } = require('../utils/links');
 const { resolveFeatures } = require('../utils/features');
 const { MAX_FIELDS, cleanLabel, cleanType, uniqueKey } = require('../utils/memberFields');
+const { getSettings } = require('../utils/platformSettings');
+const { cleanAddress, resolveMemberAppLink, fill } = require('../utils/memberAppLink');
 const { changeSlug, cleanBrandColor, cleanGradientAngle, brandColors, cleanLogoUrl, publicBrand, baseDomain, REDIRECT_DAYS } = require('../utils/subdomain');
 const { MAX_PHOTO_BYTES, sniffImage, imageSize, storePhoto, removePhotoFile, sendPhoto } = require('../utils/photos');
 
@@ -57,10 +59,30 @@ exports.updateBranchAccount = async (req, res) => {
 
 // The address a member opens to use the member app, for the QR code at the front desk or on the
 // manager's screen. It is the gym's own address when subdomains are on, else the main site.
+// What the QR poster points to. `custom` is the gym's own override (owners edit it), `platform` is what the platform-wide
+// setting would give this gym, `automatic` is what it would be with neither.
+const memberAppLinkView = async (tenant, req) => {
+  const settings = await getSettings();
+  const automatic = gymMemberAppUrl(tenant, req);
+  const platform = settings.memberAppUrl ? fill(settings.memberAppUrl, tenant) : '';
+  const { url, source } = resolveMemberAppLink({ tenant, platformTemplate: settings.memberAppUrl, automatic });
+  return { url, source, gymName: tenant.name, custom: tenant.memberAppUrl || '', platform, automatic };
+};
+
 exports.getMemberAppLink = async (req, res) => {
-  const tenant = await Tenant.findById(req.scope.tenantId).select('name slug');
+  const tenant = await Tenant.findById(req.scope.tenantId).select('name slug memberAppUrl');
   if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
-  res.json({ url: gymMemberAppUrl(tenant, req), gymName: tenant.name });
+  res.json(await memberAppLinkView(tenant, req));
+};
+
+// The owner sets the gym's own address, or clears it ('') to go back to the platform's.
+exports.setMemberAppLink = async (req, res) => {
+  const tenant = await Tenant.findById(req.scope.tenantId);
+  if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
+  tenant.memberAppUrl = cleanAddress(req.body?.url);
+  await tenant.save();
+  logAudit(req, 'UPDATE_MEMBER_APP_ADDRESS', { type: 'Tenant', id: tenant._id, metadata: { custom: !!tenant.memberAppUrl } });
+  res.json(await memberAppLinkView(tenant, req));
 };
 
 exports.updateMine = async (req, res) => {

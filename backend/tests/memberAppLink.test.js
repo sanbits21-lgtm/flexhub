@@ -16,7 +16,7 @@ describe('the member app link behind the front-desk QR code', () => {
     process.env.PUBLIC_URL = 'https://app.example.com/';
     const res = await link(t.adminToken);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ url: 'https://app.example.com/member', gymName: t.tenant.name });
+    expect(res.body).toMatchObject({ url: 'https://app.example.com/member', gymName: t.tenant.name, source: 'automatic', custom: '' });
   });
 
   it('uses the gym\'s own address when subdomains are on', async () => {

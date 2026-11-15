@@ -10,6 +10,8 @@ const platformSettingsSchema = new mongoose.Schema({
   trialMaxMembers: { type: Number, min: 1, max: 100000 },
   trialMaxBranches: { type: Number, min: 1, max: 100 },
   // Where gyms send their subscription payments (step 1 of self-serve upgrades: a UPI QR confirmed by hand).
+  // The member app's web address for every gym; {slug} stands for the gym's name (see utils/memberAppLink.js).
+  memberAppUrl: { type: String, trim: true, maxlength: 300 },
   billingUpiId: { type: String, trim: true, maxlength: 256 },
   billingPayeeName: { type: String, trim: true, maxlength: 60 },
   billingGstPercent: { type: Number, min: 0, max: 28 },
