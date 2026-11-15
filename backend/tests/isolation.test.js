@@ -112,7 +112,8 @@ const buildGym = async (label) => {
   const fixtureUtr = String(Math.floor(1e11 + Math.random() * 9e11)); // random: two gyms built in the same second must not share one
   const subscriptionOrder = await SubscriptionOrder.create({
     tenantId: t.tenant._id, packageId: billingPackage._id, packageName: `${label} package`, kind: 'upgrade', periods: 1, months: 1, amount: 1000, total: 1000,
-    status: 'awaiting_confirmation', reference: `${label}REF`, utr: fixtureUtr, utrKey: fixtureUtr, expiresAt: new Date(Date.now() + 86400000), submittedAt: new Date(),
+    // the reference is unique every run: a fixed one collides with a row left behind by a run that was cut off
+    status: 'awaiting_confirmation', reference: `${label}REF${Math.random().toString(36).slice(2, 8)}`, utr: fixtureUtr, utrKey: fixtureUtr, expiresAt: new Date(Date.now() + 86400000), submittedAt: new Date(),
   });
 
   return {
