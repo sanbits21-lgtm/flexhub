@@ -5,11 +5,9 @@ import StatCard from '../../components/StatCard';
 import Widget from '../../components/Widget';
 import DataTable from '../../components/DataTable';
 import BarChartCard from '../../components/BarChartCard';
-import { MembershipDonut, QuickActions, RevenueCard, SportsActivities, UpcomingBookings, UpgradeCard } from '../../components/DashboardCards';
+import { MembershipDonut, PlansTrending, QuickActions, RevenueCard, SportsActivities, UpcomingBookings, UpgradeCard } from '../../components/DashboardCards';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardFrame, useExpiryTiles, paymentColumns } from './shared';
-
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL;
 
 export default function TenantAdminDashboard({ data, reload }) {
   const { subscription } = useAuth();
@@ -70,7 +68,7 @@ export default function TenantAdminDashboard({ data, reload }) {
   const tiles = [
     { id: 'collections-chart', title: 'Revenue overview', span: trialing ? 'lg:col-span-5' : 'lg:col-span-7', node: <RevenueCard icon={TrendingUp} data={view.collectionsByMonth || []} /> },
     { id: 'bookings', title: 'Upcoming bookings', span: trialing ? 'lg:col-span-4' : 'lg:col-span-5', node: <UpcomingBookings sessions={view.upcomingSessions || []} /> },
-    ...(trialing ? [{ id: 'upgrade', title: 'Upgrade', span: 'lg:col-span-3', node: <UpgradeCard supportEmail={SUPPORT_EMAIL} daysLeft={subscription.daysLeft} /> }] : []),
+    ...(trialing ? [{ id: 'upgrade', title: 'Upgrade', span: 'lg:col-span-3', node: <UpgradeCard daysLeft={subscription.daysLeft} /> }] : []),
     { id: 'membership', title: 'Membership', span: 'lg:col-span-4', node: <MembershipDonut active={view.activeMembers || 0} total={totalMembers} /> },
     { id: 'activities', title: 'Sports activities', span: 'lg:col-span-4', node: <SportsActivities activities={view.activities || []} /> },
     { id: 'quick', title: 'Quick actions', span: 'lg:col-span-4', node: (
@@ -81,7 +79,8 @@ export default function TenantAdminDashboard({ data, reload }) {
         { label: 'Member App QR', to: '/member-app-qr', icon: QrCode },
       ]} />
     ) },
-    { id: 'members-chart', title: 'Members joining, monthly', span: 'lg:col-span-4', node: <BarChartCard fill title="Members joining, monthly" data={view.membersByMonth || []} dataKey="count" colorKey="blue" /> },
+    { id: 'plans-trending', title: 'Plans trending', span: 'lg:col-span-6', node: <PlansTrending plans={view.plansTrending || []} /> },
+    { id: 'members-chart', title: 'Members joining, monthly', span: 'lg:col-span-6', node: <BarChartCard fill title="Members joining, monthly" data={view.membersByMonth || []} dataKey="count" colorKey="blue" /> },
     { id: 'checkins-chart', title: 'Check-ins, last 7 days', span: 'lg:col-span-4', node: <BarChartCard fill title="Check-ins, last 7 days" data={checkins} dataKey="count" xKey="day" colorKey="violet" /> },
     { id: 'branches', title: 'Branches', span: 'lg:col-span-4', node: (
       <Widget title="Branches" icon={Building2}>
@@ -106,13 +105,13 @@ export default function TenantAdminDashboard({ data, reload }) {
         <DataTable tableId="dash.ta.collections" embedded rows={payments} columns={paymentColumns} />
       </Widget>
     ) },
-    { id: 'expiring', title: 'Expiring soon', span: 'lg:col-span-4', node: expiringNode },
-    { id: 'expired', title: 'Expired', span: 'lg:col-span-4', node: expiredNode },
+    { id: 'expiring', title: 'Expiring soon', span: 'lg:col-span-6', node: expiringNode },
+    { id: 'expired', title: 'Expired', span: 'lg:col-span-6', node: expiredNode },
   ];
 
   return (
     <>
-      <DashboardFrame title="Overview" layoutId="tenant-admin-v3" actions={branchFilter} kpis={kpis} tiles={tiles} cta={{ to: '/reports', label: 'View Reports' }} />
+      <DashboardFrame title="Overview" layoutId="tenant-admin-v4" actions={branchFilter} kpis={kpis} tiles={tiles} cta={{ to: '/reports', label: 'View Reports' }} />
       {modal}
     </>
   );

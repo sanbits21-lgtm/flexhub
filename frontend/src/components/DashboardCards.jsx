@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  Activity, ArrowRight, ArrowUpRight, Bike, CalendarDays, Dumbbell, Flower2, HeartPulse, Music, Sparkles, Swords, Trophy, Users, Waves,
+  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bike, CalendarDays, Dumbbell, Flower2, HeartPulse, Music, Sparkles, Swords, TrendingUp, Trophy, Users, Waves,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import Widget from './Widget';
 import { trendOf } from './StatCard';
+import Sparkline from './Sparkline';
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const compact = (n) => new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
@@ -174,8 +175,8 @@ export function SportsActivities({ activities = [], className = '' }) {
   );
 }
 
-/** The "take your club to the next level" card. Without a support address there is nobody to send them to, so no button. */
-export function UpgradeCard({ supportEmail, daysLeft, className = '' }) {
+/** The "take your club to the next level" card. Its button opens Billing, where the owner picks a plan and pays. */
+export function UpgradeCard({ daysLeft, className = '' }) {
   return (
     <section className={`relative flex h-80 flex-col justify-between overflow-hidden rounded-3xl border border-gray-200/80 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-gray-800/80 ${className}`}>
       <div aria-hidden="true" className="absolute inset-0 bg-contain bg-bottom bg-no-repeat opacity-80" style={{ backgroundImage: "url('/images/hero-dumbbell.svg')" }} />
@@ -184,11 +185,41 @@ export function UpgradeCard({ supportEmail, daysLeft, className = '' }) {
         <h3 className="mt-2 text-xl font-extrabold leading-tight text-gray-900 dark:text-white">Take your club to the next level</h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Unlock more members and keep everything running for your gym.</p>
       </div>
-      {supportEmail && (
-        <a href={`mailto:${supportEmail}?subject=Upgrade%20my%20plan`} className="relative inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-ink hover:brightness-110">
-          Upgrade now <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </a>
-      )}
+      <Link to="/billing" className="relative inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-ink hover:brightness-110">
+        Choose a plan <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
     </section>
+  );
+}
+
+const medals = ['text-amber-500', 'text-gray-400', 'text-orange-700'];
+
+/** Which membership plans are selling: paid memberships per plan this month against last month, with the six-month line. */
+export function PlansTrending({ plans = [], className = '' }) {
+  return (
+    <Widget title="Plans trending" icon={TrendingUp} className={className} action={<span className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 dark:border-white/10 dark:text-gray-300">This month</span>} bodyClassName="px-4 pb-4">
+      {plans.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No plan sales yet. When members join or renew, the plans that sell best show up here.</p>
+      ) : (
+        <ol className="space-y-3">
+          {plans.map((p, i) => {
+            const up = p.change !== null && p.change >= 0;
+            return (
+              <li key={p.planId} className="flex items-center gap-3">
+                <span className={`w-5 text-center text-sm font-extrabold ${medals[i] || 'text-gray-400'}`}>{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{p.name}</p>
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">{p.thisMonth} sale{p.thisMonth === 1 ? '' : 's'} · {p.activeMembers} active member{p.activeMembers === 1 ? '' : 's'}{p.revenueThisMonth > 0 ? ` · ${inr(p.revenueThisMonth)}` : ''}</p>
+                </div>
+                <Sparkline data={p.series} color={p.change !== null && p.change < 0 ? '#FF6B7A' : '#C8F83A'} className="h-9 w-16 shrink-0" />
+                <span className={`flex w-14 shrink-0 items-center justify-end gap-0.5 text-xs font-semibold ${p.isNew ? 'text-blue-600 dark:text-[#7AA2FF]' : p.change === null ? 'text-gray-400' : up ? 'text-green-600 dark:text-accent' : 'text-red-500 dark:text-red-400'}`}>
+                  {p.isNew ? 'New' : p.change === null ? '—' : <>{up ? <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDownRight className="h-3.5 w-3.5" aria-hidden="true" />}{Math.abs(p.change)}%</>}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </Widget>
   );
 }

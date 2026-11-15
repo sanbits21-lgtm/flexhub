@@ -9,6 +9,7 @@ const { statusFilter } = require('../utils/membershipStatus');
 const Equipment = require('../models/Equipment');
 const TenantSubscriptionInvoice = require('../models/TenantSubscriptionInvoice');
 const Booking = require('../models/Booking');
+const MembershipPlan = require('../models/MembershipPlan');
 const ClassSession = require('../models/ClassSession');
 const ClassType = require('../models/ClassType');
 
@@ -92,6 +93,45 @@ const classInsights = async (match, months) => {
   };
 };
 
+// Which membership plans are selling. A paid payment tied to a plan is one sale of it (a new member or a renewal), so this
+// counts those per plan for each of the last six months, against how many active members are on the plan today.
+// `match` carries the tenant, and the branch when one is selected.
+const plansTrending = async (match, months, now) => {
+  const windowStart = new Date(months[0].key + '-01');
+  const [sales, active] = await Promise.all([
+    MemberPayment.aggregate([
+      { $match: { ...match, status: 'paid', membershipPlanId: { $ne: null }, paidAt: { $gte: windowStart } } },
+      { $group: { _id: { plan: '$membershipPlanId', month: { $dateToString: { format: '%Y-%m', date: '$paidAt' } } }, count: { $sum: 1 }, amount: { $sum: '$amount' } } },
+    ]),
+    Member.aggregate([
+      { $match: { ...match, isActive: true, membershipPlanId: { $ne: null }, ...statusFilter('active', now) } },
+      { $group: { _id: '$membershipPlanId', n: { $sum: 1 } } },
+    ]),
+  ]);
+  const ids = [...new Set([...sales.map((s) => String(s._id.plan)), ...active.map((a) => String(a._id))])];
+  if (!ids.length) return [];
+  const plans = await MembershipPlan.find({ _id: { $in: ids }, tenantId: match.tenantId }).select('name').lean();
+  const [cur, prev] = [months[months.length - 1].key, months[months.length - 2].key];
+  return plans.map((p) => {
+    const at = (key) => sales.find((s) => String(s._id.plan) === String(p._id) && s._id.month === key);
+    const thisMonth = at(cur)?.count || 0;
+    const lastMonth = at(prev)?.count || 0;
+    return {
+      planId: p._id,
+      name: p.name,
+      thisMonth,
+      lastMonth,
+      change: lastMonth ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : null, // null: nothing last month to compare with
+      isNew: !lastMonth && thisMonth > 0,
+      revenueThisMonth: at(cur)?.amount || 0,
+      activeMembers: active.find((a) => String(a._id) === String(p._id))?.n || 0,
+      series: months.map((m) => at(m.key)?.count || 0),
+    };
+  })
+    .sort((a, b) => b.thisMonth - a.thisMonth || b.activeMembers - a.activeMembers || a.name.localeCompare(b.name))
+    .slice(0, 5);
+};
+
 // Tenant Admin's aggregated (or branch drill-down, when req.scope.branchId is set) dashboard.
 const tenantSummary = async (scope) => {
   const match = { tenantId: new mongoose.Types.ObjectId(scope.tenantId) };
@@ -164,6 +204,7 @@ const tenantSummary = async (scope) => {
   ]);
 
   const insights = await classInsights(match, months);
+  const trending = await plansTrending(match, months, now);
   const membersByMonth = months.map((m) => ({
     month: m.label,
     count: membersByMonthAgg.find((x) => x._id === m.key)?.count || 0,
@@ -189,6 +230,7 @@ const tenantSummary = async (scope) => {
 
   return {
     ...insights,
+    plansTrending: trending,
     activeMembers,
     revenueThisMonth: revenueAgg[0]?.revenue || 0,
     attendanceTrend,
