@@ -13,7 +13,7 @@ const emptyForm = {
 };
 
 const emptyEditForm = {
-  name: '', contactEmail: '', contactPhone: '', billingPlan: 'trial', billingStatus: 'active', maxBranches: 1, isActive: true,
+  name: '', contactEmail: '', contactPhone: '', billingPlan: 'trial', billingStatus: 'active', maxBranches: 1, maxMembers: '', isActive: true,
 };
 
 // yyyy-mm-dd in the browser's own time zone, for a date input.
@@ -65,6 +65,7 @@ export default function Tenants() {
       billingPlan: tenant.billingPlan,
       billingStatus: tenant.billingStatus,
       maxBranches: tenant.maxBranches,
+      maxMembers: tenant.maxMembers || '', // empty = unlimited
       isActive: tenant.isActive,
     });
   };
@@ -166,6 +167,7 @@ export default function Tenants() {
               <option value="cancelled">Cancelled</option>
             </select>
             <input placeholder="Max branches" type="number" min="1" value={editForm.maxBranches} onChange={(e) => setEditForm({ ...editForm, maxBranches: Number(e.target.value) })} className={inputClass} />
+            <input placeholder="Max members (empty = unlimited)" aria-label="Max members" type="number" min="1" value={editForm.maxMembers} onChange={(e) => setEditForm({ ...editForm, maxMembers: e.target.value })} className={inputClass} />
             {editForm.billingPlan !== 'trial' && (
               <label className="text-sm text-gray-600 dark:text-gray-400">Plan ends
                 <input type="date" value={editForm.planEndsAt || ''} onChange={(e) => setEditForm({ ...editForm, planEndsAt: e.target.value })} className={`${inputClass} block w-full`} />
@@ -205,6 +207,7 @@ export default function Tenants() {
           { key: 'billingPlan', label: 'Plan', render: (row) => (row.packageName ? `${row.packageName} (${row.billingPlan})` : row.billingPlan) },
           { key: 'billingStatus', label: 'Status' },
           { key: 'maxBranches', label: 'Max Branches' },
+          { key: 'maxMembers', label: 'Max Members', render: (row) => row.maxMembers || 'Unlimited' },
           {
             key: 'trialEndsAt',
             label: 'Ends',

@@ -96,7 +96,11 @@ exports.update = async (req, res) => {
   // Moving to a paid plan ends the trial and lifts its member cap, unless told otherwise.
   if (billingPlan && billingPlan !== 'trial') {
     changes.trialEndsAt = null;
-    if (maxMembers === undefined) changes.maxMembers = null;
+    if (maxMembers === undefined) {
+      // Only a gym coming off its trial loses the trial cap; a paid gym keeps the cap it bought.
+      const current = await Tenant.findOne(tenantByIdFilter(req)).select('billingPlan');
+      if (current?.billingPlan === 'trial') changes.maxMembers = null;
+    }
   }
   if (trialEndsAt !== undefined) changes.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
   if (maxMembers !== undefined) changes.maxMembers = maxMembers ? Number(maxMembers) : null;
