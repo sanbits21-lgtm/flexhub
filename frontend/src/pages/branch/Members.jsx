@@ -257,18 +257,17 @@ export default function Members() {
     setSaving(true);
     setFormError('');
     try {
+      if (form.membershipPlanId && form.paymentMethod === 'upi') {
+        // Nothing is saved yet: closing the QR step with X must not leave a member behind.
+        // The member is created when staff confirms the payment or chooses "Pay later".
+        setAddStep('upi');
+        return;
+      }
       const { data: member } = await membersAPI.create(buildMemberPayload());
       // The member exists from here on, whichever step comes next or however the modal is
       // dismissed, so show them in the list now rather than only on "Done".
       load();
 
-      if (form.membershipPlanId && form.paymentMethod === 'upi') {
-        // Member is created up front; the payment itself is recorded only once staff
-        // confirms receipt in the UPI step below (no gateway callback to verify against).
-        setCreatedMember(member);
-        setAddStep('upi');
-        return;
-      }
       if (form.membershipPlanId) {
         const { data: payment } = await paymentsAPI.create({
           memberId: member._id,
@@ -293,12 +292,24 @@ export default function Members() {
     }
   };
 
+  // Creates the member at the moment payment is settled or deferred; if the payment call then
+  // fails, a retry reuses the member already created instead of adding a second one.
+  const ensureMember = async () => {
+    if (createdMember) return createdMember;
+    const { data: member } = await membersAPI.create(buildMemberPayload());
+    setCreatedMember(member);
+    load();
+    return member;
+  };
+
   const handleMarkUpiPaid = async () => {
+    if (markingPaid) return;
     setMarkingPaid(true);
     setFormError('');
     try {
+      const member = await ensureMember();
       const { data: payment } = await paymentsAPI.create({
-        memberId: createdMember._id,
+        memberId: member._id,
         membershipPlanId: form.membershipPlanId,
         amount: finalAmount,
         method: 'upi',
@@ -317,11 +328,13 @@ export default function Members() {
   // money didn't, and nobody knew to chase it. A pending payment makes the debt visible
   // on the Payments page, where it can be settled with Mark Paid.
   const handleUpiPayLater = async () => {
+    if (markingPaid) return;
     setMarkingPaid(true);
     setFormError('');
     try {
+      const member = await ensureMember();
       await paymentsAPI.create({
-        memberId: createdMember._id,
+        memberId: member._id,
         membershipPlanId: form.membershipPlanId,
         amount: finalAmount,
         method: 'upi',
@@ -708,10 +721,10 @@ export default function Members() {
         </form>
         )}
 
-        {addStep === 'upi' && createdMember && (
+        {addStep === 'upi' && (
           <div className="flex flex-col items-center gap-4 text-center py-2">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Have {createdMember.name} scan and pay <span className="font-semibold">₹{finalAmount}</span>, then confirm below.
+              Have {form.name} scan and pay <span className="font-semibold">₹{finalAmount}</span>, then confirm below.
             </p>
             <div className="bg-white p-3 rounded border dark:border-gray-600">
               <QRCodeSVG
@@ -719,7 +732,7 @@ export default function Members() {
                   upiId: stepUpi.upiId,
                   payeeName: upiSettings.name,
                   amount: finalAmount,
-                  note: `${createdMember.name} - ${selectedPlan?.name || 'Membership'}`,
+                  note: `${form.name} -${selectedPlan?.name || 'Membership'}`,
                 })}
                 size={180}
               />
