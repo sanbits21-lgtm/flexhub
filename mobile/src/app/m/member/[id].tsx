@@ -5,7 +5,7 @@ import { Banner, Button, Card, EmptyState, ErrorText, H, Initials, Loading, Mute
 import { api, type AttendanceRow, type MemberRow, type PaymentRow, type PlanRow, type StaffRow } from '../../../lib/api';
 import { useAuth } from '../../../lib/auth';
 import { useBranch } from '../../../lib/branch';
-import { confirmAction, say } from '../../../lib/dialog';
+import { confirmAction, confirmDiscardPassword, say } from '../../../lib/dialog';
 import { useGymName } from '../../../lib/gym';
 import { openWhatsApp, renewalMessage } from '../../../lib/whatsapp';
 import { cap, expiryText, fmtDate, fmtDateTime, rupees } from '../../../lib/format';
@@ -120,7 +120,7 @@ export default function MemberDetail() {
         </>
       )}
 
-      <Sheet open={!!creds} onClose={() => setCreds(null)} title="App login">
+      <Sheet open={!!creds} onClose={async () => { if (await confirmDiscardPassword()) setCreds(null); }} title="App login">
         {creds && (
           <View style={{ gap: 12 }}>
             <Banner tone="info">Give these to {m.name}. The password is shown once. Any password they had stops working and they are signed out of the app.</Banner>

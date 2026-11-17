@@ -782,7 +782,7 @@ export default function Members() {
         )}
       </Modal>
 
-      <Modal open={!!appAccess} onClose={() => setAppAccess(null)} title={`App login and password reset: ${appAccess?.member?.name || ''}`}>
+      <Modal open={!!appAccess} onClose={() => { if (!appAccess?.creds || window.confirm('Close without copying?\nThe password is shown only once. If you close this, you will have to reset it again to get a new one.')) setAppAccess(null); }} title={`App login and password reset: ${appAccess?.member?.name || ''}`}>
         {appAccess && !appAccess.creds && (
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
             <p>This creates a temporary password for the member app, for a first login or a forgotten password. Their current password stops working and they are signed out of the app.</p>

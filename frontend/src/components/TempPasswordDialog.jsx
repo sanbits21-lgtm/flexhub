@@ -31,7 +31,7 @@ export default function TempPasswordDialog({ open, onClose, title, intro, load, 
   const copy = async () => { try { await navigator.clipboard.writeText(creds.password); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked */ } };
 
   return (
-    <Modal open={open} onClose={onClose} title={creds ? `Temporary password: ${creds.name}` : picked ? `Reset password: ${picked.name}` : title}>
+    <Modal open={open} onClose={() => { if (!creds || window.confirm('Close without copying?\nThe password is shown only once. If you close this, you will have to reset it again to get a new one.')) onClose(); }} title={creds ? `Temporary password: ${creds.name}` : picked ? `Reset password: ${picked.name}` : title}>
       <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
         {error && <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>}
 

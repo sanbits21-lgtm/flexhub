@@ -5,7 +5,7 @@ import { Banner, Button, Card, EmptyState, ErrorText, Fab, Initials, Loading, Pi
 import { api, type StaffRow } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useBranch } from '../../lib/branch';
-import { confirmAction } from '../../lib/dialog';
+import { confirmAction, confirmDiscardPassword } from '../../lib/dialog';
 import { useLoad } from '../../lib/hooks';
 
 export default function Trainers() {
@@ -56,7 +56,7 @@ export default function Trainers() {
         )}
       </Sheet>
 
-      <Sheet open={!!creds} onClose={() => setCreds(null)} title="New temporary password">
+      <Sheet open={!!creds} onClose={async () => { if (await confirmDiscardPassword()) setCreds(null); }} title="New temporary password">
         {creds && (
           <View style={{ gap: 12 }}>
             <Banner tone="info">Give these to {creds.name}. The password is shown once. They are signed out everywhere and can change it under Account.</Banner>
