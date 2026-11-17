@@ -59,7 +59,11 @@ export default function BulkUploadMembersModal({
     setPlanDrafts({}); setPlanChoices({}); setBatchPlanId(''); setExisting({ rows: new Map(), failed: false });
     setSkipDuplicates(true); setResult(null); setParseError(''); setImportError('');
   };
-  const handleClose = () => { reset(); setBranchId(fixedBranchId || ''); onClose(); };
+  const handleClose = () => {
+    // Mapping columns and plans takes a while and nothing is saved yet: ask before throwing it away.
+    if (step === 'map' && !window.confirm('Close without importing?\nYour column mapping will be lost and no members will be added.')) return;
+    reset(); setBranchId(fixedBranchId || ''); onClose();
+  };
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];

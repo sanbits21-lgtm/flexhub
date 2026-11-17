@@ -180,7 +180,7 @@ export default function Trainers() {
         </form>
       </Modal>
 
-      <Modal open={!!reset} onClose={() => setReset(null)} title={`Reset password: ${reset?.trainer?.name || ''}`}>
+      <Modal open={!!reset} onClose={() => { if (!reset?.creds || window.confirm('Close without copying?\nThe password is shown only once. If you close this, you will have to reset it again to get a new one.')) setReset(null); }} title={`Reset password: ${reset?.trainer?.name || ''}`}>
         {reset && !reset.creds && (
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
             <p>This creates a temporary password. Their current password stops working and they are signed out of the app and the website.</p>
