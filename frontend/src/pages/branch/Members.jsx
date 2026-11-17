@@ -6,6 +6,7 @@ import { useFeature } from '../../hooks/useFeature';
 import { membersAPI, branchesAPI, membershipPlansAPI, paymentsAPI, staffAPI, tenantSettingsAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
+import { phoneProps } from '../../utils/phone';
 import BulkUploadMembersModal from '../../components/BulkUploadMembersModal';
 import PaymentReceipt from '../../components/PaymentReceipt';
 import RenewMembershipModal from '../../components/RenewMembershipModal';
@@ -535,10 +536,7 @@ export default function Members() {
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Phone</label>
               <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9+\-\s]{6,15}"
-                title="6-15 digits"
+                {...phoneProps}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 required
@@ -630,7 +628,7 @@ export default function Members() {
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Emergency Phone</label>
                 <input
-                  type="tel"
+                  {...phoneProps}
                   placeholder="Phone"
                   value={form.emergencyContactPhone}
                   onChange={(e) => setForm({ ...form, emergencyContactPhone: e.target.value })}
@@ -844,7 +842,7 @@ export default function Members() {
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing member</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
-            <input placeholder="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={inputClass} />
+            <input {...phoneProps} placeholder="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={inputClass} />
             <input placeholder="Email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputClass} />
             <input placeholder="DOB" type="date" value={editForm.dob} onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })} className={inputClass} />
             <div>

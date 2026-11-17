@@ -13,6 +13,7 @@ const q = require('../utils/query');
 const { pageParams } = require('../utils/paginate');
 const { generateTempPassword } = require('../utils/tempPassword');
 const { cleanCustomFields, phoneKey } = require('../utils/memberFields');
+const { isValidPhone, PHONE_MESSAGE } = require('../utils/phoneNumber');
 
 // Builds the Mongo filter for the caller's scope, translating the trainer's
 // virtual `trainerId` scope key (not a Member field) into the real relationship:
@@ -238,6 +239,8 @@ exports.bulkCreate = async (req, res) => {
     const row = members[i] || {};
     try {
       if (!row.name || !row.phone) throw new Error('Name and phone are required');
+      if (!isValidPhone(row.phone)) throw new Error(`Phone ${PHONE_MESSAGE}`);
+      if (row.emergencyContact?.phone && !isValidPhone(row.emergencyContact.phone)) throw new Error(`Emergency contact phone ${PHONE_MESSAGE}`);
       const phoneId = phoneKey(row.phone);
       if (skipDuplicatePhones && phoneId) {
         if (knownPhones.has(phoneId)) throw new Error(`Phone already belongs to ${knownPhones.get(phoneId)}`);

@@ -7,6 +7,7 @@ import Avatar from '../Avatar';
 import { Btn, Card, Choice, ErrorText, Field, LoadState, Loading, Muted, Screen } from '../ui';
 import { inputDate } from '../format';
 import { squareJpegBase64 } from '../../utils/photo';
+import { phoneProps } from '../../utils/phone';
 
 const GOALS = [{ value: 'lose_fat', label: 'Lose fat' }, { value: 'build_muscle', label: 'Build muscle' }, { value: 'stay_fit', label: 'Stay fit' }, { value: 'improve_endurance', label: 'Endurance' }];
 const LEVELS = [{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }];
@@ -177,7 +178,7 @@ export default function Profile() {
       <Card className="space-y-4">
         <h2 className="font-extrabold text-gray-900 dark:text-gray-100">Emergency contact</h2>
         <Field label="Name" value={form.emergencyName} onChange={(e) => set('emergencyName', e.target.value)} />
-        <Field label="Phone" type="tel" value={form.emergencyPhone} onChange={(e) => set('emergencyPhone', e.target.value)} />
+        <Field label="Phone" {...phoneProps} value={form.emergencyPhone} onChange={(e) => set('emergencyPhone', e.target.value)} />
       </Card>
 
       {saveMsg.text && <p role={saveMsg.ok ? 'status' : 'alert'} className={`text-sm ${saveMsg.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{saveMsg.text}</p>}

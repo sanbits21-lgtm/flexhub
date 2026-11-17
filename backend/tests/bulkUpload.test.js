@@ -1,6 +1,7 @@
 const { app, request, connect, disconnect, seedTenant, createSuperAdmin, auth, uniq } = require('./helpers');
 const MemberPayment = require('../models/MemberPayment');
 const Member = require('../models/Member');
+const digits = () => '9' + String(Math.floor(Math.random() * 1e9)).padStart(9, '0'); // a real 10-digit number: phones are validated
 
 let t;
 const branchId = () => t.branch._id.toString();
@@ -17,7 +18,7 @@ const bulkCreate = (members, token = t.managerToken) =>
 
 describe('bulk upload — plan resolution and payment recording', () => {
   it('records a payment at the plan price when a row carries its own plan', async () => {
-    const res = await bulkCreate([{ name: 'Row Plan Member', phone: uniq('p'), membershipPlanId: planId() }]);
+    const res = await bulkCreate([{ name: 'Row Plan Member', phone: digits(), membershipPlanId: planId() }]);
     expect(res.status).toBe(201);
     expect(res.body.succeeded).toBe(1);
     expect(res.body.paymentsRecorded).toBe(1);
@@ -31,7 +32,7 @@ describe('bulk upload — plan resolution and payment recording', () => {
   });
 
   it('records no payment and no plan for a member with neither a row plan nor a batch plan', async () => {
-    const res = await bulkCreate([{ name: 'No Plan Member', phone: uniq('p') }]);
+    const res = await bulkCreate([{ name: 'No Plan Member', phone: digits() }]);
     expect(res.status).toBe(201);
     expect(res.body.paymentsRecorded).toBe(0);
 
@@ -42,8 +43,8 @@ describe('bulk upload — plan resolution and payment recording', () => {
 
   it('still allows a mix of some rows with a plan and some without in one batch', async () => {
     const res = await bulkCreate([
-      { name: 'Mixed With Plan', phone: uniq('p'), membershipPlanId: planId() },
-      { name: 'Mixed Without Plan', phone: uniq('p') },
+      { name: 'Mixed With Plan', phone: digits(), membershipPlanId: planId() },
+      { name: 'Mixed Without Plan', phone: digits() },
     ]);
     expect(res.status).toBe(201);
     expect(res.body.succeeded).toBe(2);
@@ -54,8 +55,8 @@ describe('bulk upload — plan resolution and payment recording', () => {
     // Simulates a stale/tampered client sending an id that isn't a real plan for this
     // tenant — should fail just that row with a clear message, not the whole batch.
     const res = await bulkCreate([
-      { name: 'Bad Plan Id', phone: uniq('p'), membershipPlanId: '000000000000000000000000' },
-      { name: 'Good Row', phone: uniq('p') },
+      { name: 'Bad Plan Id', phone: digits(), membershipPlanId: '000000000000000000000000' },
+      { name: 'Good Row', phone: digits() },
     ]);
     expect(res.status).toBe(201);
     expect(res.body.succeeded).toBe(1);
@@ -65,7 +66,7 @@ describe('bulk upload — plan resolution and payment recording', () => {
 
   it('audit log records paymentsRecorded in metadata', async () => {
     const superAdmin = await createSuperAdmin();
-    await bulkCreate([{ name: 'Audited Member', phone: uniq('p'), membershipPlanId: planId() }]);
+    await bulkCreate([{ name: 'Audited Member', phone: digits(), membershipPlanId: planId() }]);
 
     const logs = await request(app).get('/api/audit-logs?limit=10').set(auth(superAdmin.token));
     const entry = logs.body.logs.find((l) => l.action === 'BULK_CREATE_MEMBERS' && l.metadata?.paymentsRecorded === 1);

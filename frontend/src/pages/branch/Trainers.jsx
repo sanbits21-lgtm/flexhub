@@ -1,3 +1,4 @@
+import { phoneProps } from '../../utils/phone';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -153,7 +154,7 @@ export default function Trainers() {
           )}
           <input placeholder="Name" aria-label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={fieldClass} />
           <input placeholder="Email" aria-label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className={fieldClass} />
-          <input placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className={fieldClass} />
+          <input {...phoneProps} placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className={fieldClass} />
           <input placeholder="Password" aria-label="Password" type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className={fieldClass} />
           <input placeholder="Specialization (optional)" aria-label="Specialization" value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className={fieldClass} />
           <div className="flex gap-2 pt-1">
@@ -167,7 +168,7 @@ export default function Trainers() {
         <form onSubmit={handleUpdate} className="space-y-3">
           {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <input placeholder="Name" aria-label="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={fieldClass} />
-          <input placeholder="Phone" aria-label="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={fieldClass} />
+          <input {...phoneProps} placeholder="Phone" aria-label="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={fieldClass} />
           <input placeholder="Specialization" aria-label="Specialization" value={editForm.specialization} onChange={(e) => setEditForm({ ...editForm, specialization: e.target.value })} className={fieldClass} />
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })} />

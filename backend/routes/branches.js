@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, requireRole, scopeContext, enforceWriteScope } = require('../middleware/auth');
+const { validate, schemas } = require('../middleware/validate');
 const {
   list, getOne, create, update, remove, createManager,
 } = require('../controllers/branchController');
@@ -10,9 +11,9 @@ router.use(protect, scopeContext);
 const canSeeBranches = requireRole('super-admin', 'platform-admin', 'tenant-admin', 'branch-manager');
 router.get('/', canSeeBranches, list);
 router.get('/:id', canSeeBranches, getOne);
-router.post('/', requireRole('tenant-admin'), enforceWriteScope, create);
-router.put('/:id', requireRole('tenant-admin'), enforceWriteScope, update);
+router.post('/', requireRole('tenant-admin'), enforceWriteScope, validate(schemas.branchWrite), create);
+router.put('/:id', requireRole('tenant-admin'), enforceWriteScope, validate(schemas.branchWrite), update);
 router.delete('/:id', requireRole('tenant-admin'), remove);
-router.post('/:id/managers', requireRole('tenant-admin'), createManager);
+router.post('/:id/managers', requireRole('tenant-admin'), validate(schemas.managerCreate), createManager);
 
 module.exports = router;

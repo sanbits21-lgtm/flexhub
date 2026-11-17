@@ -1,3 +1,4 @@
+import { phoneProps } from '../../utils/phone';
 import { useEffect, useState } from 'react';
 import { platformAdminsAPI, tenantsAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
@@ -75,7 +76,7 @@ export default function PlatformAdmins() {
           <div key={field}>
             <label className="block text-xs text-gray-500 dark:text-gray-400 capitalize mb-1">{field}</label>
             <input
-              type={field === 'password' ? 'password' : 'text'}
+              {...(field === 'phone' ? phoneProps : { type: field === 'password' ? 'password' : 'text' })}
               value={form[field]}
               onChange={(e) => setForm({ ...form, [field]: e.target.value })}
               required
@@ -91,7 +92,7 @@ export default function PlatformAdmins() {
           <div className="text-sm text-gray-500 dark:text-gray-400">Editing platform admin</div>
           <div className="flex flex-wrap gap-3 items-end">
             <input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className={inputClass} />
-            <input placeholder="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={inputClass} />
+            <input {...phoneProps} placeholder="Phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required className={inputClass} />
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })} />
               Active

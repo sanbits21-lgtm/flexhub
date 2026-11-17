@@ -1,3 +1,4 @@
+import { phoneProps } from '../utils/phone';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
@@ -111,7 +112,7 @@ export default function Signup() {
       <div><label htmlFor="s-owner" className={labelClass}>Your name</label><input id="s-owner" required autoComplete="name" value={form.ownerName} onChange={set('ownerName')} className={inputClass} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label htmlFor="s-email" className={labelClass}>Email</label><input id="s-email" type="email" required autoComplete="email" value={form.email} onChange={set('email')} className={inputClass} /></div>
-        <div><label htmlFor="s-phone" className={labelClass}>Phone</label><input id="s-phone" type="tel" required autoComplete="tel" value={form.phone} onChange={set('phone')} className={inputClass} /></div>
+        <div><label htmlFor="s-phone" className={labelClass}>Phone</label><input id="s-phone" {...phoneProps} required value={form.phone} onChange={set('phone')} className={inputClass} /></div>
       </div>
       <div><label htmlFor="s-pw" className={labelClass}>Password <span className="text-gray-500">(8+ characters)</span></label><input id="s-pw" type="password" required minLength={8} maxLength={72} autoComplete="new-password" value={form.password} onChange={set('password')} className={inputClass} /></div>
       <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">

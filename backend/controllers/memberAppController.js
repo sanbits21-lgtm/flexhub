@@ -4,6 +4,7 @@ const Member = require('../models/Member');
 const generateToken = require('../utils/generateToken');
 const { revokeActor } = require('../utils/sessions');
 const { passwordProblem } = require('../utils/passwordPolicy');
+const { isValidPhone, PHONE_MESSAGE } = require('../utils/phoneNumber');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
 const MemberPlan = require('../models/MemberPlan');
@@ -36,7 +37,7 @@ const profileSchema = z.object({
   dietPreference: z.enum(['veg', 'eggetarian', 'non_veg', 'vegan']).optional(),
   emergencyContact: z.object({
     name: z.string().trim().max(80).optional(),
-    phone: z.string().trim().max(20).optional(),
+    phone: z.string().trim().refine((v) => v === '' || isValidPhone(v), PHONE_MESSAGE).optional(),
   }).optional(),
 }).strict(); // anything else (email, phone, membership fields, tenantId…) is rejected, not ignored
 

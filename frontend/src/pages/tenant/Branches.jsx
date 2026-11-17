@@ -1,3 +1,4 @@
+import { phoneProps } from '../../utils/phone';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { branchesAPI, dashboardAPI, membershipPlansAPI, staffAPI } from '../../services/api';
@@ -128,7 +129,7 @@ export default function Branches() {
         <form onSubmit={handleCreate} className="space-y-3">
           {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <input placeholder="Branch name" aria-label="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={fieldClass} />
-          <input placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
+          <input {...phoneProps} placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
           <input placeholder="Capacity (optional)" aria-label="Capacity" type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={fieldClass} />
           <PlanChecklist plans={plans} selected={chosen} onToggle={togglePlan} />
           <div className="flex gap-2 pt-1">
@@ -142,7 +143,7 @@ export default function Branches() {
         <form onSubmit={handleEdit} className="space-y-3">
           {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <input placeholder="Branch name" aria-label="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={fieldClass} />
-          <input placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
+          <input {...phoneProps} placeholder="Phone" aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
           <input placeholder="Capacity (optional)" aria-label="Capacity" type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={fieldClass} />
           <PlanChecklist plans={plans} selected={chosen} onToggle={togglePlan} />
           <div className="flex gap-2 pt-1">
@@ -166,7 +167,7 @@ export default function Branches() {
           {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <input placeholder="Name" aria-label="Name" value={managerForm.name} onChange={(e) => setManagerForm({ ...managerForm, name: e.target.value })} required className={fieldClass} />
           <input placeholder="Email" aria-label="Email" type="email" value={managerForm.email} onChange={(e) => setManagerForm({ ...managerForm, email: e.target.value })} required className={fieldClass} />
-          <input placeholder="Phone" aria-label="Phone" value={managerForm.phone} onChange={(e) => setManagerForm({ ...managerForm, phone: e.target.value })} required className={fieldClass} />
+          <input {...phoneProps} placeholder="Phone" aria-label="Phone" value={managerForm.phone} onChange={(e) => setManagerForm({ ...managerForm, phone: e.target.value })} required className={fieldClass} />
           <input placeholder="Password" aria-label="Password" type="password" autoComplete="new-password" value={managerForm.password} onChange={(e) => setManagerForm({ ...managerForm, password: e.target.value })} required className={fieldClass} />
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={saving} className={primaryBtn}>{saving ? 'Creating...' : 'Create'}</button>

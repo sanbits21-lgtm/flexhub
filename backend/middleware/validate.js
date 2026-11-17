@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { checkPassword } = require('../utils/passwordPolicy');
+const { isValidPhone, PHONE_MESSAGE } = require('../utils/phoneNumber');
 
 // Centralized request-body validation. Controllers previously hand-checked whatever
 // they happened to think of, so coverage was uneven and bad input surfaced as either a
@@ -36,8 +37,10 @@ const optionalDate = z.union([z.string(), z.date()]).optional().nullable().or(z.
 const MAX_MONEY = 10_000_000;
 const money = z.coerce.number().min(0, 'cannot be negative').max(MAX_MONEY, 'is too large');
 const positiveMoney = money.refine((v) => v > 0, 'must be greater than zero');
-// Digits with an optional leading + (or a bracketed area code) and common separators; 6 to 18 characters.
-const phone = z.string().trim().regex(/^\+?[0-9(][0-9\s\-()]{5,17}$/, 'must be a valid phone number');
+// 10 to 15 digits, with an optional leading + and common separators (see utils/phoneNumber).
+const phone = z.string().trim().refine(isValidPhone, PHONE_MESSAGE);
+// For a number that may be left empty.
+const optionalPhone = z.union([z.literal(''), phone]).optional().nullable();
 const personName = z.string().trim().min(1, 'is required').max(100, 'is too long');
 const yearsAgo = (n) => new Date(Date.now() - n * 365.25 * 86400000);
 // A date of birth must be a real past date; a membership start must be near today
@@ -95,7 +98,7 @@ const schemas = {
   tenantUpdate: z.object({
     name: z.string().trim().min(1, 'is required').max(100, 'is too long'),
     contactEmail: z.string().trim().email('must be a valid email').max(120),
-    contactPhone: z.string().trim().max(20, 'is too long'),
+    contactPhone: z.union([z.literal(''), phone]),
     billingPlan: z.enum(['trial', 'basic', 'pro', 'enterprise']),
     billingStatus: z.enum(['active', 'past_due', 'suspended', 'cancelled']),
     maxBranches: z.coerce.number().int('must be a whole number').min(1, 'must be at least 1').max(100, 'is too large'),
@@ -142,6 +145,7 @@ const schemas = {
     assignedTrainerId: optionalObjectId,
     gender: z.enum(['male', 'female', 'other', 'prefer_not_say']).optional().or(z.literal('')),
     dob: pastDate,
+    emergencyContact: z.object({ phone: optionalPhone }).passthrough().optional().nullable(),
   }).passthrough(),
 
   memberUpdate: z.object({
@@ -149,6 +153,7 @@ const schemas = {
     phone: phone.optional(),
     email: z.string().email('must be a valid email').max(120).optional().or(z.literal('')),
     dob: pastDate,
+    emergencyContact: z.object({ phone: optionalPhone }).passthrough().optional().nullable(),
     membershipPlanId: optionalObjectId,
     membershipStatus: z.enum(MEMBERSHIP_STATUSES).optional(),
     assignedTrainerId: optionalObjectId,
@@ -184,11 +189,12 @@ const schemas = {
     name: z.string().trim().min(1, 'is required'),
     slug: z.string().trim().min(1, 'is required'),
     contactEmail: z.string().email('must be a valid email'),
+    contactPhone: optionalPhone,
     maxBranches: z.coerce.number().int().min(1).optional(),
     admin: z.object({
       name: z.string().trim().min(1, 'is required'),
       email: z.string().email('must be a valid email'),
-      phone: z.string().trim().min(1, 'is required'),
+      phone,
       password: z.string().min(8, 'must be at least 8 characters'),
     }),
   }).passthrough(), (v) => v.admin, ['admin', 'password']),
@@ -214,7 +220,14 @@ const schemas = {
     upiPaymentLink: z.string().trim().max(500).regex(/^https:\/\/[^\s"'<>]+$/i, 'must be an https:// link').optional().or(z.literal('')),
   }).passthrough(),
 
+  // Only the phone is checked here; the controllers own the rest of these bodies.
+  branchWrite: z.object({ phone: optionalPhone }).passthrough(),
+  managerCreate: z.object({ phone }).passthrough(),
+  platformAdminCreate: z.object({ phone }).passthrough(),
+  platformAdminUpdate: z.object({ phone: phone.optional() }).passthrough(),
+
   staffUpdate: z.object({
+    phone: phone.optional(),
     salary: z.coerce.number().min(0, 'cannot be negative').max(MAX_MONEY, 'is too large').optional().nullable(),
   }).passthrough(),
 

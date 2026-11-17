@@ -1,3 +1,4 @@
+import { phoneProps } from '../../utils/phone';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { packagesAPI, tenantsAPI } from '../../services/api';
@@ -135,7 +136,7 @@ export default function Tenants() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <input placeholder="Name" value={form.admin.name} onChange={(e) => setForm({ ...form, admin: { ...form.admin, name: e.target.value } })} required className={inputClass} />
           <input placeholder="Email" type="email" value={form.admin.email} onChange={(e) => setForm({ ...form, admin: { ...form.admin, email: e.target.value } })} required className={inputClass} />
-          <input placeholder="Phone" value={form.admin.phone} onChange={(e) => setForm({ ...form, admin: { ...form.admin, phone: e.target.value } })} required className={inputClass} />
+          <input {...phoneProps} placeholder="Phone" value={form.admin.phone} onChange={(e) => setForm({ ...form, admin: { ...form.admin, phone: e.target.value } })} required className={inputClass} />
           <input placeholder="Password" type="password" value={form.admin.password} onChange={(e) => setForm({ ...form, admin: { ...form.admin, password: e.target.value } })} required className={inputClass} />
         </div>
         <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Onboard Tenant</button>
