@@ -170,7 +170,10 @@ exports.create = async (req, res) => {
   // their own password via a link) is built; a member can't log in with it as-is.
   const weak = password ? require('../utils/passwordPolicy').passwordProblem(password, { name, email, phone }) : null;
   if (weak) return res.status(400).json({ message: weak });
-  const initialPassword = password || crypto.randomBytes(16).toString('hex');
+  // No password given: make a readable random one the front desk can pass on in the welcome card. It is
+  // returned once in this response and never stored in the clear or emailed.
+  const generated = password ? null : generateTempPassword();
+  const initialPassword = password || generated;
 
   let member;
   // The code is time-based plus random, so two members created in the same millisecond
@@ -201,7 +204,11 @@ exports.create = async (req, res) => {
   }
   if (!member) return res.status(503).json({ message: 'Could not allocate a member code. Please try again.' });
   logAudit(req, 'CREATE_MEMBER', { type: 'Member', id: member._id });
-  res.status(201).json({ ...member.toObject(), password: undefined });
+  res.status(201).json({
+    ...member.toObject(),
+    password: undefined,
+    ...(generated ? { appAccess: { memberCode: member.memberCode, email: member.email || null, password: generated } } : {}),
+  });
 };
 
 // Bulk-onboards members from an already-parsed, already-column-mapped array (the

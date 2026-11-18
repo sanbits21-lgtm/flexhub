@@ -7,6 +7,8 @@ import { membersAPI, branchesAPI, membershipPlansAPI, paymentsAPI, staffAPI, ten
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { phoneProps } from '../../utils/phone';
+import WelcomeCard from '../../components/WelcomeCard';
+import { fmtDate } from '../../utils/receipt';
 import BulkUploadMembersModal from '../../components/BulkUploadMembersModal';
 import PaymentReceipt from '../../components/PaymentReceipt';
 import RenewMembershipModal from '../../components/RenewMembershipModal';
@@ -282,6 +284,7 @@ export default function Members() {
         setAddStep('receipt');
         return;
       }
+      if (member.appAccess) { setCreatedMember(member); setAddStep('welcome'); return; }
       setShowAddModal(false);
       load();
     } catch (err) {
@@ -341,6 +344,7 @@ export default function Members() {
         method: 'upi',
         status: 'pending',
       });
+      if (member.appAccess) { setAddStep('welcome'); load(); return; }
       closeAddModal();
       load();
     } catch (err) {
@@ -351,6 +355,7 @@ export default function Members() {
   };
 
   const handleDoneAfterPayment = () => {
+    if (createdMember?.appAccess) { setAddStep('welcome'); setLastPayment(null); load(); return; }
     setShowAddModal(false);
     setAddStep('form');
     setCreatedMember(null);
@@ -510,7 +515,7 @@ export default function Members() {
         </div>
       )}
 
-      <Modal open={showAddModal} onClose={closeAddModal} title="Add Member">
+      <Modal open={showAddModal} onClose={() => { if (addStep !== 'welcome' || window.confirm('Close without sharing?\nThe password is shown only once. If you close this, you will have to reset it again to get a new one.')) closeAddModal(); }} title={addStep === 'welcome' ? 'Member added' : 'Add Member'}>
         {formError && (
           <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
             {formError}
@@ -756,6 +761,17 @@ export default function Members() {
           </div>
         )}
 
+        {addStep === 'welcome' && createdMember?.appAccess && (
+          <WelcomeCard
+            gymName={upiSettings.name}
+            member={createdMember}
+            access={createdMember.appAccess}
+            planName={selectedPlan?.name}
+            validUntil={createdMember.membershipEnd ? fmtDate(createdMember.membershipEnd) : ''}
+            onDone={closeAddModal}
+          />
+        )}
+
         {addStep === 'receipt' && createdMember && lastPayment && (
           <div className="flex flex-col items-center gap-3 text-center py-2">
             <div className="text-green-600 dark:text-green-400 text-3xl">✓</div>
@@ -802,15 +818,8 @@ export default function Members() {
         )}
         {appAccess?.creds && (
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <p>Give these to the member. The password is shown once; they can change it after signing in.</p>
-            <dl className="grid grid-cols-[7rem_1fr] gap-y-1">
-              <dt className="text-gray-500 dark:text-gray-400">Web app</dt><dd className="font-mono break-all">{`${window.location.origin}/member`}</dd>
-              <dt className="text-gray-500 dark:text-gray-400">Member code</dt><dd className="font-mono">{appAccess.creds.memberCode}</dd>
-              {appAccess.creds.email && (<><dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-mono break-all">{appAccess.creds.email}</dd></>)}
-              <dt className="text-gray-500 dark:text-gray-400">Password</dt><dd className="font-mono">{appAccess.creds.password}</dd>
-            </dl>
-            <p className="text-xs text-gray-500 dark:text-gray-400">The member opens the web app address on their phone, signs in, and can add it to their home screen to use it like an app.</p>
-            <button onClick={() => setAppAccess(null)} className="border rounded px-4 py-2 dark:border-gray-600">Done</button>
+            <p>Send this card to the member. The password is shown once; they can change it after signing in.</p>
+            <WelcomeCard gymName={upiSettings.name} member={appAccess.member} access={appAccess.creds} onDone={() => setAppAccess(null)} />
           </div>
         )}
       </Modal>
