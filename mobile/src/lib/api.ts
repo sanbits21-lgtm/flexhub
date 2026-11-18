@@ -180,6 +180,8 @@ export type MemberRow = {
   assignedTrainerId?: string | null;
   isActive: boolean;
   emergencyContact?: { name?: string; phone?: string };
+  /** Sent once, only in the response to adding a member: their sign-in details for the welcome card. */
+  appAccess?: { memberCode: string; email: string | null; password: string };
 };
 
 export type ExpiryRow = Pick<MemberRow, '_id' | 'name' | 'phone' | 'memberCode' | 'membershipEnd' | 'membershipPlanId' | 'branchId'>;

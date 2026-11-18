@@ -7,6 +7,7 @@ import { useAuth } from '../../../lib/auth';
 import { useBranch } from '../../../lib/branch';
 import { confirmAction, confirmDiscardPassword, say } from '../../../lib/dialog';
 import { useGymName } from '../../../lib/gym';
+import { WelcomeCard } from '../../../components/WelcomeCard';
 import { openWhatsApp, renewalMessage } from '../../../lib/whatsapp';
 import { cap, expiryText, fmtDate, fmtDateTime, rupees } from '../../../lib/format';
 import { useLoad } from '../../../lib/hooks';
@@ -123,11 +124,8 @@ export default function MemberDetail() {
       <Sheet open={!!creds} onClose={async () => { if (await confirmDiscardPassword()) setCreds(null); }} title="App login">
         {creds && (
           <View style={{ gap: 12 }}>
-            <Banner tone="info">Give these to {m.name}. The password is shown once. Any password they had stops working and they are signed out of the app.</Banner>
-            <Row title={creds.memberCode} subtitle="Member code" />
-            {creds.email ? <Row title={creds.email} subtitle="Or sign in with email" /> : null}
-            <Row title={creds.password} subtitle="Temporary password" last />
-            <Button title="Done" onPress={() => setCreds(null)} />
+            <Banner tone="info">Send this card to {m.name}. Any password they had stops working and they are signed out of the app.</Banner>
+            <WelcomeCard gymName={gym} member={m} access={creds} planName={plan?.name} onDone={() => setCreds(null)} />
           </View>
         )}
       </Sheet>

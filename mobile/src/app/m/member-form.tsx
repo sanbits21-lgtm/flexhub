@@ -9,6 +9,9 @@ import { api, type MemberRow, type PaymentRow, type PlanRow, type StaffRow } fro
 import { useAuth } from '../../lib/auth';
 import { useBranch } from '../../lib/branch';
 import { rupees } from '../../lib/format';
+import { useGymName } from '../../lib/gym';
+import { isValidPhone, PHONE_PROBLEM } from '../../lib/phone';
+import { WelcomeCard } from '../../components/WelcomeCard';
 import { dateInput } from '../../lib/time';
 
 const GENDERS = [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }] as const;
@@ -30,6 +33,8 @@ export default function MemberForm() {
   const [fe, setFe] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<{ member: MemberRow; amount: number; planName: string } | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [welcome, setWelcome] = useState(false);
+  const gym = useGymName();
   const set = <K extends keyof typeof blank>(k: K, v: (typeof blank)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
@@ -54,7 +59,8 @@ export default function MemberForm() {
     const problems: Record<string, string> = {};
     if (!form.name.trim()) problems.name = 'Enter the member\'s name.';
     if (!form.phone.trim()) problems.phone = 'Enter a phone number.';
-    else if (!/^\+?[0-9(][0-9\s\-()]{5,17}$/.test(form.phone.trim())) problems.phone = 'Use digits only, for example 98765 43210.';
+    else if (!isValidPhone(form.phone)) problems.phone = PHONE_PROBLEM;
+    if (personal && form.emergencyPhone.trim() && !isValidPhone(form.emergencyPhone)) problems.emergencyPhone = PHONE_PROBLEM;
     if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) problems.email = 'This does not look like an email address.';
     if (needsBranch) problems.branch = 'Choose which branch this member joins.';
     setFe(problems);
@@ -77,6 +83,7 @@ export default function MemberForm() {
       if (role === 'tenant-admin') body.branchId = scopedBranch || form.branchId;
       const member = await api.post<MemberRow>(scoped('/members'), body);
       if (plan) setCreated({ member, amount, planName: plan.name });
+      else if (member.appAccess) { setCreated({ member, amount: 0, planName: '' }); setWelcome(true); }
       else router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save.');
@@ -87,11 +94,23 @@ export default function MemberForm() {
 
   if (loading) return <Loading />;
 
+  // After the money (or straight away when there is no plan): the welcome card to send the member their sign-in details.
+  const afterPayment = () => { if (created?.member.appAccess) setWelcome(true); else router.back(); };
+
+  if (created && welcome && created.member.appAccess) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: 'Member added', headerBackVisible: false }} />
+        <WelcomeCard gymName={gym} member={created.member} access={created.member.appAccess} planName={created.planName || undefined} onDone={() => router.back()} />
+      </Screen>
+    );
+  }
+
   if (created) {
     return (
       <Screen>
         <Stack.Screen options={{ title: 'Take payment', headerBackVisible: false }} />
-        {receipt ? <Receipt r={receipt} onDone={() => router.back()} /> : (
+        {receipt ? <Receipt r={receipt} onDone={afterPayment} /> : (
           <>
             <Banner tone="success">{created.member.name} is enrolled on {created.planName}. Now take the first payment.</Banner>
             <PaymentCollector simple amount={created.amount} note={created.planName} branchId={created.member.branchId} ctaLabel="Collect"
@@ -99,7 +118,7 @@ export default function MemberForm() {
                 const p = await api.post<PaymentRow>('/payments', { memberId: created.member._id, membershipPlanId: plan?._id, amount: created.amount, method, status });
                 setReceipt({ title: status === 'paid' ? 'Welcome aboard' : 'Saved as pending', amount: created.amount, status: p.status, memberName: created.member.name, invoice: p.invoiceNumber, method, planName: created.planName, validUntil: created.member.membershipEnd });
               }} />
-            <Button title="Skip, collect later" kind="ghost" small onPress={() => router.back()} />
+            <Button title="Skip, collect later" kind="ghost" small onPress={afterPayment} />
           </>
         )}
       </Screen>
@@ -150,7 +169,7 @@ export default function MemberForm() {
         <Card>
           <H>Emergency contact</H>
           <Field label="Name" value={form.emergencyName} onChangeText={(v) => set('emergencyName', v)} />
-          <Field label="Phone" value={form.emergencyPhone} onChangeText={(v) => set('emergencyPhone', v)} keyboardType="phone-pad" />
+          <Field label="Phone" value={form.emergencyPhone} onChangeText={(v) => set('emergencyPhone', v)} keyboardType="phone-pad" error={fe.emergencyPhone} />
         </Card>
       )}
 

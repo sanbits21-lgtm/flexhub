@@ -4,6 +4,7 @@ import { Banner, Button, Card, Field, Loading, Screen, Select } from '../../comp
 import { api, type StaffRow } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useBranch } from '../../lib/branch';
+import { isValidPhone, PHONE_PROBLEM } from '../../lib/phone';
 
 export default function TrainerForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -30,6 +31,7 @@ export default function TrainerForm() {
     const problems: Record<string, string> = {};
     if (!f.name.trim()) problems.name = 'Enter the trainer\'s name.';
     if (!f.phone.trim()) problems.phone = 'Enter a phone number.';
+    else if (!isValidPhone(f.phone)) problems.phone = PHONE_PROBLEM;
     if (!editing && !/^\S+@\S+\.\S+$/.test(f.email.trim())) problems.email = 'Enter a valid email: it is their login.';
     if (!editing && f.password.length < 8) problems.password = 'Use at least 8 characters.';
     const branch = scopedBranch || f.branchId;

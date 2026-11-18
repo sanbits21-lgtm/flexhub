@@ -5,6 +5,7 @@ import { Banner, Button, Card, EmptyState, ErrorText, Fab, Field, Loading, Row, 
 import { api, type ManagerSummary } from '../../lib/api';
 import { useBranch, type Branch } from '../../lib/branch';
 import { useLoad } from '../../lib/hooks';
+import { isValidPhone, PHONE_PROBLEM } from '../../lib/phone';
 
 export default function Branches() {
   const { branches, reloadBranches } = useBranch();
@@ -21,12 +22,14 @@ export default function Branches() {
   const saveBranch = async () => {
     setErr(null);
     if (!f.name.trim()) { setErr('Give the branch a name.'); return; }
+    if (f.phone.trim() && !isValidPhone(f.phone)) { setErr(PHONE_PROBLEM); return; }
     setSaving(true);
     try { await api.post('/branches', { name: f.name.trim(), phone: f.phone.trim() || undefined, capacity: f.capacity ? Number(f.capacity) : undefined, timezone: 'Asia/Kolkata' }); setAdd(false); setF({ name: '', phone: '', capacity: '' }); await refresh(); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add.'); } finally { setSaving(false); }
   };
   const saveManager = async () => {
     setErr(null);
     if (!m.name.trim() || !m.email.trim() || !m.phone.trim() || m.password.length < 8) { setErr('Name, email, phone and a password of at least 8 characters are needed.'); return; }
+    if (!isValidPhone(m.phone)) { setErr(PHONE_PROBLEM); return; }
     setSaving(true);
     try { await api.post(`/branches/${mgrFor!._id}/managers`, { name: m.name.trim(), email: m.email.trim(), phone: m.phone.trim(), password: m.password }); setDone(`${m.name.trim()} can now sign in as the manager of ${mgrFor!.name}.`); setMgrFor(null); setM({ name: '', email: '', phone: '', password: '' }); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add the manager.'); } finally { setSaving(false); }
   };
