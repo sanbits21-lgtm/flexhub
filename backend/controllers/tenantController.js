@@ -92,6 +92,8 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const { name, contactEmail, contactPhone, billingPlan, billingStatus, maxBranches, isActive, slug, trialEndsAt, maxMembers, planEndsAt } = req.body;
+  const badPhone = await require('../utils/phoneNumber').phoneEditProblem(Tenant, tenantByIdFilter(req), contactPhone, 'contactPhone');
+  if (badPhone) return res.status(400).json({ message: badPhone });
   const changes = { name, contactEmail, contactPhone, billingPlan, billingStatus, maxBranches, isActive };
   // Moving to a paid plan ends the trial and lifts its member cap, unless told otherwise.
   if (billingPlan && billingPlan !== 'trial') {

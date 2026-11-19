@@ -41,6 +41,10 @@ const positiveMoney = money.refine((v) => v > 0, 'must be greater than zero');
 const phone = z.string().trim().refine(isValidPhone, PHONE_MESSAGE);
 // For a number that may be left empty.
 const optionalPhone = z.union([z.literal(''), phone]).optional().nullable();
+// For EDITS only: shape-checked loosely here, because a number saved before the rule existed must not block an unrelated edit.
+// The controller refuses a bad number only when it is a change (utils/phoneNumber phoneEditProblem).
+const editPhone = z.string().trim().min(1, 'is required').max(30, 'is too long');
+const optionalEditPhone = z.string().trim().max(30, 'is too long').optional().nullable();
 const personName = z.string().trim().min(1, 'is required').max(100, 'is too long');
 const yearsAgo = (n) => new Date(Date.now() - n * 365.25 * 86400000);
 // A date of birth must be a real past date; a membership start must be near today
@@ -98,7 +102,7 @@ const schemas = {
   tenantUpdate: z.object({
     name: z.string().trim().min(1, 'is required').max(100, 'is too long'),
     contactEmail: z.string().trim().email('must be a valid email').max(120),
-    contactPhone: z.union([z.literal(''), phone]),
+    contactPhone: z.string().trim().max(30, 'is too long'),
     billingPlan: z.enum(['trial', 'basic', 'pro', 'enterprise']),
     billingStatus: z.enum(['active', 'past_due', 'suspended', 'cancelled']),
     maxBranches: z.coerce.number().int('must be a whole number').min(1, 'must be at least 1').max(100, 'is too large'),
@@ -150,10 +154,10 @@ const schemas = {
 
   memberUpdate: z.object({
     name: personName.optional(),
-    phone: phone.optional(),
+    phone: editPhone.optional(),
     email: z.string().email('must be a valid email').max(120).optional().or(z.literal('')),
     dob: pastDate,
-    emergencyContact: z.object({ phone: optionalPhone }).passthrough().optional().nullable(),
+    emergencyContact: z.object({ phone: optionalEditPhone }).passthrough().optional().nullable(),
     membershipPlanId: optionalObjectId,
     membershipStatus: z.enum(MEMBERSHIP_STATUSES).optional(),
     assignedTrainerId: optionalObjectId,
@@ -222,12 +226,13 @@ const schemas = {
 
   // Only the phone is checked here; the controllers own the rest of these bodies.
   branchWrite: z.object({ phone: optionalPhone }).passthrough(),
+  branchUpdate: z.object({ phone: optionalEditPhone }).passthrough(),
   managerCreate: z.object({ phone }).passthrough(),
   platformAdminCreate: z.object({ phone }).passthrough(),
-  platformAdminUpdate: z.object({ phone: phone.optional() }).passthrough(),
+  platformAdminUpdate: z.object({ phone: editPhone.optional() }).passthrough(),
 
   staffUpdate: z.object({
-    phone: phone.optional(),
+    phone: editPhone.optional(),
     salary: z.coerce.number().min(0, 'cannot be negative').max(MAX_MONEY, 'is too large').optional().nullable(),
   }).passthrough(),
 

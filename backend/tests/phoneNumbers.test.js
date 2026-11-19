@@ -17,6 +17,48 @@ describe('the rule itself', () => {
   });
 });
 
+describe('records saved before the rule keep working', () => {
+  const Member = require('../models/Member');
+  const Tenant = require('../models/Tenant');
+  const Branch = require('../models/Branch');
+  const User = require('../models/User');
+
+  it('a member with an old short number can be edited, but not given another bad one', async () => {
+    const old = await Member.create({ tenantId: t.tenant._id, branchId: t.branch._id, name: 'Legacy', phone: '12345', memberCode: uniq('LG'), qrCode: uniq('QR'), password: 'Sup3r-secret-pass' });
+    const put = (body) => request(app).put(`/api/members/${old._id}`).set(auth(t.managerToken)).send(body);
+    expect((await put({ name: 'Legacy Renamed', phone: '12345' })).status).toBe(200); // the form sends the phone back unchanged
+    expect((await put({ name: 'Legacy Again' })).status).toBe(200);
+    expect((await put({ phone: '999' })).status).toBe(400); // a new bad number is still refused
+    expect((await put({ phone: '9876500777' })).status).toBe(200); // and fixing it works
+    expect((await Member.findById(old._id)).phone).toBe('9876500777');
+  });
+
+  it('an old emergency number is left alone unless changed', async () => {
+    const old = await Member.create({ tenantId: t.tenant._id, branchId: t.branch._id, name: 'Legacy E', phone: '9876500778', emergencyContact: { name: 'Mum', phone: '555' }, memberCode: uniq('LG'), qrCode: uniq('QR'), password: 'Sup3r-secret-pass' });
+    const put = (body) => request(app).put(`/api/members/${old._id}`).set(auth(t.managerToken)).send(body);
+    expect((await put({ name: 'Renamed', emergencyContact: { name: 'Mum', phone: '555' } })).status).toBe(200);
+    expect((await put({ emergencyContact: { name: 'Mum', phone: '12' } })).status).toBe(400);
+  });
+
+  it('the same holds for a trainer, a branch and a gym contact phone', async () => {
+    const trainer = await User.create({ name: 'Old Trainer', email: `${uniq('ot')}@example.com`, phone: '12345', password: 'Sup3r-secret-pass', role: 'trainer', tenantId: t.tenant._id, branchId: t.branch._id });
+    const tr = (body) => request(app).put(`/api/staff/${trainer._id}`).set(auth(t.adminToken)).send(body);
+    expect((await tr({ name: 'Old Trainer 2', phone: '12345' })).status).toBe(200);
+    expect((await tr({ phone: '77' })).status).toBe(400);
+
+    await Branch.updateOne({ _id: t.branch._id }, { phone: '1234' });
+    const br = (body) => request(app).put(`/api/branches/${t.branch._id}`).set(auth(t.adminToken)).send(body);
+    expect((await br({ name: 'Renamed branch', phone: '1234' })).status).toBe(200);
+    expect((await br({ phone: '55' })).status).toBe(400);
+
+    await Tenant.updateOne({ _id: t.tenant._id }, { contactPhone: '4321' });
+    const gym = (contactPhone) => request(app).put(`/api/tenants/${t.tenant._id}`).set(auth(su.token))
+      .send({ name: 'Ph Gym', contactEmail: t.tenant.contactEmail, contactPhone, billingPlan: 'basic', billingStatus: 'active', maxBranches: 5, isActive: true });
+    expect((await gym('4321')).status).toBe(200);
+    expect((await gym('88')).status).toBe(400);
+  });
+});
+
 describe('every place a phone is typed refuses a bad one', () => {
   const member = (phone, extra = {}) => request(app).post('/api/members').set(auth(t.managerToken)).send({ name: 'Ph', phone, branchId: t.branch._id.toString(), ...extra });
 

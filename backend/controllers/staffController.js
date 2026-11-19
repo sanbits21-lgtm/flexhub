@@ -7,6 +7,7 @@ const { logAudit } = require('../utils/audit');
 const { sendList } = require('../utils/paginate');
 const q = require('../utils/query');
 const { generateTempPassword } = require('../utils/tempPassword');
+const { phoneEditProblem } = require('../utils/phoneNumber');
 const { liftLock } = require('../utils/signInLock');
 const { templated } = require('../utils/mailer');
 
@@ -89,6 +90,8 @@ exports.update = async (req, res) => {
   const { name, phone, specialization, isActive, salary } = req.body;
   const filter = { ...req.scope };
   delete filter.trainerId;
+  const badPhone = await phoneEditProblem(User, { _id: req.params.id, ...filter }, phone);
+  if (badPhone) return res.status(400).json({ message: badPhone });
   const updateFields = { name, phone, specialization, isActive };
   // Salary is compensation data — only a tenant-admin may set it, never a branch-manager.
   if (req.user.role === 'tenant-admin' && salary !== undefined) updateFields.salary = salary;

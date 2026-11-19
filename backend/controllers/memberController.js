@@ -13,7 +13,7 @@ const q = require('../utils/query');
 const { pageParams } = require('../utils/paginate');
 const { generateTempPassword } = require('../utils/tempPassword');
 const { cleanCustomFields, phoneKey } = require('../utils/memberFields');
-const { isValidPhone, PHONE_MESSAGE } = require('../utils/phoneNumber');
+const { isValidPhone, phoneEditProblem, PHONE_MESSAGE } = require('../utils/phoneNumber');
 
 // Builds the Mongo filter for the caller's scope, translating the trainer's
 // virtual `trainerId` scope key (not a Member field) into the real relationship:
@@ -366,6 +366,9 @@ exports.update = async (req, res) => {
     assignedTrainerId, isActive,
   } = req.body;
   if (req.features && req.features['features:trainerAssignment'] === false) assignedTrainerId = undefined;
+
+  const badPhone = await phoneEditProblem(Member, filter, phone) || await phoneEditProblem(Member, filter, emergencyContact?.phone, 'emergencyContact.phone');
+  if (badPhone) return res.status(400).json({ message: badPhone });
 
   // Truthy = assigning/reassigning, validate ownership; null = explicitly clearing the
   // assignment (schema default), left alone; undefined = field not sent, untouched.

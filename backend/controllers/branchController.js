@@ -72,6 +72,8 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   const { name, address, phone, timezone, capacity, isActive, planIds } = req.body;
   if (planIds !== undefined && !Array.isArray(planIds)) return res.status(400).json({ message: 'planIds must be a list of plan ids' });
+  const badPhone = await require('../utils/phoneNumber').phoneEditProblem(Branch, { _id: req.params.id, ...req.scope }, phone);
+  if (badPhone) return res.status(400).json({ message: badPhone });
   let plan = { ops: [] };
   if (planIds !== undefined) {
     const exists = await Branch.exists({ _id: req.params.id, ...req.scope });

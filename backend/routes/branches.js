@@ -12,7 +12,7 @@ const canSeeBranches = requireRole('super-admin', 'platform-admin', 'tenant-admi
 router.get('/', canSeeBranches, list);
 router.get('/:id', canSeeBranches, getOne);
 router.post('/', requireRole('tenant-admin'), enforceWriteScope, validate(schemas.branchWrite), create);
-router.put('/:id', requireRole('tenant-admin'), enforceWriteScope, validate(schemas.branchWrite), update);
+router.put('/:id', requireRole('tenant-admin'), enforceWriteScope, validate(schemas.branchUpdate), update);
 router.delete('/:id', requireRole('tenant-admin'), remove);
 router.post('/:id/managers', requireRole('tenant-admin'), validate(schemas.managerCreate), createManager);
 

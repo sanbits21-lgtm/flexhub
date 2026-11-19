@@ -28,6 +28,9 @@ exports.update = async (req, res) => {
     }
   }
 
+  const badPhone = await require('../utils/phoneNumber').phoneEditProblem(User, { _id: req.params.id, role: 'platform-admin' }, phone);
+  if (badPhone) return res.status(400).json({ message: badPhone });
+
   const admin = await User.findOneAndUpdate(
     { _id: req.params.id, role: 'platform-admin' },
     { name, phone, isActive, managedTenantIds },
