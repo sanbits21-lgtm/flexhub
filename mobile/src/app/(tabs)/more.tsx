@@ -31,7 +31,10 @@ export default function More() {
         {can('features:ratings') && <Row icon="star" title="Ratings" subtitle="What members think of the gym and trainers" onPress={go('/m/ratings')} />}
         {can('pages:equipment') && <Row icon="barbell" title="Equipment" subtitle="Inventory and maintenance" onPress={go('/m/equipment')} />}
         {can('pages:classes') && <Row icon="albums" title="Class types" subtitle="Yoga, Zumba and other group classes" onPress={go('/m/class-types')} />}
-        <Row icon="pricetags" title="Membership plans" subtitle={admin ? 'Prices and durations' : 'What members can buy'} onPress={go('/m/plans')} last />
+        <Row icon="pricetags" title="Membership plans" subtitle={admin ? 'Prices and durations' : 'What members can buy'} onPress={go('/m/plans')} />
+        {can('features:announcements') && <Row icon="megaphone" title="Announcements" subtitle="News, offers and reminders in members' apps" onPress={go('/m/announcements')} />}
+        {can('pages:expenses') && <Row icon="wallet" title="Expenses" subtitle="Rent, repairs, utilities and more" onPress={go('/m/expenses')} />}
+        <Row icon="qr-code-outline" title="Member app QR" subtitle="Members scan it to open the app" onPress={go('/m/member-app-qr')} last />
       </Card>
 
       {admin && (

@@ -272,3 +272,43 @@ export type StaffRatings = {
   gym: (RatingRow & { branchId: string; branchName: string })[];
   trainers: (RatingRow & { trainerId: string; name: string; specialization: string; branchId: string; branchName: string })[];
 };
+
+// ---- expenses, notices, member app address (owner and branch manager) ----
+export type ExpenseRow = {
+  _id: string;
+  category: string;
+  amount: number;
+  date: string;
+  branchId: string | null;
+  paidTo?: string;
+  method: string;
+  note?: string;
+  voided?: boolean;
+  voidReason?: string;
+  payrollKey?: string;
+  hasReceipt?: boolean;
+};
+export type ExpenseSummary = {
+  totalExpenses: number;
+  collected: number;
+  net: number | null;
+  partial: boolean;
+  byCategory: { category: string; total: number }[];
+};
+export type NoticeRow = {
+  _id: string;
+  title: string;
+  body: string;
+  kind: 'news' | 'offer' | 'notice';
+  stage: 'live' | 'scheduled' | 'ended' | 'withdrawn';
+  audience: { type: 'everyone' | 'active' | 'expiring' | 'expired' | 'plan'; days?: number; planId?: string };
+  branchIds: string[];
+  startsAt: string;
+  expiresAt?: string | null;
+  link?: string;
+  readCount: number;
+  reach: number;
+  canManage: boolean;
+  createdByName?: string;
+};
+export type MemberAppLink = { url: string; source: 'gym' | 'platform' | 'automatic'; gymName: string; custom: string; platform: string; automatic: string };
