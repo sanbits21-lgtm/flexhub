@@ -6,8 +6,8 @@
   /* FitzyClub lime by default; BrandContext overrides these for a gym with its own colour. */
   /* --accent-strong is the accent darkened until it reads on white (text, chart lines, focus rings in the light theme). Lime itself is a
      dark-theme colour: on white it is neon and low-contrast. A gym's own colour gets its own darkened version (utils/brand.js). */
-  :root { --accent-strong: 21 128 61; --accent: 200 248 58; --accent-2: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; --accent-angle: 135deg; }
-  body { @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100; }
+  :root { --accent-strong: 14 136 72; --accent: 200 248 58; --accent-2: 200 248 58; --accent-hover: 216 255 99; --accent-ink: 11 14 5; --accent-angle: 135deg; }
+  body { @apply bg-[#F4F5FC] text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100; }
   .dark { color-scheme: dark; }
   :focus-visible { outline: 2px solid rgb(var(--accent-strong)); outline-offset: 2px; }
   .dark :focus-visible { outline-color: rgb(var(--accent)); }

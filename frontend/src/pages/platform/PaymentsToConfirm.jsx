@@ -60,7 +60,7 @@ export default function PaymentsToConfirm() {
       {rows === null ? <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</p> : rows.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">Nothing here.</p>
       ) : (
-        <div className="overflow-x-auto rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80">
+        <div className="overflow-x-auto rounded-3xl border border-gray-100 bg-white shadow-[0_8px_28px_-14px_rgba(30,41,59,0.16)] dark:border-white/5 dark:bg-gray-800/80">
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"><tr><th className="p-3">Gym</th><th className="p-3">For</th><th className="p-3 text-right">Due</th><th className="p-3">Transaction no.</th><th className="p-3">Sent</th><th className="p-3">Actions</th></tr></thead>
             <tbody>

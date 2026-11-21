@@ -4,11 +4,11 @@ import { useChartColors } from '../utils/chartColors';
 
 // The accent colours a card can be tinted with. Lime is the brand; the others keep neighbouring cards apart.
 export const TONES = {
-  lime: { text: 'text-green-700 dark:text-accent', tint: 'bg-green-600/10 dark:bg-accent/15', line: '#C8F83A' },
-  blue: { text: 'text-blue-600 dark:text-[#7AA2FF]', tint: 'bg-blue-500/10 dark:bg-[#7AA2FF]/15', line: '#7AA2FF' },
-  violet: { text: 'text-violet-600 dark:text-[#A596FF]', tint: 'bg-violet-500/10 dark:bg-[#A596FF]/15', line: '#A596FF' },
-  amber: { text: 'text-amber-600 dark:text-amber-400', tint: 'bg-amber-500/10 dark:bg-amber-400/15', line: '#FFB547' },
-  red: { text: 'text-red-600 dark:text-red-400', tint: 'bg-red-500/10 dark:bg-red-400/15', line: '#FF6B7A' },
+  lime: { text: 'text-accent-strong dark:text-accent', tint: 'bg-[#D6F5E3] dark:bg-accent/15', line: '#C8F83A' },
+  blue: { text: 'text-blue-600 dark:text-[#7AA2FF]', tint: 'bg-[#DCEAFE] dark:bg-[#7AA2FF]/15', line: '#7AA2FF' },
+  violet: { text: 'text-violet-600 dark:text-[#A596FF]', tint: 'bg-[#EAE2FE] dark:bg-[#A596FF]/15', line: '#A596FF' },
+  amber: { text: 'text-amber-600 dark:text-amber-400', tint: 'bg-[#FDEFCB] dark:bg-amber-400/15', line: '#FFB547' },
+  red: { text: 'text-red-600 dark:text-red-400', tint: 'bg-[#FEE4E2] dark:bg-red-400/15', line: '#FF6B7A' },
 };
 
 /** Percent change from the second-last to the last number of a series, or null when there is nothing to compare. */
@@ -29,12 +29,13 @@ export default function StatCard({ label, value, compact = false, icon: Icon, to
   const change = trend === undefined ? trendOf(series) : trend;
   const full = !!Icon;
   return (
-    <div className={`relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80 ${full ? 'p-4' : compact ? 'px-4 py-3' : 'p-4'}`}>
+    <div className={`relative h-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-[0_8px_28px_-14px_rgba(30,41,59,0.16)] dark:border-white/5 dark:bg-gray-800/80 ${full ? 'p-4 sm:p-5 dark:sm:p-4' : compact ? 'px-4 py-3' : 'p-4'}`}>
+      {full && !(series && series.length > 1) && <Icon aria-hidden="true" className={`pointer-events-none absolute -bottom-5 -right-4 h-28 w-28 opacity-[0.1] dark:hidden ${t.text}`} />}
       {full && (
         <div className="flex items-start justify-between">
-          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${t.tint} ${t.text}`}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+          <span className={`flex h-12 w-12 items-center justify-center rounded-full dark:h-10 dark:w-10 dark:rounded-xl ${t.tint} ${t.text}`}><Icon className="h-5 w-5" aria-hidden="true" /></span>
           {change !== null && change !== undefined && (
-            <span className={`flex items-center gap-0.5 text-sm font-semibold ${change >= 0 ? 'text-green-600 dark:text-accent' : 'text-red-500 dark:text-red-400'}`}>
+            <span className={`flex items-center gap-0.5 rounded-full px-2.5 py-1 text-sm font-semibold dark:bg-transparent dark:p-0 ${change >= 0 ? 'bg-[#E3F9ED] text-accent-strong dark:text-accent' : 'bg-[#FFEFED] text-red-500 dark:text-red-400'}`}>
               {change >= 0 ? <ArrowUpRight className="h-4 w-4" aria-hidden="true" /> : <ArrowDownRight className="h-4 w-4" aria-hidden="true" />}
               {Math.abs(change)}%
             </span>
@@ -43,11 +44,11 @@ export default function StatCard({ label, value, compact = false, icon: Icon, to
       )}
       <div className={`flex flex-wrap items-end justify-between gap-x-3 gap-y-1 ${full ? 'mt-3' : ''}`}>
         <div className="min-w-0">
-          <div className={`font-extrabold tracking-tight text-gray-900 dark:text-white ${full ? 'text-2xl' : compact ? 'text-xl' : 'text-2xl'}`}>{value}</div>
+          <div className={`font-extrabold tracking-tight text-gray-900 dark:text-white ${full ? 'text-3xl dark:text-2xl' : compact ? 'text-xl' : 'text-2xl'}`}>{value}</div>
           <div className="text-xs leading-tight text-gray-500 dark:text-gray-400 sm:text-sm">{label}</div>
           {hint && <div className="truncate text-xs text-gray-400 dark:text-gray-500">{hint}</div>}
         </div>
-        {full && series && series.length > 1 && <Sparkline data={series} color={line} className="h-12 w-20 shrink-0 xl:w-24" />}
+        {full && series && series.length > 1 && <Sparkline data={series} color={line} className="h-14 w-full shrink-0 dark:h-12 dark:w-20 dark:xl:w-24" />}
       </div>
     </div>
   );

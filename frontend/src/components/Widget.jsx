@@ -16,9 +16,9 @@ export default function Widget({ title, icon: Icon = null, action = null, classN
   const [slot, setSlot] = useState(null);
   const tile = useContext(TileContext);
   return (
-    <section className={`group flex h-80 min-h-0 flex-col rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80 ${className}`}>
+    <section className={`group flex h-80 min-h-0 flex-col rounded-3xl border border-gray-100 bg-white shadow-[0_8px_28px_-14px_rgba(30,41,59,0.16)] dark:border-white/5 dark:bg-gray-800/80 ${className}`}>
       <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-2 pt-4">
-        <h3 className="flex min-w-0 items-center gap-2 truncate text-base font-semibold text-gray-900 dark:text-gray-100">{Icon && <Icon className="h-5 w-5 shrink-0 text-green-700 dark:text-accent" aria-hidden="true" />}<span className="truncate">{title}</span></h3>
+        <h3 className="flex min-w-0 items-center gap-2 truncate text-base font-semibold text-gray-900 dark:text-gray-100">{Icon && <Icon className="h-5 w-5 shrink-0 text-accent-strong dark:text-accent" aria-hidden="true" />}<span className="truncate">{title}</span></h3>
         <div className="flex items-center gap-2">
           {action}
           <div ref={setSlot} />

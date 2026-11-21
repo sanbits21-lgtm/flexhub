@@ -10,6 +10,7 @@ import BrandMark from './BrandMark';
 import { LogoMark } from './Logo';
 import InstallButton from './InstallButton';
 import UserMenu from './UserMenu';
+import HelpCard from './HelpCard';
 import { useBrand } from '../context/BrandContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFeature } from '../hooks/useFeature';
@@ -69,7 +70,7 @@ const COLLAPSED_KEY = 'fitzy:menu-collapsed';
 const readCollapsed = () => { try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; } };
 
 // `slim` is the icon-only desktop menu; on a phone the menu is a drawer and always shows labels.
-const linkClass = (slim) => ({ isActive }) => `flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px] transition ${slim ? 'md:justify-center md:px-0' : ''} ${isActive ? 'bg-accent/15 font-semibold text-gray-900 ring-1 ring-inset ring-accent-strong/25 dark:bg-accent dark:text-accent-ink dark:ring-0 dark:shadow-[0_8px_24px_-12px_rgb(var(--accent)/0.8)]' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'}`;
+const linkClass = (slim) => ({ isActive }) => `flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px] transition ${slim ? 'md:justify-center md:px-0' : ''} ${isActive ? 'bg-gradient-to-r from-accent-strong/5 via-accent-strong/10 to-accent-strong/20 font-semibold text-gray-900 dark:bg-accent dark:text-accent-ink dark:ring-0 dark:shadow-[0_8px_24px_-12px_rgb(var(--accent)/0.8)]' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'}`;
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { user, subscription } = useAuth();
@@ -91,7 +92,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     <>
       {isOpen && <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col border-r border-gray-200 bg-white text-gray-700 dark:border-white/5 dark:bg-gray-900 dark:text-gray-100
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col border-r border-gray-100 bg-white text-gray-700 dark:border-white/5 dark:bg-gray-900 dark:text-gray-100
           transform transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:sticky md:top-0 md:h-screen md:translate-x-0 ${collapsed ? 'md:w-[4.75rem]' : 'md:w-64'}`}
@@ -120,11 +121,15 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               <span className={`truncate ${hideWhenSlim}`}>{link.label}</span>
             </NavLink>
           ))}
+          <div className={`space-y-3 pt-4 dark:hidden ${hideWhenSlim}`}>
+            <UserMenu variant="panel" />
+            <HelpCard />
+          </div>
         </nav>
 
         <div className="space-y-3 px-3 pb-4 pt-2">
           {brand && ['tenant-admin', 'branch-manager'].includes(user?.role) && (
-            <div className={`rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 dark:border-white/10 dark:bg-white/5 ${hideWhenSlim}`}>
+            <div className={`hidden rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 dark:block dark:border-white/10 dark:bg-white/5 ${hideWhenSlim}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{user.role === 'tenant-admin' ? 'Multi-branch' : 'Your branch'}</p>
               <p className="mt-0.5 flex items-center gap-2 truncate text-sm font-medium text-gray-900 dark:text-gray-100"><Building2 className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />{brand.name}</p>
             </div>
@@ -137,7 +142,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               <Link to="/billing" onClick={onClose} className="mt-3 inline-flex rounded-xl bg-accent-strong dark:bg-accent px-3 py-1.5 text-xs font-bold text-white dark:text-accent-ink hover:brightness-110">Upgrade plan</Link>
             </div>
           )}
-          <div className={hideWhenSlim}><UserMenu variant="card" placement="top" /></div>
+          <div className={hideWhenSlim}><div className="hidden dark:block"><UserMenu variant="card" placement="top" /></div></div>
           {collapsed && <div className="hidden justify-center md:flex"><UserMenu variant="avatar" placement="top" /></div>}
           <div className={`px-1 ${hideWhenSlim}`}><InstallButton /></div>
         </div>

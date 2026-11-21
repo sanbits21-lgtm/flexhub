@@ -4,6 +4,7 @@ import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bike, CalendarDays, Dumbbell, Flower2, HeartPulse, Music, Sparkles, Swords, TrendingUp, Trophy, Users, Waves,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { ChevronDown } from 'lucide-react';
 import Widget from './Widget';
 import { trendOf } from './StatCard';
 import Sparkline from './Sparkline';
@@ -26,11 +27,11 @@ export function RevenueCard({ title = 'Revenue overview', icon, data = [], class
   const total = values.reduce((s, n) => s + n, 0);
   const change = trendOf(values);
   return (
-    <Widget title={title} icon={icon} action={<span className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 dark:border-white/10 dark:text-gray-300">Last {data.length} months</span>} className={className} bodyClassName="relative flex flex-col overflow-hidden">
+    <Widget title={title} icon={icon} action={<span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs text-gray-600 shadow-sm dark:border-white/10 dark:bg-transparent dark:px-3 dark:py-1 dark:text-gray-300 dark:shadow-none">Last {data.length} months <ChevronDown className="h-3.5 w-3.5 dark:hidden" aria-hidden="true" /></span>} className={className} bodyClassName="relative flex flex-col overflow-hidden">
       <div className="px-4">
         <p className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">{inr(total)}</p>
         {change !== null && (
-          <p className={`flex items-center gap-1 text-sm ${change >= 0 ? 'text-green-600 dark:text-accent' : 'text-red-500 dark:text-red-400'}`}>
+          <p className={`mt-1 flex w-fit items-center gap-1 rounded-full px-3 py-1 text-sm font-medium dark:mt-0 dark:bg-transparent dark:p-0 dark:font-normal ${change >= 0 ? 'bg-[#E3F9ED] text-accent-strong dark:text-accent' : 'bg-[#FFEFED] text-red-500 dark:text-red-400'}`}>
             <ArrowUpRight className={`h-4 w-4 ${change < 0 ? 'rotate-90' : ''}`} aria-hidden="true" />
             {Math.abs(change)}% <span className="text-gray-500 dark:text-gray-400">vs the month before</span>
           </p>
@@ -140,12 +141,12 @@ export function UpcomingBookings({ sessions = [], className = '' }) {
             return (
               <li key={s.id} className="flex items-center gap-3">
                 <div className="w-16 shrink-0 text-xs text-gray-500 dark:text-gray-400"><div className="font-semibold text-gray-800 dark:text-gray-200">{clock(s.startAt)}</div>{dayLabel(s.startAt)}</div>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-600/10 text-green-700 dark:bg-accent/15 dark:text-accent"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D6F5E3] text-accent-strong dark:h-10 dark:w-10 dark:rounded-xl dark:bg-accent/15 dark:text-accent"><Icon className="h-5 w-5" aria-hidden="true" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{s.name}</p>
                   <p className="truncate text-xs text-gray-500 dark:text-gray-400">{[s.branchName, s.capacity ? `${s.booked}/${s.capacity} booked` : `${s.booked} booked`].filter(Boolean).join(' • ')}</p>
                 </div>
-                <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold ${full ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-600/10 text-green-700 dark:bg-accent/15 dark:text-accent'}`}>{full ? 'Full' : 'Open'}</span>
+                <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold dark:rounded-md dark:px-2 dark:py-0.5 dark:text-[11px] ${full ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-[#E3F9ED] text-accent-strong dark:bg-accent/15 dark:text-accent'}`}>{full ? 'Full' : 'Open'}</span>
               </li>
             );
           })}

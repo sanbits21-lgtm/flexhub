@@ -16,7 +16,7 @@ export function useChartColors() {
     const dark = theme === 'dark';
     return {
       dark,
-      accent: dark ? asRgb(css.getPropertyValue('--accent'), '200 248 58') : asRgb(css.getPropertyValue('--accent-strong'), '21 128 61'),
+      accent: dark ? asRgb(css.getPropertyValue('--accent'), '200 248 58') : asRgb(css.getPropertyValue('--accent-strong'), '14 136 72'),
       danger: dark ? '#FF6B7A' : '#DC4A56',
       dotRing: dark ? '#0B0E13' : '#FFFFFF',
     };

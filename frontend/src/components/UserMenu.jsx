@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronDown, KeyRound, LogOut } from 'lucide-react';
+import { Camera, ChevronDown, KeyRound, LogOut, Moon } from 'lucide-react';
+import { useBrand } from '../context/BrandContext';
 import { useAuth } from '../context/AuthContext';
 import StaffAvatar from './StaffAvatar';
 import ProfilePhotoModal from './ProfilePhotoModal';
@@ -7,12 +8,14 @@ import ChangePasswordModal from './ChangePasswordModal';
 import ThemeToggle from './ThemeToggle';
 
 const ROLE_LABEL = { 'super-admin': 'Owner', 'platform-admin': 'Platform admin', 'tenant-admin': 'Admin', 'branch-manager': 'Branch manager', trainer: 'Trainer' };
+const PANEL_ROLE = { ...ROLE_LABEL, 'tenant-admin': 'Owner' };
 const initialsOf = (name = '') => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 
 // The signed-in person: who they are, change your photo or password, switch theme, log out. Used twice: as a card at
 // the foot of the sidebar (`variant="card"`) and as a round avatar in the top bar (`variant="avatar"`).
 export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
   const { user, logout } = useAuth();
+  const { brand } = useBrand();
   const [open, setOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -33,6 +36,33 @@ export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
   const avatar = canHavePhoto && user.hasPhoto
     ? <StaffAvatar userId={user._id} hasPhoto name={user.name} size={variant === 'card' ? 40 : 36} />
     : <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-accent-strong dark:bg-accent font-bold text-white dark:text-accent-ink" style={{ width: variant === 'card' ? 40 : 36, height: variant === 'card' ? 40 : 36, fontSize: 14 }}>{initialsOf(user.name)}</span>;
+
+  if (variant === 'panel') {
+    // Light theme: the account laid out in the sidebar, no pop-up. Who you are, then the things you can do.
+    const row = 'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] text-gray-700 transition hover:bg-gray-100';
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#D4EFE2] bg-[#EEFFFA]/70 p-2.5">
+          {avatar}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-gray-900">{user.name}</span>
+            <span className="block truncate text-xs text-gray-500">{[PANEL_ROLE[user.role] || user.role, brand?.name].filter(Boolean).join(' \u2022 ')}</span>
+          </span>
+        </div>
+        <div className="pt-1">
+          {canHavePhoto && <button type="button" onClick={() => setPhotoOpen(true)} className={row}><Camera className="h-5 w-5 text-gray-500" aria-hidden="true" /> {user.hasPhoto ? 'Change photo' : 'Add a photo'}</button>}
+          <button type="button" onClick={() => setPasswordOpen(true)} className={row}><KeyRound className="h-5 w-5 text-gray-500" aria-hidden="true" /> Change password</button>
+          <div className="flex items-center justify-between px-3 py-1.5 text-[15px] text-gray-700">
+            <span className="flex items-center gap-3"><Moon className="h-5 w-5 text-gray-500" aria-hidden="true" />Theme</span>
+            <ThemeToggle className="rounded-full bg-amber-100 p-2 text-amber-500 hover:bg-amber-200" />
+          </div>
+          <button type="button" onClick={logout} className={`${row} text-red-600 hover:bg-red-50`}><LogOut className="h-5 w-5" aria-hidden="true" /> Log out</button>
+        </div>
+        {canHavePhoto && <ProfilePhotoModal open={photoOpen} onClose={() => setPhotoOpen(false)} />}
+        <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
+      </div>
+    );
+  }
 
   return (
     <div ref={box} className="relative">

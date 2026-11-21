@@ -93,7 +93,7 @@ export default function TopBar({ onMenu }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-gray-50/85 px-4 py-3 pt-safe backdrop-blur dark:border-white/5 dark:bg-gray-900/85 md:px-6">
+    <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-100 bg-[#F4F5FC]/85 px-4 py-3 pt-safe backdrop-blur dark:border-white/5 dark:bg-gray-900/85 md:px-6">
       <button type="button" onClick={onMenu} aria-label="Open menu" className="-ml-1 rounded-xl p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-white/10 md:hidden"><Menu className="h-6 w-6" /></button>
       <span className="min-w-0 md:hidden">
         <BrandLogo size={30} />
@@ -109,7 +109,7 @@ export default function TopBar({ onMenu }) {
             type="search"
             placeholder="Search members…"
             aria-label="Search members"
-            className="w-full rounded-full border border-gray-300 bg-white py-2.5 pl-12 pr-20 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-accent/40 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-100"
+            className="w-full rounded-full border border-gray-200 bg-white py-2.5 shadow-sm pl-12 pr-20 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-accent-strong focus:ring-2 focus:ring-accent-strong/25 dark:focus:border-accent dark:focus:ring-accent/40 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-100"
           />
           <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-lg border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 lg:block">Ctrl + K</kbd>
         </form>
