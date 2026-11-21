@@ -8,6 +8,7 @@ import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { phoneProps } from '../../utils/phone';
 import WelcomeCard from '../../components/WelcomeCard';
+import MemberPhoto from '../../components/MemberPhoto';
 import { fmtDate } from '../../utils/receipt';
 import BulkUploadMembersModal from '../../components/BulkUploadMembersModal';
 import PaymentReceipt from '../../components/PaymentReceipt';
@@ -900,6 +901,7 @@ export default function Members() {
       ) : (
       <DataTable tableId="members"
         columns={[
+          { key: 'photo', label: 'Photo', render: (r) => <MemberPhoto member={r} /> },
           { key: 'name', label: 'Name' },
           { key: 'phone', label: 'Phone' },
           ...(isTenantAdmin ? [{ key: 'branch', label: 'Branch', render: (r) => branchName(r.branchId), hideOnMobile: true }] : []),

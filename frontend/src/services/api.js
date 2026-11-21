@@ -127,6 +127,8 @@ export const staffAPI = {
 export const membersAPI = {
   list: (params) => api.get('/members', { params }),
   getOne: (id) => api.get(`/members/${id}`),
+  // The member's picture as an image (staff of the same gym). `version` is the stored file name, so a new upload is fetched again.
+  photo: (id, version = 0) => api.get(`/member-app/photo/${id}`, { params: { v: version }, responseType: 'blob' }),
   progress: (id) => api.get(`/members/${id}/progress`),
   create: (data) => api.post('/members', data),
   bulkCreate: (data) => api.post('/members/bulk', data),

@@ -99,6 +99,21 @@ test('the member can sign in to the member app with those details', async ({ pag
   await expect(page).not.toHaveURL(/\/member\/login/);
 });
 
+test("a member's photo shows in the staff members list, and members without one show their initials", async ({ page, request }) => {
+  test.skip(!issued, 'needs the member from the earlier test');
+  const { png, b64 } = require('../../backend/tests/photoFixtures');
+  const login = await request.post('/api/member-auth/login', { data: { identifier: issued.code, password: issued.password } });
+  const { token } = await login.json();
+  const upload = await request.put('/api/member-app/me/photo', { headers: { Authorization: `Bearer ${token}` }, data: { image: `data:image/png;base64,${b64(png(240, 240))}` } });
+  expect(upload.status()).toBe(200);
+
+  await signIn(page, seed.alpha.managerEmail);
+  await page.goto('/members');
+  const row = page.locator('tr', { hasText: 'Smoke Member' });
+  await expect(row.getByTestId('member-photo')).toBeVisible();
+  await expect(page.getByTestId('member-photo')).toHaveCount(1); // nobody else has uploaded one
+});
+
 test('closing the UPI QR step with X does not leave a member behind', async ({ page }) => {
   await signIn(page, seed.alpha.managerEmail);
   const form = await openAddMember(page);
