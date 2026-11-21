@@ -111,8 +111,13 @@ Three layers, none of which needs an account beyond what you already have:
 Check the email path actually works: set `ALERT_EMAIL` to yourself, and confirm an alert arrives (the Email card in
 Platform Settings sends a test message; an error email uses the same sender).
 
-If you outgrow this, add a hosted error tracker (Sentry) and log search. It is a small change in `app.js` and
-`server.js` where `notifyError` is called.
+4. **Error tracking (optional, Sentry).** Create a project at sentry.io (Node), paste its DSN into the `SENTRY_DSN` environment
+   variable on Render, and redeploy. Server errors then also appear in Sentry, grouped and counted, with the release that
+   introduced them. The same variable turns on browser error tracking, because the Docker build reads it. Only the error, its
+   stack and the route are sent, never request data, cookies, IP addresses or anything a member typed (`utils/errorTracking.js`
+   and the website's `utils/errorTracking.js` strip it, and tests pin that). Leave it empty to keep it off.
+
+Still to add if you outgrow this: log search, and crash reporting inside the Expo app.
 
 ## When something breaks
 

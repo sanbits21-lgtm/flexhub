@@ -23,6 +23,12 @@ describe('finding the inline code to allow', () => {
     expect(sha('x')).toBe(hashOf('x'));
   });
 
+  it('hashes a page saved with Windows line endings the way the browser will (as LF)', () => {
+    const lf = '\n  var theme = 1;\n  apply(theme);\n';
+    expect(inlineHashes(`<script>${lf.replace(/\n/g, '\r\n')}</script>`).scripts).toEqual([hashOf(lf)]);
+    expect(inlineHashes(`<script>${lf.replace(/\n/g, '\r')}</script>`).scripts).toEqual([hashOf(lf)]);
+  });
+
   it("the hash covers the block's whitespace, as browsers compute it", () => {
     const body = '\n      (function () { return 1; })();\n    ';
     expect(inlineHashes(`<script>${body}</script>`).scripts).toEqual([hashOf(body)]);
@@ -50,7 +56,7 @@ describe('the directives', () => {
   it('lock down everything the site does not use', () => {
     const d = buildDirectives([]);
     expect(d.objectSrc).toEqual(["'none'"]);
-    expect(d.frameSrc).toEqual(["'none'"]);
+    expect(d.frameSrc).toEqual(['https://www.youtube-nocookie.com']);
     expect(d.frameAncestors).toEqual(["'none'"]);
     expect(d.baseUri).toEqual(["'self'"]);
     expect(d.formAction).toEqual(["'self'"]);

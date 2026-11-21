@@ -37,6 +37,8 @@ const signature = (err, where) => crypto.createHash('sha1').update(`${err && err
 /** Tells the right people about a server error. Never throws: an alert must not cause a second failure. */
 const notifyError = async (err, where = 'server') => {
   try {
+    // The error tracker (when SENTRY_DSN is set) does its own grouping, so every error goes to it; only the EMAIL is throttled below.
+    require('./errorTracking').capture(err, where);
     if (!enabled()) return false;
     const now = Date.now();
     const key = signature(err, where);

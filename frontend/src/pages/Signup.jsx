@@ -23,7 +23,9 @@ export default function Signup() {
     authAPI.signupConfig().then((r) => {
       setConfig(r.data);
       const offered = r.data.packages || [];
-      setPackageId((offered.find((p) => p.isFeatured) || offered[0])?._id || '');
+      // The landing page's pricing cards link here with ?package=<id>; fall back to the featured plan.
+      const wanted = new URLSearchParams(window.location.search).get('package');
+      setPackageId((offered.find((p) => p._id === wanted) || offered.find((p) => p.isFeatured) || offered[0])?._id || '');
     }).catch(() => setConfig({ enabled: false }));
   }, []);
 

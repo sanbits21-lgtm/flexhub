@@ -228,6 +228,35 @@ app.get('/member.webmanifest', (req, res) => {
   });
 });
 
+// The public landing page. It is the front door of the MAIN address only (fitzyclub.in/); a gym's own address (iron.fitzyclub.in)
+// and everything else keep going straight to the app. People already signed in are sent on to /dashboard by landing/redirect.js.
+// Content that only the owner can supply lives in public/landing/config.js; empty values hide that part of the page.
+const landingDir = path.join(__dirname, 'public/landing');
+app.get('/', (req, res, next) => {
+  if (req.hostTenant || req.unknownHost) return next();
+  // The video player needs to know which site is embedding it, so this page sends the origin (helmet's default sends nothing).
+  res.set({ 'Cache-Control': 'public, max-age=300', 'Referrer-Policy': 'strict-origin-when-cross-origin' });
+  res.sendFile(path.join(landingDir, 'index.html'), (err) => { if (err) next(); });
+});
+app.use('/landing', express.static(landingDir, {
+  index: false,
+  maxAge: '1h',
+  setHeaders: (res, filePath) => { if (path.basename(filePath) === 'config.js') res.setHeader('Cache-Control', 'no-cache'); },
+}));
+const publicOrigin = (req) => String(process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+app.get('/robots.txt', (req, res) => {
+  const lines = (req.hostTenant || req.unknownHost)
+    ? ['User-agent: *', 'Disallow: /'] // a gym's own address is not for search engines
+    : ['User-agent: *', 'Allow: /$', 'Allow: /landing/', 'Allow: /terms', 'Allow: /privacy', 'Disallow: /api/', 'Disallow: /member', '', `Sitemap: ${publicOrigin(req)}/sitemap.xml`];
+  res.type('text/plain').send(`${lines.join('\n')}\n`);
+});
+app.get('/sitemap.xml', (req, res) => {
+  if (req.hostTenant || req.unknownHost) return res.status(404).end();
+  const base = publicOrigin(req);
+  const urls = ['/', '/signup', '/terms', '/privacy'].map((p) => `  <url><loc>${base}${p}</loc></url>`).join('\n');
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+});
+
 const frontendDist = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDist, {
   setHeaders: (res, filePath) => {
@@ -237,7 +266,7 @@ app.use(express.static(frontendDist, {
     if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
   },
 }));
-app.get(/^(?!\/api|\/health|\/readyz|\/privacy|\/terms).*/, (req, res, next) => {
+app.get(/^(?!\/api|\/health|\/readyz|\/privacy|\/terms|\/landing|\/robots\.txt|\/sitemap\.xml).*/, (req, res, next) => {
   res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
     if (err) next(); // dist doesn't exist (e.g. local dev) — fall through to 404
   });

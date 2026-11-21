@@ -14,7 +14,9 @@ services:
     plan: starter
     region: singapore
     healthCheckPath: /health
-    autoDeploy: true
+    # Deploy only after the GitHub checks (the CI workflow: backend tests, website build, image build) pass on the commit.
+    # A push that breaks the tests is never shipped to clients. `commit` would deploy every push regardless.
+    autoDeployTrigger: checksPass
     disk:
       name: uploads
       mountPath: /data/uploads
@@ -61,6 +63,10 @@ services:
       - key: PRIVACY_OPERATOR_NAME
         sync: false
       - key: PRIVACY_CONTACT_EMAIL
+        sync: false
+      # Optional: error tracking (sentry.io). Paste the project's DSN to turn it on; empty = off. Only errors and the route that
+      # failed are sent, never request data. See docs/OPERATIONS.md > Monitoring.
+      - key: SENTRY_DSN
         sync: false
       # Optional: AI workout/diet suggestions. Unset = built-in rule-based plans.
       - key: ANTHROPIC_API_KEY

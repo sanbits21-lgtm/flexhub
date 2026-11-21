@@ -19,10 +19,23 @@ const sha = (text) => `'sha256-${crypto.createHash('sha256').update(text, 'utf8'
 
 /** Hashes of the inline <script> and <style> blocks of an HTML document (blocks with a src, or empty ones, have nothing to allow). */
 const inlineHashes = (html) => {
+  // A browser hashes an inline block AFTER the HTML parser has turned every CRLF (and lone CR) into LF, so hash it that way.
+  // Otherwise a page saved or built with Windows line endings never matches and its script is blocked.
+  html = String(html).replace(/\r\n?/g, '\n');
   const find = (tag) => [...html.matchAll(new RegExp(`<${tag}(\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, 'gi'))]
     .filter((m) => !/\ssrc\s*=/i.test(m[1] || '') && m[2].trim() !== '')
     .map((m) => sha(m[2]));
   return { scripts: find('script'), styles: find('style') };
+};
+
+/** The address the browser may send error reports to, taken from SENTRY_DSN (https://<key>@<host>/<project>); nothing when unset. */
+const errorReportOrigins = (dsn = process.env.SENTRY_DSN) => {
+  try {
+    const u = new URL(String(dsn || '').trim());
+    return u.protocol === 'https:' && u.hostname ? [`https://${u.hostname}`] : [];
+  } catch {
+    return [];
+  }
 };
 
 const read = (file) => { try { return fs.readFileSync(file, 'utf8'); } catch { return ''; } };
@@ -45,11 +58,12 @@ const buildDirectives = (htmlFiles) => {
     // receipts and member photos fetched through the API.
     imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
     fontSrc: ["'self'", 'data:'],
-    connectSrc: ["'self'"],
+    connectSrc: ["'self'", ...errorReportOrigins()],
     manifestSrc: ["'self'"],
     workerSrc: ["'self'"],
     mediaSrc: ["'self'", 'blob:'],
-    frameSrc: ["'none'"],
+    // Only the privacy-friendly YouTube player, for the demo videos on the landing page; nothing else may be framed.
+    frameSrc: ['https://www.youtube-nocookie.com'],
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'"],
@@ -84,4 +98,4 @@ const report = (req, res) => {
   res.status(204).end();
 };
 
-module.exports = { csp, inlineHashes, buildDirectives, sha, reportBody, report };
+module.exports = { csp, inlineHashes, buildDirectives, errorReportOrigins, sha, reportBody, report };

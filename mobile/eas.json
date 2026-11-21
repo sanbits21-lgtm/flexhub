@@ -14,13 +14,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DOMAIN"
+        "EXPO_PUBLIC_API_URL": "https://fitzyclub.in"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DOMAIN"
+        "EXPO_PUBLIC_API_URL": "https://fitzyclub.in"
       }
     }
   },

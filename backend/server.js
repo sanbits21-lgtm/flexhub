@@ -1,4 +1,6 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+// Error tracking starts first so it sees everything. Does nothing unless SENTRY_DSN is set.
+require('./utils/errorTracking').init();
 const connectDB = require('./config/db');
 const app = require('./app');
 
@@ -35,7 +37,7 @@ process.on('unhandledRejection', (reason) => {
 });
 process.on('uncaughtException', (err) => {
   console.error('uncaught exception:', err);
-  Promise.race([require('./utils/alerts').notifyError(err, 'uncaught exception'), new Promise((r) => setTimeout(r, 4000))]).finally(() => process.exit(1));
+  Promise.race([require('./utils/alerts').notifyError(err, 'uncaught exception').then(() => require('./utils/errorTracking').flush(2000)), new Promise((r) => setTimeout(r, 4000))]).finally(() => process.exit(1));
 });
 
 // Local development should not run against the live database: a test gym, a deleted record or a bad

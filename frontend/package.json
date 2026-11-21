@@ -11,6 +11,7 @@
         "icons": "node scripts/generateIcons.js"
     },
     "dependencies": {
+        "@sentry/react": "^11.15.0",
         "axios": "^1.7.2",
         "jsqr": "^1.4.0",
         "lucide-react": "^0.468.0",

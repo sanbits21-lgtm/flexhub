@@ -5,6 +5,9 @@ import App from './App.jsx';
 import PwaStatus from './components/PwaStatus.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { BrandProvider } from './context/BrandContext.jsx';
+import { startErrorTracking } from './utils/errorTracking.js';
+
+startErrorTracking();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

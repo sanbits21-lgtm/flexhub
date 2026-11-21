@@ -14,7 +14,7 @@ export default defineConfig({
         name: 'FitzyClub — Gym Management',
         short_name: 'FitzyClub',
         description: 'Manage members, attendance, payments and equipment across your gym branches.',
-        start_url: '/',
+        start_url: '/dashboard',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',

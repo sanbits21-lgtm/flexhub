@@ -9,6 +9,9 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# Optional error tracking in the browser: Render passes SENTRY_DSN to the build when it is set. Empty = none of it is built in.
+ARG SENTRY_DSN=
+ENV VITE_SENTRY_DSN=$SENTRY_DSN
 RUN npm run build
 
 # ---- production dependencies only (no jest/nodemon/supertest) ---------------------------

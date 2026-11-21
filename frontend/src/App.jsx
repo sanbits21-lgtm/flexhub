@@ -74,6 +74,8 @@ export default function App() {
           <Route path="/platform-settings" element={<RoleRoute allow={['super-admin']}><AppLayout><PlatformSettings /></AppLayout></RoleRoute>} />
 
           <Route path="/" element={<RoleRoute><AppLayout><Dashboard /></AppLayout></RoleRoute>} />
+          {/* The same home screen. The public landing page lives at "/" on the main address, so signed-in people are sent here. */}
+          <Route path="/dashboard" element={<RoleRoute><AppLayout><Dashboard /></AppLayout></RoleRoute>} />
 
           <Route path="/platform-admins" element={<RoleRoute allow={['super-admin']}><AppLayout><PlatformAdmins /></AppLayout></RoleRoute>} />
           <Route path="/tenants" element={<RoleRoute allow={['super-admin', 'platform-admin']}><AppLayout><Tenants /></AppLayout></RoleRoute>} />

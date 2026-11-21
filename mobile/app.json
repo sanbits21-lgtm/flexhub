@@ -65,7 +65,8 @@
           "backgroundColor": "#0A0C10"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "description": "Your gym in your pocket: membership, classes, training plans and check-in.",
     "runtimeVersion": {

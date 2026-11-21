@@ -1,0 +1,13 @@
+{
+  "name": "fitzyclub-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Browser smoke tests: the real server on a throwaway database, driven through the real website.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
