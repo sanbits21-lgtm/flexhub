@@ -4,7 +4,7 @@
 # built and shipped with EAS (see mobile/README or docs/DEPLOY.md).
 
 # ---- website build ----------------------------------------------------------------------
-FROM node:20-alpine AS frontend-build
+FROM node:26-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --no-audit --no-fund
@@ -15,13 +15,13 @@ ENV VITE_SENTRY_DSN=$SENTRY_DSN
 RUN npm run build
 
 # ---- production dependencies only (no jest/nodemon/supertest) ---------------------------
-FROM node:20-alpine AS backend-deps
+FROM node:26-alpine AS backend-deps
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # ---- runtime ----------------------------------------------------------------------------
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
 # tini: PID 1 that forwards SIGTERM, so `docker stop` triggers our graceful shutdown.
 RUN apk add --no-cache tini
 ENV NODE_ENV=production \
