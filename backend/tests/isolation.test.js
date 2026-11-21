@@ -59,6 +59,8 @@ const listRoutes = () => {
 // Routes that are public on purpose. Anything else must refuse a request with no sign-in.
 const PUBLIC = [
   /^GET \/health$/, /^GET \/readyz$/, /^GET \/privacy$/, /^GET \/terms$/, /^GET \/member\.webmanifest$/, /^POST \/api\/csp-report$/,
+  // The marketing front door and what search engines read. Static pages with no member or gym data (see docs/LANDING.md).
+  /^GET \/$/, /^GET \/robots\.txt$/, /^GET \/sitemap\.xml$/,
   /^(GET|POST) \/api\/public\//,
   /^POST \/api\/auth\/(login|refresh|logout|forgot-password|reset-password)$/,
   /^POST \/api\/member-auth\/(login|refresh|logout|forgot-password|reset-password)$/,
