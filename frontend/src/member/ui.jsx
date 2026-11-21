@@ -61,7 +61,7 @@ export function LoadState({ error, stale, onRetry }) {
 
 export function Btn({ kind = 'primary', busy = false, small = false, className = '', children, ...rest }) {
   const kinds = {
-    primary: 'bg-accent text-accent-ink font-bold',
+    primary: 'bg-accent-strong dark:bg-accent text-white dark:text-accent-ink font-bold',
     secondary: 'border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100',
     ghost: 'text-green-700 dark:text-accent',
     danger: 'border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400',
@@ -118,7 +118,7 @@ export function Stat({ label, value, tone, hint }) {
 
 export function Hero({ label, value, caption }) {
   return (
-    <div className="rounded-3xl p-5 bg-accent text-accent-ink">
+    <div className="rounded-3xl p-5 bg-accent-strong dark:bg-accent text-white dark:text-accent-ink">
       <div className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</div>
       <div className="text-5xl font-extrabold tracking-tight mt-1">{value}</div>
       {caption && <div className="text-sm font-medium opacity-80 mt-1">{caption}</div>}
@@ -160,7 +160,7 @@ export function Loading({ label = 'Loading...' }) {
 export function Initials({ name = '', size = 48 }) {
   const letters = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
   return (
-    <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-accent text-accent-ink font-bold shrink-0" style={{ width: size, height: size, fontSize: size * 0.38 }}>{letters}</span>
+    <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-accent-strong dark:bg-accent text-white dark:text-accent-ink font-bold shrink-0" style={{ width: size, height: size, fontSize: size * 0.38 }}>{letters}</span>
   );
 }
 

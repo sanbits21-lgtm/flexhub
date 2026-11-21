@@ -426,7 +426,7 @@ export default function Members() {
           {canBulkUpload && (
             <button onClick={() => setShowBulkModal(true)} className={`${toolBtn} hidden sm:block`}>Bulk Upload</button>
           )}
-          <button onClick={openAddModal} className="bg-gray-900 text-white rounded-xl px-4 py-2 text-sm sm:text-base dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
+          <button onClick={openAddModal} className="bg-accent-strong text-white rounded-xl px-4 py-2 text-sm sm:text-base dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">
             <span className="sm:hidden">+ Add</span><span className="hidden sm:inline">+ Add Member</span>
           </button>
           {canBulkUpload && (
@@ -456,7 +456,7 @@ export default function Members() {
         <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((o) => !o)} className={`${toolBtn} flex items-center gap-2 shrink-0 ${showFilters ? 'border-accent' : ''}`}>
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4" /></svg>
           Filters
-          {hasFilters && <span className="rounded-full bg-accent text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{chips.length}</span>}
+          {hasFilters && <span className="rounded-full bg-accent-strong dark:bg-accent text-white dark:text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{chips.length}</span>}
         </button>
       </div>
 
@@ -511,7 +511,7 @@ export default function Members() {
               {c.text}<span aria-hidden="true" className="text-gray-400">×</span>
             </button>
           ))}
-          <button type="button" onClick={clearAll} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Clear all</button>
+          <button type="button" onClick={clearAll} className="text-xs font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Clear all</button>
         </div>
       )}
 
@@ -599,7 +599,7 @@ export default function Members() {
             <button
               type="button"
               onClick={() => setShowOptional((v) => !v)}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400"
             >
               {showOptional ? '− Hide' : '+ Add'} personal & emergency details
             </button>
@@ -716,7 +716,7 @@ export default function Members() {
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
+            <button type="submit" disabled={saving} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving ? 'Saving...' : form.membershipPlanId && form.paymentMethod === 'upi' ? 'Pay Now' : 'Save Member'}
             </button>
             <button type="button" onClick={closeAddModal} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
@@ -742,7 +742,7 @@ export default function Members() {
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{stepUpi.upiId}</span></p>
             {stepUpi.upiPaymentLink && (
-              <a href={stepUpi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              <a href={stepUpi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">
                 Or open payment link
               </a>
             )}
@@ -750,7 +750,7 @@ export default function Members() {
               <button
                 onClick={handleMarkUpiPaid}
                 disabled={markingPaid}
-                className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
+                className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
               >
                 {markingPaid ? 'Confirming...' : 'Mark as Paid'}
               </button>
@@ -789,7 +789,7 @@ export default function Members() {
               invoiceNumber={lastPayment.invoiceNumber}
               paidAt={lastPayment.paidAt}
             />
-            <button onClick={handleDoneAfterPayment} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
+            <button onClick={handleDoneAfterPayment} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
               Done
             </button>
           </div>
@@ -810,7 +810,7 @@ export default function Members() {
                   setAppAccess({ member: appAccess.member, error: err.response?.data?.message || 'Could not create a login.' });
                 }
               }}
-              className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold"
+              className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold"
             >
               Create temporary password
             </button>
@@ -889,7 +889,7 @@ export default function Members() {
           </div>
           <CustomFieldInputs fields={memberFields} values={editForm.customFields} onChange={(customFields) => setEditForm({ ...editForm, customFields })} className="grid grid-cols-2 sm:grid-cols-3 gap-3" />
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
+            <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
@@ -925,12 +925,12 @@ export default function Members() {
             label: 'Actions',
             render: (row) => (
               <div className="flex gap-2">
-                <button onClick={() => setRenewingMember(row)} className="text-green-700 dark:text-green-400 hover:underline">
+                <button onClick={() => setRenewingMember(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-green-400">
                   {row.membershipPlanId ? 'Renew' : 'Add Plan'}
                 </button>
-                <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                <button onClick={() => setPlansMember(row)} disabled={!row.isActive} className="text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-40 disabled:no-underline">Plans</button>
-                <button onClick={() => setAppAccess({ member: row })} disabled={!row.isActive} className="text-gray-600 dark:text-gray-300 hover:underline disabled:opacity-40 disabled:no-underline">App login / reset</button>
+                <button onClick={() => startEdit(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
+                <button onClick={() => setPlansMember(row)} disabled={!row.isActive} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-purple-400 disabled:opacity-40 disabled:no-underline">Plans</button>
+                <button onClick={() => setAppAccess({ member: row })} disabled={!row.isActive} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-gray-300 disabled:opacity-40 disabled:no-underline">App login / reset</button>
                 <button
                   onClick={() => handleDeactivate(row)}
                   disabled={!row.isActive}

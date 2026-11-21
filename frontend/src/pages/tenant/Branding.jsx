@@ -174,7 +174,7 @@ export default function Branding() {
         </div>
 
         {message && <div role="status" className={`text-sm ${message.ok ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{message.text}</div>}
-        <button type="submit" disabled={busy} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">{busy ? 'Saving...' : 'Save'}</button>
+        <button type="submit" disabled={busy} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">{busy ? 'Saving...' : 'Save'}</button>
       </form>
     </div>
   );

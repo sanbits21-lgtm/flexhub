@@ -23,7 +23,7 @@ export default function MyMembers() {
             key: 'actions',
             label: 'Actions',
             render: (row) => (
-              <button onClick={() => setPlansMember(row)} className="text-purple-700 dark:text-purple-400 hover:underline">Workout & diet plans</button>
+              <button onClick={() => setPlansMember(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-purple-400">Workout & diet plans</button>
             ),
           },
         ]}

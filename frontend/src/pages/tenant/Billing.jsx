@@ -26,7 +26,7 @@ function Usage({ label, used, max }) {
   return (
     <div>
       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>{label}</span><span>{used}{max ? ` of ${max}` : ' (no limit)'}</span></div>
-      {max ? <div className="mt-1 h-1.5 rounded-full bg-gray-100 dark:bg-white/10"><div className={`h-1.5 rounded-full ${pct >= 90 ? 'bg-red-500' : 'bg-accent'}`} style={{ width: `${Math.max(3, pct)}%` }} /></div> : null}
+      {max ? <div className="mt-1 h-1.5 rounded-full bg-gray-100 dark:bg-white/10"><div className={`h-1.5 rounded-full ${pct >= 90 ? 'bg-red-500' : 'bg-accent-strong dark:bg-accent'}`} style={{ width: `${Math.max(3, pct)}%` }} /></div> : null}
     </div>
   );
 }

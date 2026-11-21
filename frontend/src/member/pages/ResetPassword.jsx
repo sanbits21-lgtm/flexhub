@@ -42,7 +42,7 @@ export default function MemberResetPassword() {
         {done ? (
           <>
             <p role="status" className="text-sm text-gray-700 dark:text-gray-200">{done}</p>
-            <Link to="/member/login" className="block w-full rounded-2xl bg-accent px-4 py-3.5 text-center text-lg font-bold text-accent-ink">Sign in</Link>
+            <Link to="/member/login" className="block w-full rounded-2xl bg-accent-strong dark:bg-accent px-4 py-3.5 text-center text-lg font-bold text-white dark:text-accent-ink">Sign in</Link>
           </>
         ) : dead ? (
           <>

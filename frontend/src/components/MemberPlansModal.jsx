@@ -5,7 +5,7 @@ import { memberPlansAPI } from '../services/api';
 const input = 'border rounded px-2 py-1 w-full text-sm dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
 const label = 'block text-xs text-gray-500 dark:text-gray-400 mb-1';
 const btn = 'border rounded px-3 py-1.5 text-sm dark:border-gray-600 dark:text-gray-100';
-const btnPrimary = 'bg-gray-900 text-white rounded px-4 py-1.5 text-sm dark:bg-accent dark:text-accent-ink dark:font-semibold disabled:opacity-50';
+const btnPrimary = 'bg-accent-strong text-white rounded px-4 py-1.5 text-sm dark:bg-accent dark:text-accent-ink dark:font-semibold disabled:opacity-50';
 
 const lines = (text) => text.split('\n').map((s) => s.trim()).filter(Boolean);
 const num = (v, fallback = 0) => (v === '' || v === null || Number.isNaN(Number(v)) ? fallback : Number(v));
@@ -166,7 +166,7 @@ export default function MemberPlansModal({ member, open, onClose }) {
     <Modal open={open} onClose={onClose} wide title={`Workout & diet plans: ${member.name}`}>
       <div className="flex gap-2 mb-4">
         {['workout', 'diet'].map((t) => (
-          <button key={t} type="button" onClick={() => switchType(t)} className={`px-3 py-1.5 rounded text-sm ${type === t ? 'bg-gray-900 text-white dark:bg-accent dark:text-accent-ink dark:font-semibold' : 'border dark:border-gray-600 dark:text-gray-100'}`}>
+          <button key={t} type="button" onClick={() => switchType(t)} className={`px-3 py-1.5 rounded text-sm ${type === t ? 'bg-accent-strong text-white dark:bg-accent dark:text-accent-ink dark:font-semibold' : 'border dark:border-gray-600 dark:text-gray-100'}`}>
             {t === 'workout' ? 'Workout' : 'Diet'}
           </button>
         ))}

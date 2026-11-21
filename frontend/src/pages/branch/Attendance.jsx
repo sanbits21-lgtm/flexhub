@@ -31,7 +31,7 @@ export default function Attendance() {
             <option key={m._id} value={m._id}>{m.name} ({m.memberCode})</option>
           ))}
         </select>
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Check In</button>
+        <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Check In</button>
       </form>
 
       <DataTable tableId="attendance"

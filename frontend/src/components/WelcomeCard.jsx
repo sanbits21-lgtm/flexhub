@@ -101,7 +101,7 @@ export default function WelcomeCard({ gymName, member, access, planName, validUn
         <button type="button" onClick={share} className={whatsappBtn}><MessageCircle className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>
         <button type="button" onClick={download} className={btn}><Download className="h-4 w-4" aria-hidden="true" /> Download card</button>
         <button type="button" onClick={copy} className={btn}>{copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />} {copied ? 'Copied' : 'Copy message'}</button>
-        {onDone && <button type="button" onClick={onDone} className="ml-auto rounded px-4 py-1.5 text-sm font-semibold bg-gray-900 text-white dark:bg-accent dark:text-accent-ink">Done</button>}
+        {onDone && <button type="button" onClick={onDone} className="ml-auto rounded px-4 py-1.5 text-sm font-semibold bg-accent-strong text-white dark:bg-accent dark:text-accent-ink">Done</button>}
       </div>
     </div>
   );

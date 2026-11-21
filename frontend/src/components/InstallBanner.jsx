@@ -43,7 +43,7 @@ export default function InstallBanner() {
         {!isIos && (
           <button
             onClick={promptInstall}
-            className="mt-2 text-sm bg-gray-900 text-white rounded px-3 py-1.5 dark:bg-accent dark:text-accent-ink dark:font-semibold"
+            className="mt-2 text-sm bg-accent-strong text-white rounded px-3 py-1.5 dark:bg-accent dark:text-accent-ink dark:font-semibold"
           >
             Install
           </button>

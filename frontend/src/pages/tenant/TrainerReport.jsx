@@ -75,7 +75,7 @@ export default function TrainerReport() {
                 <button
                   onClick={() => handleSaveSalary(r)}
                   disabled={savingId === r._id}
-                  className="text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600"
+                  className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400 disabled:text-gray-300 dark:disabled:text-gray-600"
                 >
                   {savingId === r._id ? 'Saving...' : 'Save'}
                 </button>

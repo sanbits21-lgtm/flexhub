@@ -150,7 +150,7 @@ export default function Announcements() {
                 </div>
                 {n.canManage && n.status !== 'withdrawn' && (
                   <div className="flex gap-3 text-sm">
-                    <button type="button" onClick={() => openEdit(n)} className="text-blue-600 hover:underline dark:text-blue-400">Edit</button>
+                    <button type="button" onClick={() => openEdit(n)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
                     <button type="button" onClick={() => withdraw(n)} className="text-red-600 hover:underline dark:text-red-400">Withdraw</button>
                   </div>
                 )}

@@ -197,9 +197,9 @@ export default function Payments() {
               label: 'Actions',
               render: (r) => (
                 <div className="flex gap-2">
-                  <button onClick={() => setReceiptFor(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Receipt</button>
+                  <button onClick={() => setReceiptFor(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Receipt</button>
                   {r.status === 'pending' && (
-                    <button onClick={() => handleMarkPaid(r)} className="text-green-700 dark:text-green-400 hover:underline whitespace-nowrap">Mark Paid</button>
+                    <button onClick={() => handleMarkPaid(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-green-400 whitespace-nowrap">Mark Paid</button>
                   )}
                   {r.status === 'paid' && canRefund && (
                     <button onClick={() => handleRefund(r)} className="text-red-600 dark:text-red-400 hover:underline">Refund</button>

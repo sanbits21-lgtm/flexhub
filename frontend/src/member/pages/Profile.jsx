@@ -199,7 +199,7 @@ export default function Profile() {
 
       <Card className="space-y-3">
         <h2 className="font-extrabold text-gray-900 dark:text-gray-100">Privacy</h2>
-        <a href="/privacy" target="_blank" rel="noreferrer" className="block text-blue-600 dark:text-blue-400 hover:underline">Read the privacy policy</a>
+        <a href="/privacy" target="_blank" rel="noreferrer" className="block font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Read the privacy policy</a>
         {!delOpen ? (
           <Btn kind="danger" onClick={() => setDelOpen(true)} className="w-full">Delete my account</Btn>
         ) : (

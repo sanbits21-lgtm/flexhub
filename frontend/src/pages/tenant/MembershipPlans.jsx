@@ -138,7 +138,7 @@ export default function MembershipPlans() {
               label: 'Actions',
               render: (row) => (
                 <div className="flex gap-2">
-                  <button onClick={() => openEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                  <button onClick={() => openEdit(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
                   <button
                     onClick={() => handleRemove(row)}
                     disabled={!row.isActive}

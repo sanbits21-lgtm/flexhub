@@ -125,7 +125,7 @@ export default function Signup() {
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px' }}>
         <label>Website<input tabIndex={-1} autoComplete="off" value={form.website} onChange={set('website')} /></label>
       </div>
-      <button type="submit" disabled={busy} className="w-full rounded-2xl bg-accent py-3.5 text-lg font-bold text-accent-ink shadow-[0_0_32px_-8px_rgb(var(--accent)/0.7)] hover:brightness-110 disabled:opacity-50">{busy ? 'Registering...' : chosen ? `Register with ${chosen.name}` : 'Register my gym'}</button>
+      <button type="submit" disabled={busy} className="w-full rounded-2xl bg-accent-strong dark:bg-accent py-3.5 text-lg font-bold text-white dark:text-accent-ink dark:shadow-[0_0_32px_-8px_rgb(var(--accent)/0.7)] hover:brightness-110 disabled:opacity-50">{busy ? 'Registering...' : chosen ? `Register with ${chosen.name}` : 'Register my gym'}</button>
       <p className="text-sm text-center text-gray-600 dark:text-gray-300">Already registered? <Link to="/login" className="font-semibold underline dark:text-accent">Log in</Link></p>
     </form>,
     packages.length > 0,

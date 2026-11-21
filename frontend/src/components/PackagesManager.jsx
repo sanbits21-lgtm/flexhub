@@ -53,7 +53,7 @@ export default function PackagesManager({ readOnly = false }) {
   };
 
   const card = 'bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-2xl shadow p-4';
-  const btn = 'text-blue-600 dark:text-blue-400 hover:underline text-sm';
+  const btn = 'font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400 text-sm';
   return (
     <section aria-label="Subscription packages" className={`${card} space-y-4`}>
       <div className="flex items-center justify-between gap-3">
@@ -61,7 +61,7 @@ export default function PackagesManager({ readOnly = false }) {
           <h2 className="font-semibold text-gray-900 dark:text-gray-100">Subscription packages</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Shown on the registration page. A gym gets its package's limits when you approve it; edits here only affect future approvals.{readOnly ? ' Only the super-admin can change packages.' : ''}</p>
         </div>
-        {!form && !readOnly && <button type="button" onClick={() => setForm({ ...EMPTY })} className="bg-gray-900 text-white rounded-xl px-4 py-2 shrink-0 dark:bg-accent dark:text-accent-ink dark:font-semibold">Add package</button>}
+        {!form && !readOnly && <button type="button" onClick={() => setForm({ ...EMPTY })} className="bg-accent-strong text-white rounded-xl px-4 py-2 shrink-0 dark:bg-accent dark:text-accent-ink dark:font-semibold">Add package</button>}
       </div>
       {error && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</div>}
 
@@ -103,7 +103,7 @@ export default function PackagesManager({ readOnly = false }) {
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={set('isFeatured')} /> Mark as "Most popular"</label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={busy} className="bg-gray-900 text-white rounded-xl px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold disabled:opacity-50">{busy ? 'Saving...' : 'Save package'}</button>
+            <button type="submit" disabled={busy} className="bg-accent-strong text-white rounded-xl px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold disabled:opacity-50">{busy ? 'Saving...' : 'Save package'}</button>
             <button type="button" onClick={() => { setForm(null); setError(''); }} className="border rounded-xl px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>

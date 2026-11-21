@@ -197,7 +197,7 @@ export function DashboardFrame({ title, actions = null, kpis = [], layoutId, til
         <div className="flex items-center gap-3">
           {actions}
           {(!isDefaultOrder || removed.length > 0) && (
-            <button type="button" onClick={reset} className="hidden lg:block text-xs text-blue-600 dark:text-blue-400 hover:underline">Reset layout</button>
+            <button type="button" onClick={reset} className="hidden lg:block text-xs font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Reset layout</button>
           )}
           <button
             type="button"
@@ -206,7 +206,7 @@ export function DashboardFrame({ title, actions = null, kpis = [], layoutId, til
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg>
             Widgets
-            {removed.length > 0 && <span className="rounded-full bg-accent text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{removed.length}</span>}
+            {removed.length > 0 && <span className="rounded-full bg-accent-strong dark:bg-accent text-white dark:text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{removed.length}</span>}
           </button>
         </div>
       </div>
@@ -246,7 +246,7 @@ export function useExpiryTiles({ expiring, expired, branchNameFor = null, onRene
     key: 'renew',
     label: '',
     render: (r) => (
-      <button onClick={() => setRenewing(r)} className="text-green-700 dark:text-green-400 hover:underline">Renew</button>
+      <button onClick={() => setRenewing(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-green-400">Renew</button>
     ),
   };
   const base = [

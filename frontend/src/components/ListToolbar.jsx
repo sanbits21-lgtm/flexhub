@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export const fieldClass = 'w-full border rounded-xl px-3 py-2 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100';
-export const primaryBtn = 'bg-gray-900 text-white rounded-xl px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
+export const primaryBtn = 'bg-accent-strong text-white rounded-xl px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
 export const toolBtn = 'border rounded-xl px-3 py-2 text-sm dark:border-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800';
 
 /**
@@ -37,7 +37,7 @@ export default function ListToolbar({ title, count, addLabel, onAdd, search, onS
             <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className={`${toolBtn} flex items-center gap-2 shrink-0 ${open ? 'border-accent' : ''}`}>
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4" /></svg>
               Filters
-              {hasChips && <span className="rounded-full bg-accent text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{chips.length}</span>}
+              {hasChips && <span className="rounded-full bg-accent-strong dark:bg-accent text-white dark:text-accent-ink text-xs font-semibold px-1.5 min-w-5 text-center">{chips.length}</span>}
             </button>
           )}
         </div>
@@ -54,7 +54,7 @@ export default function ListToolbar({ title, count, addLabel, onAdd, search, onS
               {c.text}<span aria-hidden="true" className="text-gray-400">×</span>
             </button>
           ))}
-          <button type="button" onClick={onClearAll} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Clear all</button>
+          <button type="button" onClick={onClearAll} className="text-xs font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Clear all</button>
         </div>
       )}
     </div>

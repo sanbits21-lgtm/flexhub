@@ -32,18 +32,18 @@ export default function UserMenu({ variant = 'avatar', placement = 'bottom' }) {
   const role = ROLE_LABEL[user.role] || user.role;
   const avatar = canHavePhoto && user.hasPhoto
     ? <StaffAvatar userId={user._id} hasPhoto name={user.name} size={variant === 'card' ? 40 : 36} />
-    : <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-accent font-bold text-accent-ink" style={{ width: variant === 'card' ? 40 : 36, height: variant === 'card' ? 40 : 36, fontSize: 14 }}>{initialsOf(user.name)}</span>;
+    : <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-accent-strong dark:bg-accent font-bold text-white dark:text-accent-ink" style={{ width: variant === 'card' ? 40 : 36, height: variant === 'card' ? 40 : 36, fontSize: 14 }}>{initialsOf(user.name)}</span>;
 
   return (
     <div ref={box} className="relative">
       {variant === 'card' ? (
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2.5 text-left hover:bg-white/10">
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} className="flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-2.5 text-left hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
           {avatar}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-gray-100">{user.name}</span>
-            <span className="block truncate text-xs text-gray-400">{role}</span>
+            <span className="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{user.name}</span>
+            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">{role}</span>
           </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+          <ChevronDown className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
         </button>
       ) : (
         <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} aria-label="Account menu" className="flex items-center gap-1 rounded-full p-0.5 hover:bg-gray-200 dark:hover:bg-white/10">

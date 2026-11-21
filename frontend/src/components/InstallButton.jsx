@@ -12,8 +12,8 @@ export default function InstallButton() {
 
   if (isIos) {
     return (
-      <div className="text-xs text-gray-400">
-        <button onClick={() => setShowIosHint((v) => !v)} className="hover:text-gray-200">
+      <div className="text-xs text-gray-500 dark:text-gray-400">
+        <button onClick={() => setShowIosHint((v) => !v)} className="hover:text-gray-900 dark:hover:text-gray-200">
           Install app
         </button>
         {showIosHint && <p className="mt-1 leading-snug">{iosInstallSteps()}</p>}
@@ -24,7 +24,7 @@ export default function InstallButton() {
   if (!canPrompt) return null;
 
   return (
-    <button onClick={promptInstall} className="text-xs text-gray-400 hover:text-gray-200">
+    <button onClick={promptInstall} className="text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">
       Install app
     </button>
   );

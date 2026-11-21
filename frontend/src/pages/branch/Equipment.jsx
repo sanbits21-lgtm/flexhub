@@ -128,7 +128,7 @@ export default function Equipment() {
                   <button
                     onClick={() => { setService(emptyService()); setError(''); setServicing(row); }}
                     disabled={row.status === 'retired'}
-                    className="text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                    className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
                   >
                     Log service
                   </button>

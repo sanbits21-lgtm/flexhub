@@ -12,7 +12,7 @@ import {
 } from '../utils/planMapping';
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
-const primaryBtn = 'bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
+const primaryBtn = 'bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
 const ghostBtn = 'border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100';
 const DURATIONS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['half_yearly', 'Half-yearly'], ['yearly', 'Yearly']];
 const NEW_FIELD = '__new__';
@@ -239,7 +239,7 @@ export default function BulkUploadMembersModal({
             column of your file is listed as it is, and you choose what each one becomes. {canCreate && 'Columns with no matching field can become new fields. '}
             Up to {MAX_ROWS} rows per upload.
           </p>
-          <button type="button" onClick={() => downloadSampleSheet({ plans, fields: memberFields })} className="text-sm text-blue-600 dark:text-blue-400 hover:underline self-start">
+          <button type="button" onClick={() => downloadSampleSheet({ plans, fields: memberFields })} className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400 self-start">
             Download a sample sheet
           </button>
           <div className="flex justify-end pt-2">
@@ -365,7 +365,7 @@ export default function BulkUploadMembersModal({
                           {suggestion && (
                             <p className="text-xs text-gray-600 dark:text-gray-300">
                               Looks like <span className="font-medium">{suggestion.name}</span>?{' '}
-                              <button type="button" onClick={() => setPlanChoices((prev) => ({ ...prev, [fp.key]: suggestion._id }))} className="text-blue-600 dark:text-blue-400 hover:underline">Use it</button>
+                              <button type="button" onClick={() => setPlanChoices((prev) => ({ ...prev, [fp.key]: suggestion._id }))} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Use it</button>
                             </p>
                           )}
                           {value === NO_PLAN && <p className="text-xs text-gray-500 dark:text-gray-400">These members are imported with no plan and no payment.</p>}
@@ -499,7 +499,7 @@ export default function BulkUploadMembersModal({
                   </tbody>
                 </table>
               </div>
-              <button onClick={downloadFailedCsv} className="text-sm text-blue-600 dark:text-blue-400 hover:underline self-start">
+              <button onClick={downloadFailedCsv} className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400 self-start">
                 Download these rows as CSV
               </button>
             </>

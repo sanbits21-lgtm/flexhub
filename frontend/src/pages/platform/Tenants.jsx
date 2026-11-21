@@ -139,7 +139,7 @@ export default function Tenants() {
           <input {...phoneProps} placeholder="Phone" value={form.admin.phone} onChange={(e) => setForm({ ...form, admin: { ...form.admin, phone: e.target.value } })} required className={inputClass} />
           <input placeholder="Password" type="password" value={form.admin.password} onChange={(e) => setForm({ ...form, admin: { ...form.admin, password: e.target.value } })} required className={inputClass} />
         </div>
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Onboard Tenant</button>
+        <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Onboard Tenant</button>
       </form>
 
       {editingId && (
@@ -181,7 +181,7 @@ export default function Tenants() {
           </div>
           {editError && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{editError}</div>}
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
+            <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
@@ -194,7 +194,7 @@ export default function Tenants() {
           <div className="flex flex-wrap items-end gap-3 text-sm text-gray-700 dark:text-gray-200">
             <label>Months<input type="number" min="1" max="60" required value={renewing.months} onChange={(e) => setRenewing({ ...renewing, months: e.target.value })} className={`${inputClass} block w-24`} /></label>
             <label>Amount received (₹)<input type="number" min="0" required value={renewing.amount} onChange={(e) => setRenewing({ ...renewing, amount: e.target.value })} className={`${inputClass} block w-36`} /></label>
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold">Record and renew</button>
+            <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold">Record and renew</button>
             <button type="button" onClick={() => setRenewing(null)} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
           {renewError && <div role="alert" className="text-sm text-red-700 dark:text-red-400">{renewError}</div>}
@@ -226,11 +226,11 @@ export default function Tenants() {
             label: 'Actions',
             render: (row) => (
               <div className="flex gap-2">
-                <Link to={`/tenants/${row._id}/workspace`} className="text-blue-600 dark:text-blue-400 hover:underline">Workspace</Link>
-                {row.billingPlan === 'trial' && <button onClick={() => setExtending(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Extend trial</button>}
-                <button onClick={() => startRenew(row)} className="text-blue-600 dark:text-blue-400 hover:underline">{row.billingPlan === 'trial' ? 'Activate plan' : 'Renew'}</button>
-                <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                <button onClick={() => setOwnersOf(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Owners</button>
+                <Link to={`/tenants/${row._id}/workspace`} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Workspace</Link>
+                {row.billingPlan === 'trial' && <button onClick={() => setExtending(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Extend trial</button>}
+                <button onClick={() => startRenew(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">{row.billingPlan === 'trial' ? 'Activate plan' : 'Renew'}</button>
+                <button onClick={() => startEdit(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
+                <button onClick={() => setOwnersOf(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Owners</button>
                 <button
                   onClick={() => handleSuspend(row)}
                   disabled={row.billingStatus === 'suspended'}

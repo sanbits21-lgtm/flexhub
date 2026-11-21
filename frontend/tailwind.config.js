@@ -12,7 +12,7 @@ export default {
           50: '#F3F4F7', 100: '#E9ECF1', 200: '#DDE1E8', 300: '#C5CBD6', 400: '#8E97AB',
           500: '#7A8499', 600: '#343A48', 700: '#242935', 800: '#12151B', 900: '#0A0C10', 950: '#06080B',
         },
-        accent: { DEFAULT: 'rgb(var(--accent) / <alpha-value>)', hover: 'rgb(var(--accent-hover) / <alpha-value>)', ink: 'rgb(var(--accent-ink) / <alpha-value>)' },
+        accent: { DEFAULT: 'rgb(var(--accent) / <alpha-value>)', strong: 'rgb(var(--accent-strong) / <alpha-value>)', hover: 'rgb(var(--accent-hover) / <alpha-value>)', ink: 'rgb(var(--accent-ink) / <alpha-value>)' },
         red: { 400: '#FF6B7A' },
         green: { 400: '#3DDC97' },
         amber: { 400: '#FFB547' },

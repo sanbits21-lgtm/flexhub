@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const primaryBtn = 'bg-gray-900 text-white rounded-lg px-3 py-1 text-sm dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover';
+const primaryBtn = 'bg-accent-strong text-white rounded-lg px-3 py-1 text-sm dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover';
 
 function Group({ heading, items, onAdd }) {
   if (!items.length) return null;
@@ -67,7 +67,7 @@ export default function WidgetLibrary({ open, onClose, removed, onAdd, onAddAll,
         {removed.length > 0 && (
           <footer className="flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             <button type="button" onClick={onAddAll} className={primaryBtn}>Add all</button>
-            <button type="button" onClick={onReset} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Reset layout</button>
+            <button type="button" onClick={onReset} className="text-xs font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Reset layout</button>
           </footer>
         )}
         <p className="px-4 pb-3 text-xs text-gray-400 dark:text-gray-500">Saved on this device for this dashboard.</p>

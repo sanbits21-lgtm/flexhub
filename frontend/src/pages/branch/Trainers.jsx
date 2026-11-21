@@ -126,8 +126,8 @@ export default function Trainers() {
               label: 'Actions',
               render: (row) => (
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                  <button onClick={() => setReset({ trainer: row })} disabled={!row.isActive} className="text-gray-600 dark:text-gray-300 hover:underline disabled:opacity-40 disabled:no-underline whitespace-nowrap">Reset password</button>
+                  <button onClick={() => startEdit(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
+                  <button onClick={() => setReset({ trainer: row })} disabled={!row.isActive} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-gray-300 disabled:opacity-40 disabled:no-underline whitespace-nowrap">Reset password</button>
                   <button
                     onClick={() => handleDeactivate(row)}
                     disabled={!row.isActive}

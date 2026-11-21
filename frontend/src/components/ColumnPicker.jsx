@@ -87,7 +87,7 @@ export default function ColumnPicker({ prefs }) {
               </label>
             );
           })}
-          <button type="button" onClick={prefs.reset} className="mt-1 w-full text-left px-1 py-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+          <button type="button" onClick={prefs.reset} className="mt-1 w-full text-left px-1 py-1 text-xs font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">
             Reset to default
           </button>
         </div>

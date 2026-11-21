@@ -4,7 +4,7 @@ import { tenantSettingsAPI } from '../../services/api';
 import { buildUpiLink } from '../../utils/upi';
 
 const inputClass = 'border rounded px-2 py-1 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100';
-const primaryBtn = 'bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
+const primaryBtn = 'bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50';
 const ghostBtn = 'border rounded px-4 py-2 text-sm dark:border-gray-600 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50';
 const UPI_ID = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
 const errorOf = (err) => err.response?.data?.message || 'Could not save. Please try again.';

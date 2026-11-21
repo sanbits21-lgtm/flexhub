@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import Widget from './Widget';
 import { trendOf } from './StatCard';
 import Sparkline from './Sparkline';
+import { useChartColors } from '../utils/chartColors';
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 const compact = (n) => new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
@@ -19,6 +20,7 @@ const INK = {
 /** Money over the months as a filled line, with the total and the change since the month before. */
 export function RevenueCard({ title = 'Revenue overview', icon, data = [], className = '' }) {
   const { theme } = useTheme();
+  const chart = useChartColors();
   const ink = INK[theme];
   const values = data.map((d) => d.amount);
   const total = values.reduce((s, n) => s + n, 0);
@@ -40,15 +42,15 @@ export function RevenueCard({ title = 'Revenue overview', icon, data = [], class
             <AreaChart data={data} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="rev-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#C8F83A" stopOpacity={0.35} />
-                  <stop offset="1" stopColor="#C8F83A" stopOpacity={0} />
+                  <stop offset="0" stopColor={chart.accent} stopOpacity={chart.dark ? 0.35 : 0.22} />
+                  <stop offset="1" stopColor={chart.accent} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} stroke={ink.grid} />
               <XAxis dataKey="month" tick={{ fill: ink.muted, fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: ink.muted, fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={compact} width={44} />
               <Tooltip contentStyle={{ background: ink.tooltip, border: `1px solid ${ink.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v) => [inr(v), 'Collected']} />
-              <Area type="monotone" dataKey="amount" stroke="#C8F83A" strokeWidth={2.5} fill="url(#rev-fill)" dot={{ r: 3, fill: '#C8F83A', stroke: '#0B0E13', strokeWidth: 1 }} activeDot={{ r: 5 }} isAnimationActive={false} />
+              <Area type="monotone" dataKey="amount" stroke={chart.accent} strokeWidth={2.5} fill="url(#rev-fill)" dot={{ r: 3, fill: chart.accent, stroke: chart.dotRing, strokeWidth: 1 }} activeDot={{ r: 5 }} isAnimationActive={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -62,9 +64,10 @@ export function MembershipDonut({ title = 'Membership', icon, active = 0, total 
   const inactive = Math.max(0, total - active);
   const pct = total ? Math.round((active / total) * 100) : 0;
   const { theme } = useTheme();
-  const track = theme === 'dark' ? '#343A48' : '#DDE1E8';
+  const track = theme === 'dark' ? '#343A48' : '#E4E7EC';
+  const chart = useChartColors();
   const rows = [
-    { label: 'Active', value: active, color: '#C8F83A' },
+    { label: 'Active', value: active, color: chart.accent },
     { label: 'Inactive', value: inactive, color: track },
   ];
   return (
@@ -185,7 +188,7 @@ export function UpgradeCard({ daysLeft, className = '' }) {
         <h3 className="mt-2 text-xl font-extrabold leading-tight text-gray-900 dark:text-white">Take your club to the next level</h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Unlock more members and keep everything running for your gym.</p>
       </div>
-      <Link to="/billing" className="relative inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-ink hover:brightness-110">
+      <Link to="/billing" className="relative inline-flex w-fit items-center gap-2 rounded-full bg-accent-strong dark:bg-accent px-5 py-2 text-sm font-bold text-white dark:text-accent-ink hover:brightness-110">
         Choose a plan <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </section>
@@ -196,6 +199,7 @@ const medals = ['text-amber-500', 'text-gray-400', 'text-orange-700'];
 
 /** Which membership plans are selling: paid memberships per plan this month against last month, with the six-month line. */
 export function PlansTrending({ plans = [], className = '' }) {
+  const chart = useChartColors();
   return (
     <Widget title="Plans trending" icon={TrendingUp} className={className} action={<span className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 dark:border-white/10 dark:text-gray-300">This month</span>} bodyClassName="px-4 pb-4">
       {plans.length === 0 ? (
@@ -211,7 +215,7 @@ export function PlansTrending({ plans = [], className = '' }) {
                   <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{p.name}</p>
                   <p className="truncate text-xs text-gray-500 dark:text-gray-400">{p.thisMonth} sale{p.thisMonth === 1 ? '' : 's'} · {p.activeMembers} active member{p.activeMembers === 1 ? '' : 's'}{p.revenueThisMonth > 0 ? ` · ${inr(p.revenueThisMonth)}` : ''}</p>
                 </div>
-                <Sparkline data={p.series} color={p.change !== null && p.change < 0 ? '#FF6B7A' : '#C8F83A'} className="h-9 w-16 shrink-0" />
+                <Sparkline data={p.series} color={p.change !== null && p.change < 0 ? chart.danger : chart.accent} className="h-9 w-16 shrink-0" />
                 <span className={`flex w-14 shrink-0 items-center justify-end gap-0.5 text-xs font-semibold ${p.isNew ? 'text-blue-600 dark:text-[#7AA2FF]' : p.change === null ? 'text-gray-400' : up ? 'text-green-600 dark:text-accent' : 'text-red-500 dark:text-red-400'}`}>
                   {p.isNew ? 'New' : p.change === null ? '—' : <>{up ? <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDownRight className="h-3.5 w-3.5" aria-hidden="true" />}{Math.abs(p.change)}%</>}
                 </span>

@@ -117,7 +117,7 @@ export default function Plans({ type }) {
         <ErrorText>{genError}</ErrorText>
         <Btn busy={busy} kind={assigned ? 'secondary' : 'primary'} onClick={generate} className="w-full">{stored ? `Make a new ${noun}` : `Make my ${noun}`}</Btn>
         <Muted>Uses your profile and the equipment at your gym.</Muted>
-        <Link to="/member/profile" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Update my profile</Link>
+        <Link to="/member/profile" className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Update my profile</Link>
       </Card>
 
       {stored

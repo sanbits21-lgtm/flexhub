@@ -21,7 +21,7 @@ export default function StaffAvatar({ userId, hasPhoto, name, size = 36, version
 
   const box = { width: size, height: size };
   if (!url) {
-    return <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-accent text-accent-ink font-bold shrink-0" style={{ ...box, fontSize: size * 0.38 }}>{initialsOf(name)}</span>;
+    return <span aria-hidden="true" className="inline-flex items-center justify-center rounded-full bg-accent-strong dark:bg-accent text-white dark:text-accent-ink font-bold shrink-0" style={{ ...box, fontSize: size * 0.38 }}>{initialsOf(name)}</span>;
   }
   return <img src={url} alt="" className="rounded-full object-cover shrink-0" style={box} />;
 }

@@ -40,7 +40,7 @@ export default function ResetPassword() {
         <div className="space-y-5">
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">Password changed</h1>
           <p role="status" className="text-sm text-gray-700 dark:text-gray-200">{done}</p>
-          <Link to="/login" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3.5 text-lg font-bold text-accent-ink hover:brightness-110"><LogIn className="h-5 w-5" /> Log in</Link>
+          <Link to="/login" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-strong dark:bg-accent px-4 py-3.5 text-lg font-bold text-white dark:text-accent-ink hover:brightness-110"><LogIn className="h-5 w-5" /> Log in</Link>
         </div>
       ) : dead ? (
         <div className="space-y-4">

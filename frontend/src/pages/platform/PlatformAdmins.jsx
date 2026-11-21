@@ -84,7 +84,7 @@ export default function PlatformAdmins() {
             />
           </div>
         ))}
-        <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Platform Admin</button>
+        <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Add Platform Admin</button>
       </form>
 
       {editingId && (
@@ -119,7 +119,7 @@ export default function PlatformAdmins() {
           </div>
 
           <div className="flex gap-2">
-            <button type="submit" className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
+            <button type="submit" className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover">Save Changes</button>
             <button type="button" onClick={cancelEdit} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">Cancel</button>
           </div>
         </form>
@@ -137,7 +137,7 @@ export default function PlatformAdmins() {
             label: 'Actions',
             render: (row) => (
               <div className="flex gap-2">
-                <button onClick={() => startEdit(row)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
+                <button onClick={() => startEdit(row)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
                 <button
                   onClick={() => handleDeactivate(row)}
                   disabled={!row.isActive}

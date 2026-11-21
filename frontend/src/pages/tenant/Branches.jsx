@@ -104,9 +104,9 @@ export default function Branches() {
                 const q = `branchId=${r._id}&branchName=${encodeURIComponent(r.name)}`;
                 return (
                   <div className="flex gap-3">
-                    <Link to={`/members?${q}`} className="text-blue-600 dark:text-blue-400 hover:underline">Members</Link>
-                    <Link to={`/equipment?${q}`} className="text-blue-600 dark:text-blue-400 hover:underline">Equipment</Link>
-                    <Link to={`/trainers?${q}`} className="text-blue-600 dark:text-blue-400 hover:underline">Trainers</Link>
+                    <Link to={`/members?${q}`} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Members</Link>
+                    <Link to={`/equipment?${q}`} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Equipment</Link>
+                    <Link to={`/trainers?${q}`} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Trainers</Link>
                   </div>
                 );
               },
@@ -114,9 +114,9 @@ export default function Branches() {
             {
               key: 'actions', label: 'Actions', render: (r) => (
                 <div className="flex gap-3 whitespace-nowrap">
-                  <button onClick={() => openEdit(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
-                  <button onClick={() => openManager(r)} className="text-blue-600 dark:text-blue-400 hover:underline">+ Add Manager</button>
-                  <button onClick={() => setManagersOf(r)} className="text-blue-600 dark:text-blue-400 hover:underline">Managers</button>
+                  <button onClick={() => openEdit(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>
+                  <button onClick={() => openManager(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">+ Add Manager</button>
+                  <button onClick={() => setManagersOf(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Managers</button>
                 </div>
               ),
             },

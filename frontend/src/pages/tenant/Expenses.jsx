@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Paperclip, Plus, Wallet } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useChartColors } from '../../utils/chartColors';
 import { branchesAPI, expensesAPI } from '../../services/api';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
@@ -44,6 +45,7 @@ export default function Expenses() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const ink = INK[theme];
+  const chart = useChartColors();
   const admin = user.role === 'tenant-admin';
   const [month, setMonth] = useState(startOfMonth());
   const [branchId, setBranchId] = useState('');
@@ -149,7 +151,7 @@ export default function Expenses() {
                   {summary.byCategory.map((c) => (
                     <li key={c.category}>
                       <div className="flex justify-between text-sm"><span className="text-gray-700 dark:text-gray-200">{label(c.category)}</span><span className="font-semibold text-gray-900 dark:text-gray-100">{fmtRupees(c.total)}</span></div>
-                      <div className="mt-1 h-1.5 rounded-full bg-gray-100 dark:bg-white/10"><div className="h-1.5 rounded-full bg-accent" style={{ width: `${Math.max(3, (c.total / summary.totalExpenses) * 100)}%` }} /></div>
+                      <div className="mt-1 h-1.5 rounded-full bg-gray-100 dark:bg-white/10"><div className="h-1.5 rounded-full bg-accent-strong dark:bg-accent" style={{ width: `${Math.max(3, (c.total / summary.totalExpenses) * 100)}%` }} /></div>
                     </li>
                   ))}
                 </ul>
@@ -172,12 +174,12 @@ export default function Expenses() {
                     <XAxis dataKey="month" tick={{ fill: ink.muted, fontSize: 12 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: ink.muted, fontSize: 12 }} axisLine={false} tickLine={false} width={48} tickFormatter={(v) => new Intl.NumberFormat('en-IN', { notation: 'compact' }).format(v)} />
                     <Tooltip formatter={(v, n) => [fmtRupees(v), n === 'collected' ? 'Collected' : 'Spent']} contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-                    <Bar dataKey="collected" fill="#C8F83A" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                    <Bar dataKey="expenses" fill="#FF6B7A" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="collected" fill={chart.accent} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="expenses" fill={chart.danger} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="mt-1 flex gap-4 text-xs text-gray-500 dark:text-gray-400"><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-accent" />Collected</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[#FF6B7A]" />Spent</span></p>
+              <p className="mt-1 flex gap-4 text-xs text-gray-500 dark:text-gray-400"><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-accent-strong dark:bg-accent" />Collected</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[#FF6B7A]" />Spent</span></p>
             </section>
           </div>
         </>
@@ -198,9 +200,9 @@ export default function Expenses() {
               render: (r) => (r.voided ? <span className="text-xs text-gray-400">{r.voidReason || 'Voided'}</span> : (
                 <div className="flex items-center gap-3 whitespace-nowrap">
                   {r.hasReceipt
-                    ? <button type="button" onClick={() => viewReceipt(r)} className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"><Paperclip className="h-3.5 w-3.5" />Bill</button>
-                    : <label className="cursor-pointer text-gray-500 hover:underline dark:text-gray-400">Add bill<input type="file" accept="image/*" className="sr-only" onChange={(e) => { attach(r, e.target.files?.[0]); e.target.value = ''; }} /></label>}
-                  {!r.payrollKey && <button type="button" onClick={() => openEdit(r)} className="text-blue-600 hover:underline dark:text-blue-400">Edit</button>}
+                    ? <button type="button" onClick={() => viewReceipt(r)} className="inline-flex items-center gap-1 font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400"><Paperclip className="h-3.5 w-3.5" />Bill</button>
+                    : <label className="cursor-pointer font-medium text-accent-strong hover:underline dark:font-normal dark:text-gray-400">Add bill<input type="file" accept="image/*" className="sr-only" onChange={(e) => { attach(r, e.target.files?.[0]); e.target.value = ''; }} /></label>}
+                  {!r.payrollKey && <button type="button" onClick={() => openEdit(r)} className="font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Edit</button>}
                   <button type="button" onClick={() => voidIt(r)} className="text-red-600 hover:underline dark:text-red-400">Void</button>
                 </div>
               )),

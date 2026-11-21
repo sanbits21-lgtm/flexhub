@@ -19,15 +19,15 @@ export default function DashboardHero({ cta }) {
     <section className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm dark:border-white/5 dark:bg-gray-800/80">
       <div aria-hidden="true" className="absolute inset-y-0 right-0 w-3/5 opacity-0 dark:opacity-90" style={{ backgroundImage: "url('/images/dashboard-hero.jpg'), url('/images/hero-dumbbell.svg')", backgroundSize: 'cover, contain', backgroundPosition: 'right, right', backgroundRepeat: 'no-repeat' }} />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-gray-800 dark:via-gray-800/85 dark:to-transparent" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-56 w-16 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-80" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-4 h-56 w-6 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-60" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-56 w-16 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-30 dark:opacity-80" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-4 h-56 w-6 rotate-[35deg] bg-gradient-to-b from-accent to-accent/0 opacity-20 dark:opacity-60" />
       <div className="relative px-6 py-6 sm:px-8 sm:py-7">
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-          Welcome back, <span className="text-green-700 dark:text-accent">{first}!</span>
+          Welcome back, <span className="text-accent-strong dark:text-accent">{first}!</span>
         </h1>
         <p className="mt-1 text-gray-600 dark:text-gray-300">{SUBTITLE[user?.role] || ''}</p>
         {cta && (
-          <Link to={cta.to} className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-ink shadow-[0_8px_24px_-10px_rgb(var(--accent)/0.9)] hover:brightness-110">
+          <Link to={cta.to} className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent-strong dark:bg-accent px-5 py-2 text-sm font-bold text-white dark:text-accent-ink dark:shadow-[0_8px_24px_-10px_rgb(var(--accent)/0.9)] hover:brightness-110">
             {cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         )}

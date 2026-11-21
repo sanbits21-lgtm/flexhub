@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import Sparkline from './Sparkline';
+import { useChartColors } from '../utils/chartColors';
 
 // The accent colours a card can be tinted with. Lime is the brand; the others keep neighbouring cards apart.
 export const TONES = {
@@ -23,6 +24,8 @@ export const trendOf = (series = []) => {
 // recent months); without one it stays the plain label-and-number it always was.
 export default function StatCard({ label, value, compact = false, icon: Icon, tone = 'lime', trend, series, hint }) {
   const t = TONES[tone] || TONES.lime;
+  const chart = useChartColors();
+  const line = tone === 'lime' ? chart.accent : t.line; // the brand tone follows the theme; the others keep their own colour
   const change = trend === undefined ? trendOf(series) : trend;
   const full = !!Icon;
   return (
@@ -44,7 +47,7 @@ export default function StatCard({ label, value, compact = false, icon: Icon, to
           <div className="text-xs leading-tight text-gray-500 dark:text-gray-400 sm:text-sm">{label}</div>
           {hint && <div className="truncate text-xs text-gray-400 dark:text-gray-500">{hint}</div>}
         </div>
-        {full && series && series.length > 1 && <Sparkline data={series} color={t.line} className="h-12 w-20 shrink-0 xl:w-24" />}
+        {full && series && series.length > 1 && <Sparkline data={series} color={line} className="h-12 w-20 shrink-0 xl:w-24" />}
       </div>
     </div>
   );

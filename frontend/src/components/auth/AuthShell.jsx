@@ -21,10 +21,10 @@ export default function AuthShell({ children, wide = false }) {
       />
       <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgb(var(--accent)/0.12),transparent_45%),radial-gradient(circle_at_90%_95%,rgb(var(--accent)/0.10),transparent_40%)] dark:bg-gradient-to-b dark:from-gray-900/60 dark:via-gray-900/80 dark:to-gray-900" />
       {/* the stripes in the corners */}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-20 h-72 w-24 -rotate-45 bg-gradient-to-b from-accent to-accent/0 opacity-90" />
-      <div aria-hidden="true" className="pointer-events-none absolute -left-2 -top-24 h-72 w-8 -rotate-45 bg-gradient-to-b from-accent to-accent/0 opacity-70" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-14 h-72 w-24 -rotate-45 bg-gradient-to-t from-accent to-accent/0 opacity-90" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 right-6 h-72 w-8 -rotate-45 bg-gradient-to-t from-accent to-accent/0 opacity-70" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-20 h-72 w-24 -rotate-45 bg-gradient-to-b from-accent to-accent/0 opacity-35 dark:opacity-90" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-2 -top-24 h-72 w-8 -rotate-45 bg-gradient-to-b from-accent to-accent/0 opacity-25 dark:opacity-70" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-14 h-72 w-24 -rotate-45 bg-gradient-to-t from-accent to-accent/0 opacity-35 dark:opacity-90" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 right-6 h-72 w-8 -rotate-45 bg-gradient-to-t from-accent to-accent/0 opacity-25 dark:opacity-70" />
 
       <div className="absolute right-4 top-4 z-10">
         <ThemeToggle className="text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white" />
@@ -43,7 +43,7 @@ export default function AuthShell({ children, wide = false }) {
   );
 }
 
-const inputBase = 'w-full rounded-2xl border border-gray-300 bg-white py-3 pl-11 text-base text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40 dark:border-gray-600/70 dark:bg-gray-900/60 dark:text-gray-100';
+const inputBase = 'w-full rounded-2xl border border-gray-300 bg-white py-3 pl-11 text-base text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-accent-strong focus:ring-2 focus:ring-accent-strong/30 dark:focus:border-accent dark:focus:ring-accent/40 dark:border-gray-600/70 dark:bg-gray-900/60 dark:text-gray-100';
 
 /** A labelled field with its icon in front. Give `password` to get the show/hide eye. */
 export function AuthField({ id, label, icon: Icon, password = false, ...input }) {
@@ -77,7 +77,7 @@ export function AuthButton({ icon: Icon, children, ...props }) {
   return (
     <button
       {...props}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3.5 text-lg font-bold text-accent-ink shadow-[0_0_32px_-8px_rgb(var(--accent)/0.7)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-strong dark:bg-accent px-4 py-3.5 text-lg font-bold text-white dark:text-accent-ink dark:shadow-[0_0_32px_-8px_rgb(var(--accent)/0.7)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {Icon && <Icon className="h-5 w-5" aria-hidden="true" />}
       {children}
@@ -96,4 +96,4 @@ export function RuleText({ children }) {
   );
 }
 
-export const authLink = 'font-semibold text-green-700 underline underline-offset-2 hover:opacity-80 dark:text-accent';
+export const authLink = 'font-semibold text-accent-strong underline underline-offset-2 hover:opacity-80 dark:text-accent';

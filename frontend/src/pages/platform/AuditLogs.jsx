@@ -61,7 +61,7 @@ export default function AuditLogs() {
           <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className={inputClass} />
         </div>
         {(actionFilter || roleFilter || dateFrom || dateTo) && (
-          <button onClick={clearFilters} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Clear filters</button>
+          <button onClick={clearFilters} className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">Clear filters</button>
         )}
       </div>
 

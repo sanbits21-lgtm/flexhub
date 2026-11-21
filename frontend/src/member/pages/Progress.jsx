@@ -44,7 +44,7 @@ function Badge({ a }) {
       <p className="text-xs text-gray-500 dark:text-gray-400">{a.text}</p>
       {!a.earned && (
         <div className="mt-2" aria-label={`${a.progress.value} of ${a.progress.target}`}>
-          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700"><div className="h-1.5 rounded-full bg-accent" style={{ width: `${Math.max(pct, 2)}%` }} /></div>
+          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700"><div className="h-1.5 rounded-full bg-accent-strong dark:bg-accent" style={{ width: `${Math.max(pct, 2)}%` }} /></div>
           <p className="mt-1 text-xs text-gray-400">{a.progress.value} / {a.progress.target}</p>
         </div>
       )}

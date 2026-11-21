@@ -66,7 +66,7 @@ export default function Home() {
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Notices</p>
               <p className="truncate font-semibold text-gray-900 dark:text-gray-100">{notices.items[0].title}</p>
             </div>
-            {notices.unread > 0 && <span className="shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-ink">{notices.unread} new</span>}
+            {notices.unread > 0 && <span className="shrink-0 rounded-full bg-accent-strong dark:bg-accent px-2.5 py-0.5 text-xs font-bold text-white dark:text-accent-ink">{notices.unread} new</span>}
           </Card>
         </Link>
       )}

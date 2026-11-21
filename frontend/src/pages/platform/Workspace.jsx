@@ -55,7 +55,7 @@ export default function Workspace() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <div>
-        <Link to="/tenants" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">← Tenants</Link>
+        <Link to="/tenants" className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">← Tenants</Link>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1">Workspace — {tenantName}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Turn pages, features and fields on or off for this gym specifically. Unchanged
@@ -90,7 +90,7 @@ export default function Workspace() {
           <button
             type="submit"
             disabled={saving || !hasChanges}
-            className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
+            className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>

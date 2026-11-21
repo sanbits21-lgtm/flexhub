@@ -170,7 +170,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
           )}
 
           <div className="flex gap-2 pt-2">
-            <button type="submit" disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
+            <button type="submit" disabled={saving} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving
                 ? 'Saving...'
                 : form.paymentMethod === 'upi'
@@ -204,12 +204,12 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">UPI ID: <span className="font-mono">{upi.upiId}</span></p>
           {upi.upiPaymentLink && (
-            <a href={upi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <a href={upi.upiPaymentLink} target="_blank" rel="noreferrer" className="text-sm font-medium text-accent-strong hover:underline dark:font-normal dark:text-blue-400">
               Or open payment link
             </a>
           )}
           <div className="flex gap-2 pt-2">
-            <button onClick={() => doRenew('upi')} disabled={saving} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
+            <button onClick={() => doRenew('upi')} disabled={saving} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover disabled:opacity-50">
               {saving ? 'Confirming...' : 'Mark as Paid'}
             </button>
             <button type="button" onClick={onClose} className="border rounded px-4 py-2 dark:border-gray-600 dark:text-gray-100">
@@ -237,7 +237,7 @@ export default function RenewMembershipModal({ open, member, onClose, onRenewed 
             invoiceNumber={result.payment.invoiceNumber}
             paidAt={result.payment.paidAt}
           />
-          <button onClick={handleDone} className="bg-gray-900 text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
+          <button onClick={handleDone} className="bg-accent-strong text-white rounded px-4 py-2 dark:bg-accent dark:text-accent-ink dark:font-semibold dark:hover:bg-accent-hover mt-2">
             Done
           </button>
         </div>
