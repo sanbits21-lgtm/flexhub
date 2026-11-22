@@ -55,6 +55,12 @@ export default defineConfig({
       '/privacy': 'http://localhost:5000',
       '/terms': 'http://localhost:5000',
       '/readyz': 'http://localhost:5000',
+      // The public landing page is the front door of the main address, as it is in production: "/" itself, its files, and what
+      // search engines read. (A signed-in browser is sent on to /dashboard by landing/redirect.js; add ?home to look anyway.)
+      '^/$': 'http://localhost:5000',
+      '/landing': 'http://localhost:5000',
+      '/robots.txt': 'http://localhost:5000',
+      '/sitemap.xml': 'http://localhost:5000',
     },
   },
 });
