@@ -52,6 +52,25 @@ test('a wrong password is refused and the right one signs in', async ({ page }) 
   await expect(page).not.toHaveURL(/\/login/);
 });
 
+test('someone who is already signed in is never asked to log in again', async ({ page }) => {
+  await signIn(page, seed.alpha.managerEmail);
+  // the login page forwards them straight on...
+  await page.goto('/login');
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page.getByRole('button', { name: 'Log in' })).toHaveCount(0);
+  // ...and so does the front door of the site, and the installed app's start address
+  for (const address of ['/', '/dashboard']) {
+    await page.goto(address);
+    await expect(page).not.toHaveURL(/\/login/);
+    await expect(page.getByPlaceholder('Your password')).toHaveCount(0);
+  }
+  // a fresh visit with the session cookie but nothing else remembered (cleared site data for the page, not the cookie)
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByPlaceholder('Your password')).toHaveCount(0);
+});
+
 test('a phone number that is too short is refused by the form', async ({ page }) => {
   await signIn(page, seed.alpha.managerEmail);
   const form = await openAddMember(page);

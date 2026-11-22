@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Gift, LogIn, Mail, Lock, Users } from 'lucide-react';
 import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import { useBrand } from '../context/BrandContext';
 import AuthShell, { AuthButton, AuthField, RuleText, authLink } from '../components/auth/AuthShell';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { user, loading, login } = useAuth();
   const { unknownGym } = useBrand();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -30,6 +30,11 @@ export default function Login() {
       setBusy(false);
     }
   };
+
+  // Already signed in (the session cookie is still good): nothing to type, go to the dashboard. Wait for the check first, so the
+  // form never flashes up for someone who is signed in.
+  if (loading) return null;
+  if (user) return <Navigate to="/" replace />;
 
   if (unknownGym) {
     return (
