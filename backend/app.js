@@ -243,6 +243,14 @@ app.use('/landing', express.static(landingDir, {
   maxAge: '1h',
   setHeaders: (res, filePath) => { if (path.basename(filePath) === 'config.js') res.setHeader('Cache-Control', 'no-cache'); },
 }));
+// For the reverse proxy only (docker/Caddyfile): may it fetch an HTTPS certificate for this name? See utils/tlsAsk.js. The proxy calls it
+// directly on the private network, and refuses to pass any /internal path on from the public internet; a request that did arrive through
+// the proxy carries X-Forwarded-For, so those are refused here as well. The answer is only a status code.
+app.get('/internal/tls-ask', async (req, res) => {
+  if (req.get('x-forwarded-for')) return res.status(404).end();
+  const allowed = await require('./utils/tlsAsk').isAllowedDomain(req.query.domain);
+  res.status(allowed ? 200 : 404).end();
+});
 const publicOrigin = (req) => String(process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
 app.get('/robots.txt', (req, res) => {
   const lines = (req.hostTenant || req.unknownHost)
@@ -266,7 +274,7 @@ app.use(express.static(frontendDist, {
     if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
   },
 }));
-app.get(/^(?!\/api|\/health|\/readyz|\/privacy|\/terms|\/landing|\/robots\.txt|\/sitemap\.xml).*/, (req, res, next) => {
+app.get(/^(?!\/api|\/health|\/readyz|\/privacy|\/terms|\/internal|\/landing|\/robots\.txt|\/sitemap\.xml).*/, (req, res, next) => {
   res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
     if (err) next(); // dist doesn't exist (e.g. local dev) — fall through to 404
   });

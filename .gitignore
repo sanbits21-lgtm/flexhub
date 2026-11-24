@@ -6,3 +6,5 @@ build/
 .claude/
 
 backend/uploads/
+.env.docker
+backups/

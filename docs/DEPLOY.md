@@ -1,34 +1,21 @@
 # Deploying FitzyClub
 
+> **One server (Hostinger VPS or any Docker host): use [VPS.md](./VPS.md).** `docker-compose.yml` runs the database, app, HTTPS (Caddy,
+> with a certificate per gym address fetched on first visit) and daily backups together. The database can be the bundled one or MongoDB Atlas
+> (see "Using MongoDB Atlas instead" there). Settings live in `.env.docker`; run every command with `--env-file .env.docker`.
+
 ## What runs where
 | Piece | How it ships |
 |---|---|
 | API + staff website | **One Docker image** (`Dockerfile`): Express serves the built website. |
-| Database | MongoDB Atlas (recommended) or the bundled `mongo` service (`--profile db`). |
-| HTTPS | Caddy (`--profile proxy`) or your host's load balancer. |
+| Database | Bundled `mongo` container, or MongoDB Atlas (`DATABASE_URL`). |
+| HTTPS | Caddy in the same compose file. On a managed host (Render etc.) use the host's own HTTPS and skip compose. |
 | Member/staff mobile app | Not Docker. Built with EAS and submitted to the stores. |
 
-## First deploy
-1. `cp .env.example .env` and set:
-   - `MONGODB_URI` (Atlas, or `mongodb://mongo:27017/flexhub` with `--profile db`)
-   - `JWT_SECRET`: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
-     The container refuses to start in production with a short or placeholder secret.
-   - `PUBLIC_URL`, your site's `https://` address. **Required in production**: the server will not
-     start without it (email links are built from it).
-   - `DOMAIN` if using the Caddy profile; `ANTHROPIC_API_KEY` is optional.
-   - Every other setting is in [CONFIGURATION.md](./CONFIGURATION.md).
-2. `docker compose up -d --build` (add `--profile db` and/or `--profile proxy`).
-3. Create the platform owner once:
-   `docker compose run --rm app node scripts/seedSuperAdmin.js` (uses `SEED_*` vars), then
-   remove `SEED_PASSWORD` from `.env`.
-4. Check: `curl http://localhost:8080/health`.
-
-## Operations
-- **Logs:** `docker compose logs -f app` (rotated, 5 x 10 MB).
-- **Update:** `git pull && docker compose up -d --build`. Stops gracefully (SIGTERM, 15 s).
-- **Backups:** Atlas snapshots, or for the bundled DB
-  `docker compose exec mongo mongodump --archive --gzip > flexhub-$(date +%F).gz`.
-  Member photos are in the `uploads` volume - back that up too.
+## Operations (compose stack)
+- **Logs:** `docker compose --env-file .env.docker logs -f app` (rotated, 5 x 10 MB).
+- **Update:** `git pull && docker compose --env-file .env.docker up -d --build`. Stops gracefully (SIGTERM, 15 s).
+- **Backups:** the `backup` container saves the database and photos daily to `backups/`; copy that folder off the server (VPS.md).
 - The container is non-root, read-only, drops all capabilities; only `/data/uploads` is writable.
 - Behind a proxy the app trusts one hop (`trust proxy`), so rate limiting sees real client IPs.
 
@@ -69,7 +56,7 @@ The mobile app is unaffected (it keeps using the single API address).
    and the `dns` line in `Caddyfile.wildcard`. If you already terminate HTTPS elsewhere, e.g. a
    Cloudflare proxy or a cloud load balancer with a wildcard certificate, skip Caddy and make sure
    it forwards the original `Host` header.)
-3. `docker compose --profile proxy up -d --build`
+3. This older wildcard-certificate route (DNS-provider plugin) is no longer in `docker-compose.yml`; VPS.md's per-address certificates replace it.
 
 **Changing an address later:** the gym admin does it under *Branding & Address* once the platform
 admin enables **Choose own subdomain** for that gym in Workspace (platform staff can always

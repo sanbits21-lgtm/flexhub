@@ -1,0 +1,38 @@
+# The front door: automatic HTTPS for the main address and for every gym's own address, then everything goes to the app.
+#
+# A gym's address (iron.yourdomain.com) gets its certificate the first time it is visited ("on-demand TLS"), so you do not need a
+# wildcard certificate, a DNS provider plugin or an API token: just a wildcard DNS record. Before fetching one, Caddy asks the app
+# (/internal/tls-ask) whether that name is a real gym, so strangers cannot make the server request certificates for made-up names.
+#
+# Everything here is set from .env.docker (see docs/VPS.md); nothing needs editing in this file.
+{
+	http_port {$HTTP_PORT}
+	https_port {$HTTPS_PORT}
+	email {$ACME_EMAIL}
+	# Empty on a real server. For a test on your own computer it is "local_certs": Caddy then signs its own certificates
+	# (your browser will ask you to trust them once) instead of asking Let's Encrypt, which cannot reach a laptop.
+	{$CADDY_LOCAL_CERTS}
+	on_demand_tls {
+		ask http://app:8080/internal/tls-ask
+	}
+}
+
+(front) {
+	encode zstd gzip
+	# The check above is for Caddy only. Nobody on the internet can reach it through here.
+	@internal path /internal/*
+	respond @internal 404
+	# The original Host header is passed through unchanged: it is how the app knows which gym a request is for.
+	reverse_proxy app:8080
+}
+
+{$DOMAIN} {
+	import front
+}
+
+*.{$DOMAIN} {
+	tls {
+		on_demand
+	}
+	import front
+}
